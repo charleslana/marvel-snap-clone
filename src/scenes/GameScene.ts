@@ -12,6 +12,7 @@ interface Slot {
   y: number;
   ocupado: boolean;
   overlay?: Phaser.GameObjects.Rectangle;
+  poder?: number;
 }
 
 interface Lane {
@@ -61,6 +62,7 @@ export default class GameScene extends Phaser.Scene {
   private energiaTexto?: Phaser.GameObjects.Text;
   private energiaJogador = 0;
   private energiaBot = 0;
+  private turnoText!: Phaser.GameObjects.Text;
 
   create(): void {
     this.add.text(20, 20, "Marvel Snap Clone Offline", {
@@ -204,23 +206,41 @@ export default class GameScene extends Phaser.Scene {
     }
 
     const energiaX = 20;
-    const energiaY = 60;
+    const centerY = this.scale.height / 2;
 
-    const energiaRect = this.add
-      .rectangle(energiaX, energiaY, 100, 40, 0x222222)
-      .setOrigin(0);
+    // Cria o texto primeiro (para saber altura e centralizar com base nele)
     const energiaTexto = this.add
-      .text(energiaX + 50, energiaY + 20, `Energia: ${this.turnoAtual}`, {
+      .text(0, 0, "Energia: " + this.energiaJogador, {
         fontSize: "20px",
         color: "#ffffff",
       })
-      .setOrigin(0.5, 0.5);
+      .setOrigin(0, 0.5);
 
-    this.energiaContainer = this.add.container(0, 0, [
+    // Agora cria o retângulo com base no tamanho do texto
+    const padding = 10;
+    const rectWidth = energiaTexto.width + padding * 2;
+    const rectHeight = 40;
+
+    const energiaRect = this.add
+      .rectangle(0, 0, rectWidth, rectHeight, 0x222222)
+      .setOrigin(0, 0.5);
+
+    // Agrupa em container na posição final
+    this.energiaContainer = this.add.container(energiaX, centerY, [
       energiaRect,
       energiaTexto,
     ]);
+
     this.energiaTexto = energiaTexto;
+
+    this.turnoText = this.add
+      .text(screenWidth - 20, centerY, `Turno: ${this.turnoAtual}`, {
+        fontSize: "20px",
+        color: "#ffffff",
+        backgroundColor: "#000000",
+        padding: { x: 10, y: 5 },
+      })
+      .setOrigin(1, 0.5);
 
     this.finalizarTurnoButton = this.add
       .text(screenWidth - 20, screenHeight - 40, "Finalizar Turno", {
@@ -542,15 +562,76 @@ export default class GameScene extends Phaser.Scene {
   }
 
   turnoBot(): void {
-    const jogavel = this.botMao.filter((c) => c.custo <= this.energiaBot);
-    if (jogavel.length > 0) {
-      const carta = jogavel.sort((a, b) => b.poder - a.poder)[0];
-      this.energiaBot -= carta.custo;
-      const index = this.botMao.indexOf(carta);
+    // Filtra cartas jogáveis por energia
+    const jogaveis = this.botMao.filter((c) => c.custo <= this.energiaBot);
 
-      for (const lane of this.lanes) {
+    if (jogaveis.length === 0) {
+      // Se não tem cartas jogáveis, passa o turno direto
+      this.turnoDoJogador = true;
+      this.finalizarTurnoButton?.setVisible(true);
+      return;
+    }
+
+    // Função para calcular poder total do bot e do jogador em uma lane
+    const poderLane = (lane: Lane) => {
+      let poderBot = 0;
+      for (const slot of lane.botSlots) {
+        poderBot += slot.poder ?? 0;
+      }
+      let poderJogador = 0;
+      for (const slot of lane.playerSlots) {
+        poderJogador += slot.poder ?? 0;
+      }
+      return { poderBot, poderJogador };
+    };
+
+    // Ordena as cartas jogáveis por poder decrescente (priorizar cartas mais fortes)
+    jogaveis.sort((a, b) => b.poder - a.poder);
+
+    // Tenta jogar cartas uma a uma
+    for (const carta of jogaveis) {
+      if (carta.custo > this.energiaBot) continue;
+
+      // Prioridade para lanes que o bot está perdendo ou empatando
+      // Ordena lanes pelas que o bot tem menor vantagem (ou desvantagem) primeiro
+      const lanesOrdenadas = this.lanes
+        .map((lane) => {
+          const { poderBot, poderJogador } = poderLane(lane);
+          return {
+            lane,
+            diferenca: poderBot - poderJogador,
+          };
+        })
+        .sort((a, b) => a.diferenca - b.diferenca);
+
+      let cartaJogada = false;
+
+      for (const item of lanesOrdenadas) {
+        const lane = item.lane;
+
+        // Se slot disponível na lane para bot e carta cabe na energia
         const slot = lane.botSlots.find((s) => !s.ocupado);
-        if (slot) {
+        if (!slot) continue;
+
+        if (carta.custo > this.energiaBot) continue;
+
+        // Critério para tentar jogar aqui:
+        // Se bot está perdendo ou empatando na lane, tenta virar a vantagem
+        // Ou se bot está ganhando mas ainda tem slot disponível, pode reforçar
+
+        const { poderBot, poderJogador } = poderLane(lane);
+        const poderComCarta = poderBot + carta.poder;
+
+        // Queremos jogar se:
+        // 1) Está perdendo ou empatando e esta carta pode virar a vantagem
+        // 2) Está ganhando mas pode reforçar (optional, podemos priorizar virar lanes)
+
+        if (
+          (poderBot <= poderJogador && poderComCarta > poderJogador) ||
+          poderBot > poderJogador
+        ) {
+          // Joga carta nessa lane
+
           // Criar carta na lane
           this.add.rectangle(slot.x, slot.y, 80, 110, 0xff0000);
 
@@ -582,17 +663,86 @@ export default class GameScene extends Phaser.Scene {
 
           slot.ocupado = true;
           (slot as any).poder = carta.poder;
-          this.botMao.splice(index, 1); // Remove da mão do bot
+
+          // Remove carta da mão do bot
+          const index = this.botMao.indexOf(carta);
+          if (index >= 0) {
+            this.botMao.splice(index, 1);
+          }
+
+          this.energiaBot -= carta.custo;
 
           // Atualiza visual da mão do bot
           this.renderMaoBot();
           this.atualizarPoderesLanes();
 
+          cartaJogada = true;
+
+          // Sai do loop de lanes para essa carta, passa pra próxima carta
           break;
         }
       }
+
+      // Se não conseguiu jogar em nenhuma lane pela regra acima,
+      // tenta jogar em qualquer lane com slot disponível (priorizando o slot vazio)
+      if (!cartaJogada) {
+        for (const lane of this.lanes) {
+          const slot = lane.botSlots.find((s) => !s.ocupado);
+          if (slot && carta.custo <= this.energiaBot) {
+            // Joga carta aqui
+
+            this.add.rectangle(slot.x, slot.y, 80, 110, 0xff0000);
+
+            this.add
+              .text(slot.x, slot.y + 45, carta.nome, {
+                color: "#ffffff",
+                fontSize: "14px",
+                align: "center",
+              })
+              .setOrigin(0.5, 1)
+              .setWordWrapWidth(70);
+
+            this.add
+              .text(slot.x + 30, slot.y - 45, String(carta.poder), {
+                color: "#ffffff",
+                fontSize: "14px",
+                align: "right",
+              })
+              .setOrigin(1, 0);
+
+            this.add
+              .text(slot.x - 30, slot.y - 45, String(carta.custo), {
+                color: "#ffff00",
+                fontSize: "14px",
+                fontStyle: "bold",
+                align: "left",
+              })
+              .setOrigin(0, 0);
+
+            slot.ocupado = true;
+            (slot as any).poder = carta.poder;
+
+            const index = this.botMao.indexOf(carta);
+            if (index >= 0) {
+              this.botMao.splice(index, 1);
+            }
+
+            this.energiaBot -= carta.custo;
+
+            this.renderMaoBot();
+            this.atualizarPoderesLanes();
+
+            cartaJogada = true;
+            break;
+          }
+        }
+      }
+
+      // Se acabou a energia, para de jogar cartas
+      if (this.energiaBot <= 0) break;
     }
 
+    // Depois que o bot jogou, passa o turno para o jogador
     this.turnoDoJogador = true;
     this.finalizarTurnoButton?.setVisible(true);
   }
@@ -623,12 +773,32 @@ export default class GameScene extends Phaser.Scene {
 
       // Incrementa turno e atualiza energia após bot jogar
       this.turnoAtual++;
+      this.turnoText.setText(`Turno: ${this.turnoAtual}`);
+      this.tweens.add({
+        targets: this.turnoText,
+        scale: 1.4,
+        alpha: 0.7,
+        duration: 150,
+        yoyo: true,
+        ease: "Power2",
+        onYoyo: () => {
+          this.turnoText.setScale(1);
+          this.turnoText.setAlpha(1);
+        },
+      });
+
       this.energiaJogador = this.turnoAtual;
       this.energiaBot = this.turnoAtual;
       this.atualizarEnergiaTexto();
 
       this.turnoDoJogador = true;
       this.finalizarTurnoButton?.setVisible(true);
+
+      if (this.turnoAtual >= 6) {
+        this.checarFimDeJogo();
+      } else {
+        this.turnoDoJogador = true;
+      }
     });
   }
 
@@ -694,5 +864,77 @@ export default class GameScene extends Phaser.Scene {
       ? this.energiaJogador
       : this.energiaBot;
     this.energiaTexto.setText(`Energia: ${energiaAtual}`);
+  }
+
+  private checarFimDeJogo(): void {
+    let vitoriasJogador = 0;
+    let vitoriasBot = 0;
+
+    for (const lane of this.lanes) {
+      let poderJogador = 0;
+      let poderBot = 0;
+
+      for (const slot of lane.playerSlots) {
+        if (slot.ocupado) {
+          // opcional: armazenar poder na slot no futuro
+          poderJogador += this.recuperarPoderNoSlot(slot);
+        }
+      }
+
+      for (const slot of lane.botSlots) {
+        if (slot.ocupado) {
+          poderBot += this.recuperarPoderNoSlot(slot);
+        }
+      }
+
+      if (poderJogador > poderBot) vitoriasJogador++;
+      else if (poderBot > poderJogador) vitoriasBot++;
+    }
+
+    let mensagem = "";
+
+    if (vitoriasJogador > vitoriasBot) mensagem = "Você venceu!";
+    else if (vitoriasBot > vitoriasJogador) mensagem = "Bot venceu!";
+    else mensagem = "Empate!";
+
+    this.mostrarModalResultado(mensagem);
+  }
+
+  private recuperarPoderNoSlot(slot: Slot): number {
+    return slot.poder ?? 0;
+  }
+
+  private mostrarModalResultado(texto: string): void {
+    const largura = 300;
+    const altura = 150;
+    const x = this.scale.width / 2;
+    const y = this.scale.height / 2;
+
+    const fundo = this.add
+      .rectangle(x, y, largura, altura, 0x000000, 0.8)
+      .setStrokeStyle(2, 0xffffff)
+      .setOrigin(0.5);
+
+    const mensagem = this.add
+      .text(x, y - 30, texto, {
+        fontSize: "20px",
+        color: "#ffffff",
+        align: "center",
+      })
+      .setOrigin(0.5);
+
+    const botao = this.add
+      .text(x, y + 30, "Jogar Novamente", {
+        fontSize: "16px",
+        backgroundColor: "#ffffff",
+        color: "#000000",
+        padding: { x: 10, y: 5 },
+      })
+      .setOrigin(0.5)
+      .setInteractive();
+
+    botao.on("pointerdown", () => this.scene.restart());
+
+    this.add.container(0, 0, [fundo, mensagem, botao]);
   }
 }
