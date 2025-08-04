@@ -73,24 +73,7 @@ export class CardDetailsPanel {
     this.cardNameText?.setText(card.name);
     this.cardPowerText?.setText(card.power.toString());
     this.cardCostText?.setText(card.cost.toString());
-
-    let description = "";
-
-    switch (card.name) {
-      case "Homem de Ferro":
-        description = "Um herói inteligente e poderoso com armadura avançada.";
-        break;
-      case "Hulk":
-        description = "Força bruta imbatível quando está com raiva.";
-        break;
-      case "Viúva Negra":
-        description = "Espiã ágil e mestre em combate corpo a corpo.";
-        break;
-      default:
-        description = "Carta sem descrição disponível.";
-    }
-
-    this.cardDescriptionText?.setText(description);
+    this.cardDescriptionText?.setText(card.description);
     this.cardDetailsPanel.setVisible(true);
   }
 

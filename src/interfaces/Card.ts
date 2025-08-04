@@ -3,6 +3,7 @@ export interface Card {
   cost: number;
   power: number;
   index: number;
+  description: string
 }
 
 export interface CardData extends Card {

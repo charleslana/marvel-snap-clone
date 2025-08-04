@@ -16,19 +16,69 @@ import { GameEndManager } from "../utils/GameEndManager";
 
 export default class GameScene extends Phaser.Scene {
   private playerHand: Omit<Card, "index">[] = [
-    { name: "Homem de Ferro", cost: 2, power: 3 },
-    { name: "Hulk", cost: 3, power: 6 },
-    { name: "Viúva Negra", cost: 1, power: 2 },
-    { name: "Capitão América", cost: 2, power: 4 },
-    { name: "Nick Fury", cost: 5, power: 9 },
+    {
+      name: "Homem de Ferro",
+      cost: 2,
+      power: 3,
+      description: "Um herói inteligente e poderoso com armadura avançada.",
+    },
+    {
+      name: "Hulk",
+      cost: 3,
+      power: 6,
+      description: "Força bruta imbatível quando está com raiva.",
+    },
+    {
+      name: "Viúva Negra",
+      cost: 1,
+      power: 2,
+      description: "Espiã ágil e mestre em combate corpo a corpo.",
+    },
+    {
+      name: "Capitão América",
+      cost: 2,
+      power: 4,
+      description: "Líder nato com escudo indestrutível de vibranium.",
+    },
+    {
+      name: "Nick Fury",
+      cost: 5,
+      power: 9,
+      description: "Diretor da S.H.I.E.L.D. com acesso a recursos ilimitados.",
+    },
   ];
 
   private botHand: Omit<Card, "index">[] = [
-    { name: "Thanos", cost: 3, power: 7 },
-    { name: "Loki", cost: 2, power: 4 },
-    { name: "Ultron", cost: 1, power: 2 },
-    { name: "Capitão América", cost: 2, power: 4 },
-    { name: "Thor", cost: 4, power: 8 },
+    {
+      name: "Thanos",
+      cost: 3,
+      power: 7,
+      description: "Titã Louco obcecado em equilibrar o universo.",
+    },
+    {
+      name: "Loki",
+      cost: 2,
+      power: 4,
+      description: "Deus da trapaça com poderes mágicos e ilusões.",
+    },
+    {
+      name: "Ultron",
+      cost: 1,
+      power: 2,
+      description: "IA robótica com capacidade de evolução constante.",
+    },
+    {
+      name: "Capitão América",
+      cost: 2,
+      power: 4,
+      description: "Líder nato com escudo indestrutível de vibranium.",
+    },
+    {
+      name: "Thor",
+      cost: 4,
+      power: 8,
+      description: "Deus do trovão com martelo místico Mjolnir.",
+    },
   ];
 
   private isPlayerTurn = true;
@@ -434,12 +484,14 @@ export default class GameScene extends Phaser.Scene {
         name: cardData.name,
         cost: cardData.cost,
         power: cardData.power,
+        description: cardData.description,
       });
     } else {
       this.playerHand.push({
         name: cardData.name,
         cost: cardData.cost,
         power: cardData.power,
+        description: cardData.description,
       });
     }
 
