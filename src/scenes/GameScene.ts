@@ -1,248 +1,265 @@
 import Phaser from "phaser";
+import { Card, CardData } from "../entities/Card";
+import { Lane } from "../entities/Lane";
+import { Slot } from "../entities/Slot";
 
-interface Carta {
-  nome: string;
-  custo: number;
-  poder: number;
-  index: number;
-}
-
-interface Slot {
-  x: number;
-  y: number;
-  ocupado: boolean;
-  overlay?: Phaser.GameObjects.Rectangle;
-  poder?: number;
-}
-
-interface Lane {
-  x: number;
-  y: number;
-  playerSlots: Slot[];
-  botSlots: Slot[];
-  mundoText?: Phaser.GameObjects.Text;
-  poderJogadorText?: Phaser.GameObjects.Text;
-  poderBotText?: Phaser.GameObjects.Text;
-  mundoContainer?: Phaser.GameObjects.Container;
-}
-
-interface CartaData extends Carta {
-  index: number;
-}
-
-interface DraggableCard extends Phaser.GameObjects.Rectangle {
-  cartaData: CartaData;
-  startX: number;
-  startY: number;
-}
+// =============================================
+// Classe Principal do Jogo
+// =============================================
 
 export default class GameScene extends Phaser.Scene {
-  private jogadorMao: Omit<Carta, "index">[] = [
-    { nome: "Homem de Ferro", custo: 2, poder: 3 },
-    { nome: "Hulk", custo: 3, poder: 6 },
-    { nome: "Viúva Negra", custo: 1, poder: 2 },
-    { nome: "Capitão América", custo: 2, poder: 4 },
-    { nome: "Nick Fury", custo: 5, poder: 9 },
+  // Propriedades do Jogo
+  private playerHand: Omit<Card, "index">[] = [
+    { name: "Homem de Ferro", cost: 2, power: 3 },
+    { name: "Hulk", cost: 3, power: 6 },
+    { name: "Viúva Negra", cost: 1, power: 2 },
+    { name: "Capitão América", cost: 2, power: 4 },
+    { name: "Nick Fury", cost: 5, power: 9 },
   ];
-  private botMao: Omit<Carta, "index">[] = [
-    { nome: "Thanos", custo: 3, poder: 7 },
-    { nome: "Loki", custo: 2, poder: 4 },
-    { nome: "Ultron", custo: 1, poder: 2 },
-    { nome: "Capitão América", custo: 2, poder: 4 },
-    { nome: "Thor", custo: 4, poder: 8 },
+
+  private botHand: Omit<Card, "index">[] = [
+    { name: "Thanos", cost: 3, power: 7 },
+    { name: "Loki", cost: 2, power: 4 },
+    { name: "Ultron", cost: 1, power: 2 },
+    { name: "Capitão América", cost: 2, power: 4 },
+    { name: "Thor", cost: 4, power: 8 },
   ];
-  private turnoDoJogador = true;
-  private energia = 5;
+
+  private isPlayerTurn = true;
   private lanes: Lane[] = [];
-  private maoJogadorContainers: Phaser.GameObjects.Container[] = [];
-  private maoBotContainers: Phaser.GameObjects.Container[] = [];
-  private finalizarTurnoButton?: Phaser.GameObjects.Text;
-  private turnoAtual = 1;
-  private energiaContainer?: Phaser.GameObjects.Container;
-  private energiaTexto?: Phaser.GameObjects.Text;
-  private energiaJogador = 0;
-  private energiaBot = 0;
-  private turnoText!: Phaser.GameObjects.Text;
+  private playerHandContainers: Phaser.GameObjects.Container[] = [];
+  private botHandContainers: Phaser.GameObjects.Container[] = [];
+  private endTurnButton?: Phaser.GameObjects.Text;
+  private currentTurn = 1;
+  private energyContainer?: Phaser.GameObjects.Container;
+  private energyText?: Phaser.GameObjects.Text;
+  private playerEnergy = 0;
+  private botEnergy = 0;
+  private turnText!: Phaser.GameObjects.Text;
+
+  // Painel de detalhes da carta
+  private cardDetailsPanel?: Phaser.GameObjects.Container;
+  private cardNameText?: Phaser.GameObjects.Text;
+  private cardPowerText?: Phaser.GameObjects.Text;
+  private cardCostText?: Phaser.GameObjects.Text;
+  private cardDescriptionText?: Phaser.GameObjects.Text;
+
+  // =============================================
+  // Métodos Principais do Phaser
+  // =============================================
 
   create(): void {
+    this.initializeGameTitle();
+    this.initializeGameLanes();
+    this.initializeEnergyDisplay();
+    this.initializeTurnDisplay();
+    this.initializeEndTurnButton();
+    this.initializeCardDetailsPanel();
+
+    this.playerEnergy = this.currentTurn;
+    this.botEnergy = this.currentTurn;
+    this.updateEnergyText();
+
+    this.renderPlayerHand();
+    this.renderBotHand();
+  }
+
+  // =============================================
+  // Inicialização de Componentes
+  // =============================================
+
+  /**
+   * Inicializa o título do jogo
+   */
+  private initializeGameTitle(): void {
     this.add.text(20, 20, "Marvel Snap Clone Offline", {
       color: "#fff",
       fontSize: "24px",
     });
+  }
 
+  /**
+   * Inicializa as lanes (áreas de jogo)
+   */
+  private initializeGameLanes(): void {
     const screenWidth = this.scale.width;
     const screenHeight = this.scale.height;
-
     const totalLanes = 3;
     const spacing = screenWidth / (totalLanes + 1);
     const laneY = screenHeight / 2;
-    const cardSpacing = 120;
 
     for (let i = 0; i < totalLanes; i++) {
       const x = spacing * (i + 1);
       const y = laneY;
 
-      // Cria os elementos do "mundo"
-      const mundoRect = this.add
-        .rectangle(0, 0, 160, 100, 0x333333)
-        .setStrokeStyle(2, 0xffffff);
+      const lane = this.createLane(x, y, i);
+      this.lanes.push(lane);
+    }
+  }
 
-      const mundoText = this.add
-        .text(0, 0, `Mundo ${i + 1}`, {
-          fontSize: "16px",
-          color: "#ffffff",
-        })
-        .setOrigin(0.5, 0.5);
+  /**
+   * Cria uma lane individual
+   */
+  private createLane(x: number, y: number, index: number): Lane {
+    // Elementos visuais da lane
+    const worldRect = this.add
+      .rectangle(0, 0, 160, 100, 0x333333)
+      .setStrokeStyle(2, 0xffffff);
 
-      // Texto poder bot (topo dentro do retângulo)
-      const poderBotText = this.add
-        .text(0, -100 / 2 + 15, "Poder Bot: 0", {
-          fontSize: "14px",
-          color: "#ff4444",
-          fontStyle: "bold",
-        })
-        .setOrigin(0.5, 0);
+    const worldText = this.add
+      .text(0, 0, `Mundo ${index + 1}`, {
+        fontSize: "16px",
+        color: "#ffffff",
+      })
+      .setOrigin(0.5, 0.5);
 
-      // Texto poder jogador (base dentro do retângulo)
-      const poderJogadorText = this.add
-        .text(0, 100 / 2 - 15, "Poder Jogador: 0", {
-          fontSize: "14px",
-          color: "#44ff44",
-          fontStyle: "bold",
-        })
-        .setOrigin(0.5, 1);
+    const botPowerText = this.add
+      .text(0, -100 / 2 + 15, "Poder Bot: 0", {
+        fontSize: "14px",
+        color: "#ff4444",
+        fontStyle: "bold",
+      })
+      .setOrigin(0.5, 0);
 
-      // Cria container que agrupa o retângulo e textos
-      const mundoContainer = this.add.container(x, y, [
-        mundoRect,
-        mundoText,
-        poderBotText,
-        poderJogadorText,
-      ]);
+    const playerPowerText = this.add
+      .text(0, 100 / 2 - 15, "Poder Jogador: 0", {
+        fontSize: "14px",
+        color: "#44ff44",
+        fontStyle: "bold",
+      })
+      .setOrigin(0.5, 1);
 
-      const playerSlots: Slot[] = [];
-      const botSlots: Slot[] = [];
+    const worldContainer = this.add.container(x, y, [
+      worldRect,
+      worldText,
+      botPowerText,
+      playerPowerText,
+    ]);
 
-      const cardWidth = 80;
-      const cardHeight = 110;
-      const cols = 2;
-      const rowsPerSide = 2; // 2 linhas para bot, 2 para jogador
-      const horizontalSpacing = 5;
-      const verticalSpacing = 5;
+    // Slots para cartas
+    const playerSlots = this.createSlots(x, y, true);
+    const botSlots = this.createSlots(x, y, false);
 
-      const totalCardsWidth = cols * cardWidth + (cols - 1) * horizontalSpacing;
-      const firstCardOffsetX = -totalCardsWidth / 2 + cardWidth / 2;
+    return {
+      x,
+      y,
+      playerSlots,
+      botSlots,
+      worldText,
+      botPowerText,
+      playerPowerText,
+      worldContainer,
+    };
+  }
 
-      const totalRows = rowsPerSide * 2; // total linhas = 4 (2 bot + 2 jogador)
-      const totalHeight =
-        totalRows * cardHeight + (totalRows - 1) * verticalSpacing;
+  /**
+   * Cria os slots para cartas em uma lane
+   */
+  private createSlots(x: number, y: number, isPlayer: boolean): Slot[] {
+    const slots: Slot[] = [];
+    const cardWidth = 80;
+    const cardHeight = 110;
+    const cols = 2;
+    const rowsPerSide = 2;
+    const horizontalSpacing = 5;
+    const verticalSpacing = 5;
+    const marginFromRect = 10;
 
-      // Distância vertical entre o centro da lane e a linha mais próxima do bot ou jogador
-      // Vamos posicionar as 2 linhas do bot acima do retângulo, e as 2 linhas do jogador abaixo
+    const totalCardsWidth = cols * cardWidth + (cols - 1) * horizontalSpacing;
+    const firstCardOffsetX = -totalCardsWidth / 2 + cardWidth / 2;
 
-      // Altura da "margem" entre retângulo e primeiras linhas (ajustável)
-      const marginFromRect = 10;
+    for (let row = 0; row < rowsPerSide; row++) {
+      for (let col = 0; col < cols; col++) {
+        const offsetX =
+          firstCardOffsetX + col * (cardWidth + horizontalSpacing);
+        const slotX = x + offsetX;
 
-      for (let side = 0; side < 2; side++) {
-        // 0 = bot, 1 = jogador
-        for (let row = 0; row < rowsPerSide; row++) {
-          for (let col = 0; col < cols; col++) {
-            const offsetX =
-              firstCardOffsetX + col * (cardWidth + horizontalSpacing);
-
-            let slotX = x + offsetX;
-            let slotY: number;
-
-            if (side === 0) {
-              // bot — linhas acima do retângulo mundo
-              // linha mais próxima fica em: y - 100/2 - marginFromRect - cardHeight/2
-              // segunda linha fica acima dela, descontando cardHeight + verticalSpacing
-              slotY =
-                y -
-                100 / 2 -
-                marginFromRect -
-                cardHeight / 2 -
-                row * (cardHeight + verticalSpacing);
-            } else {
-              // jogador — linhas abaixo do retângulo mundo
-              // linha mais próxima fica em: y + 100/2 + marginFromRect + cardHeight/2
-              // segunda linha fica abaixo dela, somando cardHeight + verticalSpacing
-              slotY =
-                y +
-                100 / 2 +
-                marginFromRect +
-                cardHeight / 2 +
-                row * (cardHeight + verticalSpacing);
-            }
-
-            const overlay = this.add
-              .rectangle(slotX, slotY, cardWidth, cardHeight, 0xffffff, 0.2)
-              .setVisible(false);
-
-            const slot: Slot = {
-              x: slotX,
-              y: slotY,
-              ocupado: false,
-              overlay,
-            };
-
-            if (side === 0) botSlots.push(slot);
-            else playerSlots.push(slot);
-          }
+        let slotY: number;
+        if (isPlayer) {
+          slotY =
+            y +
+            100 / 2 +
+            marginFromRect +
+            cardHeight / 2 +
+            row * (cardHeight + verticalSpacing);
+        } else {
+          slotY =
+            y -
+            100 / 2 -
+            marginFromRect -
+            cardHeight / 2 -
+            row * (cardHeight + verticalSpacing);
         }
-      }
 
-      this.lanes.push({
-        x,
-        y,
-        playerSlots,
-        botSlots,
-        mundoText,
-        poderBotText,
-        poderJogadorText,
-        // Armazena também o container do mundo para facilitar manipulações futuras
-        mundoContainer,
-      });
+        const overlay = this.add
+          .rectangle(slotX, slotY, cardWidth, cardHeight, 0xffffff, 0.2)
+          .setVisible(false);
+
+        slots.push({
+          x: slotX,
+          y: slotY,
+          occupied: false,
+          overlay,
+        });
+      }
     }
 
-    const energiaX = 20;
+    return slots;
+  }
+
+  /**
+   * Inicializa o display de energia
+   */
+  private initializeEnergyDisplay(): void {
+    const energyX = 20;
     const centerY = this.scale.height / 2;
 
-    // Cria o texto primeiro (para saber altura e centralizar com base nele)
-    const energiaTexto = this.add
-      .text(0, 0, "Energia: " + this.energiaJogador, {
+    this.energyText = this.add
+      .text(0, 0, "Energia: " + this.playerEnergy, {
         fontSize: "20px",
         color: "#ffffff",
       })
       .setOrigin(0, 0.5);
 
-    // Agora cria o retângulo com base no tamanho do texto
     const padding = 10;
-    const rectWidth = energiaTexto.width + padding * 2;
+    const rectWidth = this.energyText.width + padding * 2;
     const rectHeight = 40;
 
-    const energiaRect = this.add
+    const energyRect = this.add
       .rectangle(0, 0, rectWidth, rectHeight, 0x222222)
       .setOrigin(0, 0.5);
 
-    // Agrupa em container na posição final
-    this.energiaContainer = this.add.container(energiaX, centerY, [
-      energiaRect,
-      energiaTexto,
+    this.energyContainer = this.add.container(energyX, centerY, [
+      energyRect,
+      this.energyText,
     ]);
+  }
 
-    this.energiaTexto = energiaTexto;
+  /**
+   * Inicializa o display de turno
+   */
+  private initializeTurnDisplay(): void {
+    const screenWidth = this.scale.width;
+    const centerY = this.scale.height / 2;
 
-    this.turnoText = this.add
-      .text(screenWidth - 20, centerY, `Turno: ${this.turnoAtual}`, {
+    this.turnText = this.add
+      .text(screenWidth - 20, centerY, `Turno: ${this.currentTurn}`, {
         fontSize: "20px",
         color: "#ffffff",
         backgroundColor: "#000000",
         padding: { x: 10, y: 5 },
       })
       .setOrigin(1, 0.5);
+  }
 
-    this.finalizarTurnoButton = this.add
+  /**
+   * Inicializa o botão de finalizar turno
+   */
+  private initializeEndTurnButton(): void {
+    const screenWidth = this.scale.width;
+    const screenHeight = this.scale.height;
+
+    this.endTurnButton = this.add
       .text(screenWidth - 20, screenHeight - 40, "Finalizar Turno", {
         fontSize: "20px",
         color: "#ffffff",
@@ -252,117 +269,231 @@ export default class GameScene extends Phaser.Scene {
       .setOrigin(1, 1)
       .setInteractive({ useHandCursor: true })
       .on("pointerdown", () => {
-        if (this.turnoDoJogador) {
-          this.finalizarTurno();
+        if (this.isPlayerTurn) {
+          this.endTurn();
         }
       });
-
-    this.energiaJogador = this.turnoAtual;
-    this.energiaBot = this.turnoAtual;
-    this.atualizarEnergiaTexto();
-
-    this.renderMao();
-    this.renderMaoBot();
   }
 
-  renderMao(): void {
-    // destruir cartas antigas
-    this.maoJogadorContainers.forEach((c) => c.destroy());
-    this.maoJogadorContainers = [];
+  /**
+   * Inicializa o painel de detalhes da carta
+   */
+  private initializeCardDetailsPanel(): void {
+    const width = 220;
+    const height = 320;
+    const x = this.scale.width - width / 2 - 20;
+    const y = this.scale.height / 2;
+
+    const background = this.add
+      .rectangle(0, 0, width, height, 0x222222, 0.9)
+      .setStrokeStyle(2, 0xffffff)
+      .setOrigin(0.5);
+
+    this.cardNameText = this.add
+      .text(0, height / 2 - 30, "Nome da Carta", {
+        fontSize: "20px",
+        color: "#ffffff",
+        align: "center",
+        wordWrap: { width: width - 40 },
+      })
+      .setOrigin(0.5, 0.5);
+
+    this.cardPowerText = this.add
+      .text(width / 2 - 20, -height / 2 + 20, "0", {
+        fontSize: "18px",
+        color: "#ffffff",
+        fontStyle: "bold",
+      })
+      .setOrigin(1, 0.5);
+
+    this.cardCostText = this.add
+      .text(-width / 2 + 20, -height / 2 + 20, "0", {
+        fontSize: "18px",
+        color: "#ffff00",
+        fontStyle: "bold",
+      })
+      .setOrigin(0, 0.5);
+
+    this.cardDescriptionText = this.add
+      .text(0, 0, "Descrição detalhada da carta vai aqui.", {
+        fontSize: "16px",
+        color: "#cccccc",
+        align: "center",
+        wordWrap: { width: width - 40 },
+      })
+      .setOrigin(0.5);
+
+    this.cardDetailsPanel = this.add.container(x, y, [
+      background,
+      this.cardNameText,
+      this.cardPowerText,
+      this.cardCostText,
+      this.cardDescriptionText,
+    ]);
+
+    this.cardDetailsPanel.setVisible(false);
+    this.setupCardDetailsEvents();
+  }
+
+  // =============================================
+  // Renderização de Mãos (Jogador e Bot)
+  // =============================================
+
+  /**
+   * Renderiza a mão do jogador
+   */
+  private renderPlayerHand(): void {
+    this.playerHandContainers.forEach((c) => c.destroy());
+    this.playerHandContainers = [];
 
     const screenWidth = this.scale.width;
     const screenHeight = this.scale.height;
-    const totalCartas = this.jogadorMao.length;
-
+    const totalCards = this.playerHand.length;
     const cardWidth = 100;
     const cardSpacing = 30;
-
-    const totalWidth =
-      cardWidth * totalCartas + cardSpacing * (totalCartas - 1);
-
+    const totalWidth = cardWidth * totalCards + cardSpacing * (totalCards - 1);
     const startX = (screenWidth - totalWidth) / 2;
-    const maoY = screenHeight - 120;
+    const handY = screenHeight - 120;
 
-    this.jogadorMao.forEach((carta, index) => {
+    this.playerHand.forEach((card, index) => {
       const x = startX + index * (cardWidth + cardSpacing);
-      const y = maoY;
+      const y = handY;
 
-      const cardRect = this.add.rectangle(0, 0, cardWidth, 140, 0x0088ff);
+      const cardContainer = this.createCardContainer(
+        x,
+        y,
+        cardWidth,
+        140,
+        0x0088ff,
+        card,
+        index,
+        true
+      );
 
-      const nomeText = this.add
-        .text(0, 60, carta.nome, {
-          color: "#ffffff",
-          fontSize: "14px",
-          align: "center",
-        })
-        .setOrigin(0.5, 1)
-        .setWordWrapWidth(cardWidth - 10);
-
-      const poderText = this.add
-        .text(cardWidth / 2 - 10, -60, String(carta.poder), {
-          color: "#ffffff",
-          fontSize: "14px",
-          align: "right",
-        })
-        .setOrigin(1, 0);
-
-      const custoText = this.add
-        .text(-cardWidth / 2 + 10, -60, String(carta.custo), {
-          color: "#ffff00", // cor amarela pra diferenciar do poder
-          fontSize: "14px",
-          fontStyle: "bold",
-          align: "left",
-        })
-        .setOrigin(0, 0); // esquerda, topo
-
-      const container = this.add.container(x, y, [
-        cardRect,
-        nomeText,
-        poderText,
-        custoText,
-      ]) as Phaser.GameObjects.Container & {
-        cartaData: CartaData;
-        startX: number;
-        startY: number;
-      };
-
-      container.setSize(cardWidth, 140);
-      container.setInteractive({ draggable: true });
-      container.cartaData = { ...carta, index };
-      container.startX = x;
-      container.startY = y;
-
-      this.input.setDraggable(container);
-
-      this.maoJogadorContainers.push(container);
+      this.playerHandContainers.push(cardContainer);
     });
 
-    // Eventos de drag (registrar uma vez)
+    this.setupDragEvents();
+  }
+
+  /**
+   * Renderiza a mão do bot
+   */
+  private renderBotHand(): void {
+    this.botHandContainers.forEach((c) => c.destroy());
+    this.botHandContainers = [];
+
+    const screenWidth = this.scale.width;
+    const totalCards = this.botHand.length;
+    const cardWidth = 100;
+    const cardSpacing = 30;
+    const totalWidth = cardWidth * totalCards + cardSpacing * (totalCards - 1);
+    const startX = (screenWidth - totalWidth) / 2;
+    const handY = 100;
+
+    this.botHand.forEach((card, index) => {
+      const x = startX + index * (cardWidth + cardSpacing);
+      const y = handY;
+
+      const cardContainer = this.createCardContainer(
+        x,
+        y,
+        cardWidth,
+        140,
+        0xff0000,
+        card,
+        index,
+        false
+      );
+
+      this.botHandContainers.push(cardContainer);
+    });
+  }
+
+  /**
+   * Cria um container de carta genérico
+   */
+  private createCardContainer(
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    color: number,
+    card: Omit<Card, "index">,
+    index: number,
+    isPlayer: boolean
+  ): Phaser.GameObjects.Container & {
+    cardData: CardData;
+    startX: number;
+    startY: number;
+  } {
+    const cardRect = this.add.rectangle(0, 0, width, height, color);
+
+    const nameText = this.add
+      .text(0, 60, card.name, {
+        color: "#ffffff",
+        fontSize: "14px",
+        align: "center",
+      })
+      .setOrigin(0.5, 1)
+      .setWordWrapWidth(width - 10);
+
+    const powerText = this.add
+      .text(width / 2 - 10, -60, String(card.power), {
+        color: "#ffffff",
+        fontSize: "14px",
+        align: "right",
+      })
+      .setOrigin(1, 0);
+
+    const costText = this.add
+      .text(-width / 2 + 10, -60, String(card.cost), {
+        color: "#ffff00",
+        fontSize: "14px",
+        fontStyle: "bold",
+        align: "left",
+      })
+      .setOrigin(0, 0);
+
+    const container = this.add.container(x, y, [
+      cardRect,
+      nameText,
+      powerText,
+      costText,
+    ]) as Phaser.GameObjects.Container & {
+      cardData: CardData;
+      startX: number;
+      startY: number;
+    };
+
+    container.setSize(width, height);
+    container.cardData = { ...card, index };
+    container.startX = x;
+    container.startY = y;
+
+    if (isPlayer) {
+      container.setInteractive({ draggable: true });
+      this.input.setDraggable(container);
+    }
+
+    return container;
+  }
+
+  // =============================================
+  // Lógica de Drag and Drop
+  // =============================================
+
+  /**
+   * Configura os eventos de drag and drop
+   */
+  private setupDragEvents(): void {
     this.input.on(
       "dragstart",
       (
         _pointer: Phaser.Input.Pointer,
         gameObject: Phaser.GameObjects.GameObject
       ) => {
-        const container = gameObject as Phaser.GameObjects.Container & {
-          cartaData: CartaData;
-          startX: number;
-          startY: number;
-        };
-
-        container.startX = container.x;
-        container.startY = container.y;
-
-        container.setScale(0.8);
-
-        // Mostrar overlays disponíveis
-        for (const lane of this.lanes) {
-          for (const slot of lane.playerSlots) {
-            if (!slot.ocupado && slot.overlay) {
-              slot.overlay.setVisible(true);
-            }
-          }
-        }
+        this.handleDragStart(gameObject);
       }
     );
 
@@ -374,13 +505,7 @@ export default class GameScene extends Phaser.Scene {
         dragX: number,
         dragY: number
       ) => {
-        const container = gameObject as Phaser.GameObjects.Container & {
-          cartaData: CartaData;
-          startX: number;
-          startY: number;
-        };
-        container.x = dragX;
-        container.y = dragY;
+        this.handleDrag(gameObject, dragX, dragY);
       }
     );
 
@@ -390,540 +515,566 @@ export default class GameScene extends Phaser.Scene {
         _pointer: Phaser.Input.Pointer,
         gameObject: Phaser.GameObjects.GameObject
       ) => {
-        const container = gameObject as Phaser.GameObjects.Container & {
-          cartaData: CartaData;
-          startX: number;
-          startY: number;
-        };
-        const { x, y } = container;
-        const { index, nome, custo, poder } = container.cartaData;
-
-        let cartaPosicionada = false;
-
-        for (const lane of this.lanes) {
-          if (!this.turnoDoJogador || custo > this.energiaJogador) continue;
-
-          for (const slot of lane.playerSlots) {
-            if (
-              !slot.ocupado &&
-              Phaser.Math.Distance.Between(x, y, slot.x, slot.y) < 60
-            ) {
-              // Criar carta na lane (container filho)
-              const cartaContainer = this.add.container(slot.x, slot.y);
-
-              const cardRect = this.add.rectangle(0, 0, 80, 110, 0x00ccff);
-              const nomeText = this.add
-                .text(0, 45, nome, {
-                  color: "#ffffff",
-                  fontSize: "14px",
-                  align: "center",
-                })
-                .setOrigin(0.5, 1)
-                .setWordWrapWidth(70);
-              const poderText = this.add
-                .text(30, -45, String(poder), {
-                  color: "#ffffff",
-                  fontSize: "14px",
-                  align: "right",
-                })
-                .setOrigin(1, 0);
-
-              const custoText = this.add
-                .text(-30, -45, String(custo), {
-                  // -30 para esquerda do centro, -45 topo
-                  color: "#ffff00",
-                  fontSize: "14px",
-                  fontStyle: "bold",
-                  align: "left",
-                })
-                .setOrigin(0, 0);
-
-              cartaContainer.add([cardRect, nomeText, poderText, custoText]);
-
-              // Deixa interativo para clique
-              cartaContainer.setSize(80, 110);
-              cartaContainer.setInteractive({ useHandCursor: true });
-
-              cartaContainer.on("pointerdown", () => {
-                this.removerCartaPosicionada(cartaContainer);
-              });
-
-              // Marca slot ocupado
-              slot.ocupado = true;
-              (slot as any).poder = poder;
-
-              // Marca carta container para identificar e linkar slot e carta
-              (cartaContainer as any).posicionada = true;
-              (cartaContainer as any).slot = slot;
-              (cartaContainer as any).cartaData = container.cartaData;
-
-              // Adiciona o turno atual em que a carta foi jogada
-              (cartaContainer as any).turnoJogado = this.turnoAtual;
-
-              // Remover a carta da mão
-              this.jogadorMao.splice(index, 1);
-              container.destroy();
-
-              this.energiaJogador -= custo;
-              this.atualizarEnergiaTexto();
-
-              cartaPosicionada = true;
-
-              this.atualizarPoderesLanes();
-
-              break;
-            }
-          }
-          if (cartaPosicionada) break;
-        }
-
-        if (!cartaPosicionada) {
-          container.setScale(1);
-          container.x = container.startX;
-          container.y = container.startY;
-
-          container.list.forEach((child) => {
-            if (child instanceof Phaser.GameObjects.Text) {
-              child.setVisible(true);
-            }
-          });
-        }
-
-        for (const lane of this.lanes) {
-          for (const slot of lane.playerSlots) {
-            slot.overlay?.setVisible(false);
-          }
-        }
-
-        if (cartaPosicionada) {
-          this.renderMao();
-        }
+        this.handleDragEnd(gameObject);
       }
     );
   }
 
-  renderMaoBot(): void {
-    this.maoBotContainers.forEach((c) => c.destroy());
-    this.maoBotContainers = [];
+  /**
+   * Manipula o início do drag
+   */
+  private handleDragStart(gameObject: Phaser.GameObjects.GameObject): void {
+    const container = gameObject as Phaser.GameObjects.Container & {
+      cardData: CardData;
+      startX: number;
+      startY: number;
+    };
 
-    const screenWidth = this.scale.width;
-    const totalCartas = this.botMao.length;
+    container.startX = container.x;
+    container.startY = container.y;
+    container.setScale(0.8);
 
-    const cardWidth = 100;
-    const cardSpacing = 30;
+    // Mostra overlays de slots disponíveis
+    for (const lane of this.lanes) {
+      for (const slot of lane.playerSlots) {
+        if (!slot.occupied && slot.overlay) {
+          slot.overlay.setVisible(true);
+        }
+      }
+    }
+  }
 
-    const totalWidth =
-      cardWidth * totalCartas + cardSpacing * (totalCartas - 1);
+  /**
+   * Manipula o movimento durante o drag
+   */
+  private handleDrag(
+    gameObject: Phaser.GameObjects.GameObject,
+    dragX: number,
+    dragY: number
+  ): void {
+    const container = gameObject as Phaser.GameObjects.Container & {
+      cardData: CardData;
+      startX: number;
+      startY: number;
+    };
+    container.x = dragX;
+    container.y = dragY;
+  }
 
-    const startX = (screenWidth - totalWidth) / 2;
-    const maoY = 100;
+  /**
+   * Manipula o fim do drag
+   */
+  private handleDragEnd(gameObject: Phaser.GameObjects.GameObject): void {
+    const container = gameObject as Phaser.GameObjects.Container & {
+      cardData: CardData;
+      startX: number;
+      startY: number;
+    };
+    const { x, y } = container;
+    const { index, name, cost, power } = container.cardData;
 
-    this.botMao.forEach((carta, index) => {
-      const x = startX + index * (cardWidth + cardSpacing);
-      const y = maoY;
+    let cardPlaced = false;
 
-      const cardRect = this.add.rectangle(0, 0, cardWidth, 140, 0xff0000);
+    for (const lane of this.lanes) {
+      if (!this.isPlayerTurn || cost > this.playerEnergy) continue;
 
-      const nomeText = this.add
-        .text(0, 60, carta.nome, {
-          color: "#ffffff",
-          fontSize: "14px",
-          align: "center",
-        })
-        .setOrigin(0.5, 1)
-        .setWordWrapWidth(cardWidth - 10);
+      for (const slot of lane.playerSlots) {
+        if (
+          !slot.occupied &&
+          Phaser.Math.Distance.Between(x, y, slot.x, slot.y) < 60
+        ) {
+          this.placeCardOnSlot(slot, container.cardData);
+          this.removeCardFromPlayerHand(index);
 
-      const poderText = this.add
-        .text(cardWidth / 2 - 10, -60, String(carta.poder), {
-          color: "#ffffff",
-          fontSize: "14px",
-          align: "right",
-        })
-        .setOrigin(1, 0);
+          this.playerEnergy -= cost;
+          this.updateEnergyText();
+          this.updateLanePowers();
 
-      const custoText = this.add
-        .text(-cardWidth / 2 + 10, -60, String(carta.custo), {
-          color: "#ffff00",
-          fontSize: "14px",
-          fontStyle: "bold",
-          align: "left",
-        })
-        .setOrigin(0, 0);
+          cardPlaced = true;
+          break;
+        }
+      }
+      if (cardPlaced) break;
+    }
 
-      const container = this.add.container(x, y, [
-        cardRect,
-        nomeText,
-        poderText,
-        custoText,
-      ]);
+    if (!cardPlaced) {
+      this.animateCardReturn(container);
+    }
 
-      this.maoBotContainers.push(container);
+    this.hideSlotOverlays();
+
+    if (cardPlaced) {
+      this.renderPlayerHand();
+    }
+  }
+
+  /**
+   * Animação suave e rápida para retornar a carta à posição original
+   * (usada tanto para cancelar colocação quanto para remover da lane)
+   */
+  private animateCardReturn(
+    container: Phaser.GameObjects.Container & {
+      cardData: CardData;
+      startX: number;
+      startY: number;
+    },
+    onComplete?: () => void
+  ): void {
+    // Reset rápido da escala
+    this.tweens.add({
+      targets: container,
+      scale: 1,
+      duration: 200, // Reduzido de 300 para 200
+      ease: "Back.out",
+    });
+
+    // Movimento de volta mais rápido
+    this.tweens.add({
+      targets: container,
+      x: container.startX,
+      y: container.startY,
+      duration: 300, // Reduzido de 500 para 300
+      ease: "Power2.out",
+      onComplete: () => {
+        container.list.forEach((child) => {
+          if (child instanceof Phaser.GameObjects.Text) {
+            child.setVisible(true);
+          }
+        });
+        onComplete?.();
+      },
     });
   }
 
-  turnoBot(): void {
-    // Filtra cartas jogáveis por energia
-    const jogaveis = this.botMao.filter((c) => c.custo <= this.energiaBot);
+  /**
+   * Coloca uma carta em um slot
+   */
+  private placeCardOnSlot(slot: Slot, cardData: CardData): void {
+    const { name, cost, power } = cardData;
 
-    if (jogaveis.length === 0) {
-      // Se não tem cartas jogáveis, passa o turno direto
-      this.turnoDoJogador = true;
-      this.finalizarTurnoButton?.setVisible(true);
+    const cardContainer = this.add.container(slot.x, slot.y);
+    const cardRect = this.add.rectangle(0, 0, 80, 110, 0x00ccff);
+
+    const nameText = this.add
+      .text(0, 45, name, {
+        color: "#ffffff",
+        fontSize: "14px",
+        align: "center",
+      })
+      .setOrigin(0.5, 1)
+      .setWordWrapWidth(70);
+
+    const powerText = this.add
+      .text(30, -45, String(power), {
+        color: "#ffffff",
+        fontSize: "14px",
+        align: "right",
+      })
+      .setOrigin(1, 0);
+
+    const costText = this.add
+      .text(-30, -45, String(cost), {
+        color: "#ffff00",
+        fontSize: "14px",
+        fontStyle: "bold",
+        align: "left",
+      })
+      .setOrigin(0, 0);
+
+    cardContainer.add([cardRect, nameText, powerText, costText]);
+    cardContainer.setSize(80, 110);
+    cardContainer.setInteractive({ useHandCursor: true });
+
+    cardContainer.on("pointerdown", () => {
+      this.removePlacedCard(cardContainer);
+    });
+
+    slot.occupied = true;
+    slot.power = power;
+
+    // Armazena metadados no container
+    (cardContainer as any).placed = true;
+    (cardContainer as any).slot = slot;
+    (cardContainer as any).cardData = cardData;
+    (cardContainer as any).turnPlayed = this.currentTurn;
+  }
+
+  /**
+   * Remove uma carta da mão do jogador
+   */
+  private removeCardFromPlayerHand(index: number): void {
+    this.playerHand.splice(index, 1);
+  }
+
+  /**
+   * Reseta a posição da carta se não foi colocada em um slot
+   */
+  private resetCardPosition(
+    container: Phaser.GameObjects.Container & {
+      cardData: CardData;
+      startX: number;
+      startY: number;
+    }
+  ): void {
+    container.setScale(1);
+    container.x = container.startX;
+    container.y = container.startY;
+
+    container.list.forEach((child) => {
+      if (child instanceof Phaser.GameObjects.Text) {
+        child.setVisible(true);
+      }
+    });
+  }
+
+  /**
+   * Esconde os overlays dos slots
+   */
+  private hideSlotOverlays(): void {
+    for (const lane of this.lanes) {
+      for (const slot of lane.playerSlots) {
+        slot.overlay?.setVisible(false);
+      }
+    }
+  }
+
+  // =============================================
+  // Lógica de Turno
+  // =============================================
+
+  /**
+   * Finaliza o turno do jogador e inicia o turno do bot
+   */
+  private endTurn(): void {
+    this.isPlayerTurn = false;
+    this.endTurnButton?.setVisible(false);
+
+    this.time.delayedCall(1000, () => {
+      this.botTurn();
+
+      this.currentTurn++;
+      this.turnText.setText(`Turno: ${this.currentTurn}`);
+      this.animateTurnText();
+
+      this.playerEnergy = this.currentTurn;
+      this.botEnergy = this.currentTurn;
+      this.updateEnergyText();
+
+      this.isPlayerTurn = true;
+      this.endTurnButton?.setVisible(true);
+
+      if (this.currentTurn >= 6) {
+        this.checkGameEnd();
+      } else {
+        this.isPlayerTurn = true;
+      }
+    });
+  }
+
+  /**
+   * Animação do texto de turno
+   */
+  private animateTurnText(): void {
+    this.tweens.add({
+      targets: this.turnText,
+      scale: 1.4,
+      alpha: 0.7,
+      duration: 150,
+      yoyo: true,
+      ease: "Power2",
+      onYoyo: () => {
+        this.turnText.setScale(1);
+        this.turnText.setAlpha(1);
+      },
+    });
+  }
+
+  /**
+   * Turno do bot - lógica de IA
+   */
+  private botTurn(): void {
+    const playableCards = this.botHand.filter((c) => c.cost <= this.botEnergy);
+
+    if (playableCards.length === 0) {
+      this.isPlayerTurn = true;
+      this.endTurnButton?.setVisible(true);
       return;
     }
 
-    // Função para calcular poder total do bot e do jogador em uma lane
-    const poderLane = (lane: Lane) => {
-      let poderBot = 0;
-      for (const slot of lane.botSlots) {
-        poderBot += slot.poder ?? 0;
-      }
-      let poderJogador = 0;
-      for (const slot of lane.playerSlots) {
-        poderJogador += slot.poder ?? 0;
-      }
-      return { poderBot, poderJogador };
-    };
+    // Ordena cartas por poder (maiores primeiro)
+    playableCards.sort((a, b) => b.power - a.power);
 
-    // Ordena as cartas jogáveis por poder decrescente (priorizar cartas mais fortes)
-    jogaveis.sort((a, b) => b.poder - a.poder);
+    for (const card of playableCards) {
+      if (card.cost > this.botEnergy) continue;
 
-    // Tenta jogar cartas uma a uma
-    for (const carta of jogaveis) {
-      if (carta.custo > this.energiaBot) continue;
+      const lanesByPriority = this.getLanesByPriority();
 
-      // Prioridade para lanes que o bot está perdendo ou empatando
-      // Ordena lanes pelas que o bot tem menor vantagem (ou desvantagem) primeiro
-      const lanesOrdenadas = this.lanes
-        .map((lane) => {
-          const { poderBot, poderJogador } = poderLane(lane);
-          return {
-            lane,
-            diferenca: poderBot - poderJogador,
-          };
-        })
-        .sort((a, b) => a.diferenca - b.diferenca);
+      let cardPlayed = false;
 
-      let cartaJogada = false;
-
-      for (const item of lanesOrdenadas) {
-        const lane = item.lane;
-
-        // Se slot disponível na lane para bot e carta cabe na energia
-        const slot = lane.botSlots.find((s) => !s.ocupado);
+      for (const laneItem of lanesByPriority) {
+        const lane = laneItem.lane;
+        const slot = lane.botSlots.find((s) => !s.occupied);
         if (!slot) continue;
 
-        if (carta.custo > this.energiaBot) continue;
-
-        // Critério para tentar jogar aqui:
-        // Se bot está perdendo ou empatando na lane, tenta virar a vantagem
-        // Ou se bot está ganhando mas ainda tem slot disponível, pode reforçar
-
-        const { poderBot, poderJogador } = poderLane(lane);
-        const poderComCarta = poderBot + carta.poder;
-
-        // Queremos jogar se:
-        // 1) Está perdendo ou empatando e esta carta pode virar a vantagem
-        // 2) Está ganhando mas pode reforçar (optional, podemos priorizar virar lanes)
+        const { botPower, playerPower } = laneItem;
+        const powerWithCard = botPower + card.power;
 
         if (
-          (poderBot <= poderJogador && poderComCarta > poderJogador) ||
-          poderBot > poderJogador
+          (botPower <= playerPower && powerWithCard > playerPower) ||
+          botPower > playerPower
         ) {
-          // Joga carta nessa lane
-
-          // Criar carta na lane
-          this.add.rectangle(slot.x, slot.y, 80, 110, 0xff0000);
-
-          this.add
-            .text(slot.x, slot.y + 45, carta.nome, {
-              color: "#ffffff",
-              fontSize: "14px",
-              align: "center",
-            })
-            .setOrigin(0.5, 1)
-            .setWordWrapWidth(70);
-
-          this.add
-            .text(slot.x + 30, slot.y - 45, String(carta.poder), {
-              color: "#ffffff",
-              fontSize: "14px",
-              align: "right",
-            })
-            .setOrigin(1, 0);
-
-          this.add
-            .text(slot.x - 30, slot.y - 45, String(carta.custo), {
-              color: "#ffff00",
-              fontSize: "14px",
-              fontStyle: "bold",
-              align: "left",
-            })
-            .setOrigin(0, 0);
-
-          slot.ocupado = true;
-          (slot as any).poder = carta.poder;
-
-          // Remove carta da mão do bot
-          const index = this.botMao.indexOf(carta);
-          if (index >= 0) {
-            this.botMao.splice(index, 1);
-          }
-
-          this.energiaBot -= carta.custo;
-
-          // Atualiza visual da mão do bot
-          this.renderMaoBot();
-          this.atualizarPoderesLanes();
-
-          cartaJogada = true;
-
-          // Sai do loop de lanes para essa carta, passa pra próxima carta
+          this.playBotCardOnSlot(slot, card);
+          cardPlayed = true;
           break;
         }
       }
 
-      // Se não conseguiu jogar em nenhuma lane pela regra acima,
-      // tenta jogar em qualquer lane com slot disponível (priorizando o slot vazio)
-      if (!cartaJogada) {
-        for (const lane of this.lanes) {
-          const slot = lane.botSlots.find((s) => !s.ocupado);
-          if (slot && carta.custo <= this.energiaBot) {
-            // Joga carta aqui
-
-            this.add.rectangle(slot.x, slot.y, 80, 110, 0xff0000);
-
-            this.add
-              .text(slot.x, slot.y + 45, carta.nome, {
-                color: "#ffffff",
-                fontSize: "14px",
-                align: "center",
-              })
-              .setOrigin(0.5, 1)
-              .setWordWrapWidth(70);
-
-            this.add
-              .text(slot.x + 30, slot.y - 45, String(carta.poder), {
-                color: "#ffffff",
-                fontSize: "14px",
-                align: "right",
-              })
-              .setOrigin(1, 0);
-
-            this.add
-              .text(slot.x - 30, slot.y - 45, String(carta.custo), {
-                color: "#ffff00",
-                fontSize: "14px",
-                fontStyle: "bold",
-                align: "left",
-              })
-              .setOrigin(0, 0);
-
-            slot.ocupado = true;
-            (slot as any).poder = carta.poder;
-
-            const index = this.botMao.indexOf(carta);
-            if (index >= 0) {
-              this.botMao.splice(index, 1);
-            }
-
-            this.energiaBot -= carta.custo;
-
-            this.renderMaoBot();
-            this.atualizarPoderesLanes();
-
-            cartaJogada = true;
-            break;
-          }
-        }
+      if (!cardPlayed) {
+        this.playBotCardOnAnyAvailableSlot(card);
       }
 
-      // Se acabou a energia, para de jogar cartas
-      if (this.energiaBot <= 0) break;
+      if (this.botEnergy <= 0) break;
     }
 
-    // Depois que o bot jogou, passa o turno para o jogador
-    this.turnoDoJogador = true;
-    this.finalizarTurnoButton?.setVisible(true);
+    this.isPlayerTurn = true;
+    this.endTurnButton?.setVisible(true);
   }
 
-  private atualizarPoderesLanes() {
+  /**
+   * Ordena lanes por prioridade (onde o bot está em desvantagem)
+   */
+  private getLanesByPriority(): Array<{
+    lane: Lane;
+    botPower: number;
+    playerPower: number;
+    difference: number;
+  }> {
+    return this.lanes
+      .map((lane) => {
+        const { botPower, playerPower } = this.calculateLanePower(lane);
+        return {
+          lane,
+          botPower,
+          playerPower,
+          difference: botPower - playerPower,
+        };
+      })
+      .sort((a, b) => a.difference - b.difference);
+  }
+
+  /**
+   * Joga uma carta do bot em um slot específico
+   */
+  private playBotCardOnSlot(slot: Slot, card: Omit<Card, "index">): void {
+    const cardContainer = this.add.container(slot.x, slot.y);
+    const cardRect = this.add.rectangle(0, 0, 80, 110, 0xff0000);
+
+    const nameText = this.add
+      .text(0, 45, card.name, {
+        color: "#ffffff",
+        fontSize: "14px",
+        align: "center",
+      })
+      .setOrigin(0.5, 1)
+      .setWordWrapWidth(70);
+
+    const powerText = this.add
+      .text(30, -45, String(card.power), {
+        color: "#ffffff",
+        fontSize: "14px",
+        align: "right",
+      })
+      .setOrigin(1, 0);
+
+    const costText = this.add
+      .text(-30, -45, String(card.cost), {
+        color: "#ffff00",
+        fontSize: "14px",
+        fontStyle: "bold",
+        align: "left",
+      })
+      .setOrigin(0, 0);
+
+    cardContainer.add([cardRect, nameText, powerText, costText]);
+    cardContainer.setSize(80, 110);
+    cardContainer.setInteractive({ useHandCursor: true });
+
+    // Guarda dados da carta para mostrar no painel de detalhes
+    (cardContainer as any).cardData = card;
+
+    slot.occupied = true;
+    slot.power = card.power;
+
+    const index = this.botHand.indexOf(card);
+    if (index >= 0) {
+      this.botHand.splice(index, 1);
+    }
+
+    this.botEnergy -= card.cost;
+    this.renderBotHand();
+    this.updateLanePowers();
+  }
+
+  /**
+   * Joga uma carta do bot em qualquer slot disponível
+   */
+  private playBotCardOnAnyAvailableSlot(card: Omit<Card, "index">): void {
     for (const lane of this.lanes) {
-      let poderBotTotal = 0;
-      for (const slot of lane.botSlots) {
-        poderBotTotal += (slot as any).poder ?? 0;
+      const slot = lane.botSlots.find((s) => !s.occupied);
+      if (slot && card.cost <= this.botEnergy) {
+        this.playBotCardOnSlot(slot, card);
+        break;
       }
-
-      let poderJogadorTotal = 0;
-      for (const slot of lane.playerSlots) {
-        poderJogadorTotal += (slot as any).poder ?? 0;
-      }
-
-      lane.poderBotText?.setText(`Poder Bot: ${poderBotTotal}`);
-      lane.poderJogadorText?.setText(`Poder Jogador: ${poderJogadorTotal}`);
     }
   }
 
-  private finalizarTurno() {
-    this.turnoDoJogador = false;
-    this.finalizarTurnoButton?.setVisible(false);
+  // =============================================
+  // Manipulação de Cartas Posicionadas
+  // =============================================
 
-    this.time.delayedCall(1000, () => {
-      this.turnoBot();
+  /**
+   * Remove uma carta posicionada e a devolve para a mão
+   */
+  private removePlacedCard(container: Phaser.GameObjects.Container): void {
+    const turnPlayed = (container as any).turnPlayed as number;
 
-      // Incrementa turno e atualiza energia após bot jogar
-      this.turnoAtual++;
-      this.turnoText.setText(`Turno: ${this.turnoAtual}`);
-      this.tweens.add({
-        targets: this.turnoText,
-        scale: 1.4,
-        alpha: 0.7,
-        duration: 150,
-        yoyo: true,
-        ease: "Power2",
-        onYoyo: () => {
-          this.turnoText.setScale(1);
-          this.turnoText.setAlpha(1);
-        },
-      });
-
-      this.energiaJogador = this.turnoAtual;
-      this.energiaBot = this.turnoAtual;
-      this.atualizarEnergiaTexto();
-
-      this.turnoDoJogador = true;
-      this.finalizarTurnoButton?.setVisible(true);
-
-      if (this.turnoAtual >= 6) {
-        this.checarFimDeJogo();
-      } else {
-        this.turnoDoJogador = true;
-      }
-    });
-  }
-
-  // Função que remove carta posicionada (do jogador) e devolve para a mão
-  private removerCartaPosicionada(container: Phaser.GameObjects.Container) {
-    const turnoJogado = (container as any).turnoJogado as number;
-
-    if (turnoJogado !== this.turnoAtual) {
-      // Carta jogada em turno anterior - não pode voltar
+    if (turnPlayed !== this.currentTurn) {
       console.log("Carta jogada em turno anterior. Não pode voltar.");
       return;
     }
 
-    if (turnoJogado === this.turnoAtual) {
-      this.energiaJogador += (container as any).cartaData.custo;
-      this.atualizarEnergiaTexto();
+    if (turnPlayed === this.currentTurn) {
+      this.playerEnergy += (container as any).cardData.cost;
+      this.updateEnergyText();
     }
 
-    // Continua o código para liberar slot, devolver para mão etc...
     const slot = (container as any).slot as Slot;
     if (!slot) return;
 
-    slot.ocupado = false;
-    delete (slot as any).poder;
+    slot.occupied = false;
+    delete slot.power;
 
-    const cartaData = (container as any).cartaData as Carta;
+    const cardData = (container as any).cardData as Card;
+    const originalIndex = (container as any).cardData.index;
 
-    // this.jogadorMao.push({
-    //   nome: cartaData.nome,
-    //   custo: cartaData.custo,
-    //   poder: cartaData.poder,
-    // });
-
-    const originalIndex = (container as any).cartaData.index;
-
-    // Insere a carta na posição original (ou o máximo possível, para evitar erro)
     if (originalIndex !== undefined && originalIndex >= 0) {
-      this.jogadorMao.splice(originalIndex, 0, {
-        nome: cartaData.nome,
-        custo: cartaData.custo,
-        poder: cartaData.poder,
+      this.playerHand.splice(originalIndex, 0, {
+        name: cardData.name,
+        cost: cardData.cost,
+        power: cardData.power,
       });
     } else {
-      this.jogadorMao.push({
-        nome: cartaData.nome,
-        custo: cartaData.custo,
-        poder: cartaData.poder,
+      this.playerHand.push({
+        name: cardData.name,
+        cost: cardData.cost,
+        power: cardData.power,
       });
     }
 
     container.destroy();
-
-    this.atualizarPoderesLanes();
-    this.renderMao();
-
-    this.finalizarTurnoButton?.setVisible(true);
+    this.updateLanePowers();
+    this.renderPlayerHand();
+    this.endTurnButton?.setVisible(true);
+    this.cardDetailsPanel?.setVisible(false);
   }
 
-  private atualizarEnergiaTexto() {
-    if (!this.energiaTexto) return;
+  // =============================================
+  // Atualização de Estado do Jogo
+  // =============================================
 
-    const energiaAtual = this.turnoDoJogador
-      ? this.energiaJogador
-      : this.energiaBot;
-    this.energiaTexto.setText(`Energia: ${energiaAtual}`);
+  /**
+   * Atualiza o texto de energia
+   */
+  private updateEnergyText(): void {
+    if (!this.energyText) return;
+
+    const currentEnergy = this.isPlayerTurn
+      ? this.playerEnergy
+      : this.botEnergy;
+    this.energyText.setText(`Energia: ${currentEnergy}`);
   }
 
-  private checarFimDeJogo(): void {
-    let vitoriasJogador = 0;
-    let vitoriasBot = 0;
-
+  /**
+   * Atualiza os poderes das lanes
+   */
+  private updateLanePowers(): void {
     for (const lane of this.lanes) {
-      let poderJogador = 0;
-      let poderBot = 0;
+      const { botPower, playerPower } = this.calculateLanePower(lane);
 
-      for (const slot of lane.playerSlots) {
-        if (slot.ocupado) {
-          // opcional: armazenar poder na slot no futuro
-          poderJogador += this.recuperarPoderNoSlot(slot);
-        }
-      }
+      lane.botPowerText?.setText(`Poder Bot: ${botPower}`);
+      lane.playerPowerText?.setText(`Poder Jogador: ${playerPower}`);
+    }
+  }
 
-      for (const slot of lane.botSlots) {
-        if (slot.ocupado) {
-          poderBot += this.recuperarPoderNoSlot(slot);
-        }
-      }
-
-      if (poderJogador > poderBot) vitoriasJogador++;
-      else if (poderBot > poderJogador) vitoriasBot++;
+  /**
+   * Calcula o poder total de uma lane
+   */
+  private calculateLanePower(lane: Lane): {
+    botPower: number;
+    playerPower: number;
+  } {
+    let botPower = 0;
+    for (const slot of lane.botSlots) {
+      botPower += slot.power ?? 0;
     }
 
-    let mensagem = "";
+    let playerPower = 0;
+    for (const slot of lane.playerSlots) {
+      playerPower += slot.power ?? 0;
+    }
 
-    if (vitoriasJogador > vitoriasBot) mensagem = "Você venceu!";
-    else if (vitoriasBot > vitoriasJogador) mensagem = "Bot venceu!";
-    else mensagem = "Empate!";
-
-    this.mostrarModalResultado(mensagem);
+    return { botPower, playerPower };
   }
 
-  private recuperarPoderNoSlot(slot: Slot): number {
-    return slot.poder ?? 0;
+  // =============================================
+  // Final de Jogo
+  // =============================================
+
+  /**
+   * Verifica se o jogo terminou e mostra o resultado
+   */
+  private checkGameEnd(): void {
+    let playerWins = 0;
+    let botWins = 0;
+
+    for (const lane of this.lanes) {
+      const { playerPower, botPower } = this.calculateLanePower(lane);
+
+      if (playerPower > botPower) playerWins++;
+      else if (botPower > playerPower) botWins++;
+    }
+
+    let message = "";
+    if (playerWins > botWins) message = "Você venceu!";
+    else if (botWins > playerWins) message = "Bot venceu!";
+    else message = "Empate!";
+
+    this.showResultModal(message);
   }
 
-  private mostrarModalResultado(texto: string): void {
-    const largura = 300;
-    const altura = 150;
+  /**
+   * Mostra o modal de resultado
+   */
+  private showResultModal(text: string): void {
+    const width = 300;
+    const height = 150;
     const x = this.scale.width / 2;
     const y = this.scale.height / 2;
 
-    const fundo = this.add
-      .rectangle(x, y, largura, altura, 0x000000, 0.8)
+    const background = this.add
+      .rectangle(x, y, width, height, 0x000000, 0.8)
       .setStrokeStyle(2, 0xffffff)
       .setOrigin(0.5);
 
-    const mensagem = this.add
-      .text(x, y - 30, texto, {
+    const message = this.add
+      .text(x, y - 30, text, {
         fontSize: "20px",
         color: "#ffffff",
         align: "center",
       })
       .setOrigin(0.5);
 
-    const botao = this.add
+    const button = this.add
       .text(x, y + 30, "Jogar Novamente", {
         fontSize: "16px",
         backgroundColor: "#ffffff",
@@ -933,8 +1084,80 @@ export default class GameScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setInteractive();
 
-    botao.on("pointerdown", () => this.scene.restart());
+    button.on("pointerdown", () => this.scene.restart());
 
-    this.add.container(0, 0, [fundo, mensagem, botao]);
+    this.add.container(0, 0, [background, message, button]);
+  }
+
+  // =============================================
+  // Painel de Detalhes da Carta
+  // =============================================
+
+  /**
+   * Configura os eventos do painel de detalhes
+   */
+  private setupCardDetailsEvents(): void {
+    this.input.on(
+      "gameobjectover",
+      (
+        pointer: Phaser.Input.Pointer,
+        gameObject: Phaser.GameObjects.GameObject
+      ) => {
+        const container = gameObject as Phaser.GameObjects.Container & {
+          cardData?: CardData;
+        };
+
+        if (!container.cardData) return;
+
+        this.showCardDetails(container.cardData);
+      }
+    );
+
+    this.input.on(
+      "gameobjectout",
+      (
+        pointer: Phaser.Input.Pointer,
+        gameObject: Phaser.GameObjects.GameObject
+      ) => {
+        this.hideCardDetails();
+      }
+    );
+  }
+
+  /**
+   * Mostra os detalhes da carta
+   */
+  private showCardDetails(card: CardData): void {
+    if (!this.cardDetailsPanel) return;
+
+    this.cardNameText?.setText(card.name);
+    this.cardPowerText?.setText(card.power.toString());
+    this.cardCostText?.setText(card.cost.toString());
+
+    let description = "";
+
+    switch (card.name) {
+      case "Homem de Ferro":
+        description = "Um herói inteligente e poderoso com armadura avançada.";
+        break;
+      case "Hulk":
+        description = "Força bruta imbatível quando está com raiva.";
+        break;
+      case "Viúva Negra":
+        description = "Espiã ágil e mestre em combate corpo a corpo.";
+        break;
+      default:
+        description = "Carta sem descrição disponível.";
+    }
+
+    this.cardDescriptionText?.setText(description);
+    this.cardDetailsPanel.setVisible(true);
+  }
+
+  /**
+   * Esconde os detalhes da carta
+   */
+  private hideCardDetails(): void {
+    this.cardDetailsPanel?.setVisible(false);
   }
 }
