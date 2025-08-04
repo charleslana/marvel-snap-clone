@@ -13,6 +13,7 @@ import { CardDetailsPanel } from "../components/CardDetailsPanel";
 import { DragAndDropManager } from "../utils/DragAndDropManager";
 import { BotAI } from "../utils/BotAI";
 import { GameEndManager } from "../utils/GameEndManager";
+import { EndBattleButton } from "@/components/EndBattleButton";
 
 export default class GameScene extends Phaser.Scene {
   private playerHand: Omit<Card, "index">[] = [
@@ -98,6 +99,7 @@ export default class GameScene extends Phaser.Scene {
   private dragAndDropManager!: DragAndDropManager;
   private botAI!: BotAI;
   private gameEndManager!: GameEndManager;
+  private endBattleButton!: EndBattleButton;
 
   create(): void {
     this.laneDisplay = new LaneDisplay(this);
@@ -105,12 +107,14 @@ export default class GameScene extends Phaser.Scene {
     this.turnDisplay = new TurnDisplay(this);
     this.endTurnButton = new EndTurnButton(this);
     this.cardDetailsPanel = new CardDetailsPanel(this);
+    this.endBattleButton = new EndBattleButton(this);
 
     this.initializeGameTitle();
     this.initializeGameLanes();
     this.initializeEnergyDisplay();
     this.initializeTurnDisplay();
     this.initializeEndTurnButton();
+    this.initializeEndBattleButton();
     this.initializeCardDetailsPanel();
 
     this.dragAndDropManager = new DragAndDropManager(
@@ -181,6 +185,17 @@ export default class GameScene extends Phaser.Scene {
         this.endTurn();
       }
     });
+  }
+
+  private initializeEndBattleButton(): void {
+    const screenWidth = this.scale.width;
+    const screenHeight = this.scale.height;
+    this.endBattleButton.initialize(20, screenHeight - 40, () => {
+      if (this.gameEndManager.isGameEnded()) {
+        console.log("Finalizar batalha");
+      }
+    });
+    this.endBattleButton.setVisible(false);
   }
 
   private initializeCardDetailsPanel(): void {
@@ -403,6 +418,10 @@ export default class GameScene extends Phaser.Scene {
 
       if (this.currentTurn >= 6) {
         this.gameEndManager.checkGameEnd();
+        // Habilita o botão de fim de batalha
+        this.endBattleButton.setVisible(true);
+        // Desabilita o botão de fim de turno
+        this.endTurnButton.setVisible(false);
       } else {
         this.isPlayerTurn = true;
       }

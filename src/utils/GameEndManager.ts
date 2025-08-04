@@ -4,6 +4,7 @@ import { Lane } from "../interfaces/Lane";
 export class GameEndManager {
   private scene: Phaser.Scene;
   private lanes: Lane[];
+  private gameEnded: boolean = false;
 
   constructor(scene: Phaser.Scene, lanes: Lane[]) {
     this.scene = scene;
@@ -26,7 +27,20 @@ export class GameEndManager {
     else if (botWins > playerWins) message = "Bot venceu!";
     else message = "Empate!";
 
+    this.gameEnded = true;
     this.showResultModal(message);
+  }
+
+  public forceGameEnd(): void {
+    this.checkGameEnd();
+  }
+
+  public isGameEnded(): boolean {
+    return this.gameEnded;
+  }
+
+  public resetGameState(): void {
+    this.gameEnded = false;
   }
 
   private calculateLanePower(lane: Lane): {
