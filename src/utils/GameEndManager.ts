@@ -1,5 +1,5 @@
-import Phaser from "phaser";
-import { Lane } from "../interfaces/Lane";
+import Phaser from 'phaser';
+import { Lane } from '@/interfaces/Lane';
 
 export class GameEndManager {
   private scene: Phaser.Scene;
@@ -22,10 +22,10 @@ export class GameEndManager {
       else if (botPower > playerPower) botWins++;
     }
 
-    let message = "";
-    if (playerWins > botWins) message = "Você venceu!";
-    else if (botWins > playerWins) message = "Bot venceu!";
-    else message = "Empate!";
+    let message = '';
+    if (playerWins > botWins) message = 'Você venceu!';
+    else if (botWins > playerWins) message = 'Bot venceu!';
+    else message = 'Empate!';
 
     this.gameEnded = true;
     this.showResultModal(message);
@@ -73,37 +73,33 @@ export class GameEndManager {
 
     const message = this.scene.add
       .text(x, y - 30, text, {
-        fontSize: "20px",
-        color: "#ffffff",
-        align: "center",
+        fontSize: '20px',
+        color: '#ffffff',
+        align: 'center',
       })
       .setOrigin(0.5);
 
     const button = this.scene.add
-      .text(x, y + 30, "Fechar", {
-        fontSize: "16px",
-        backgroundColor: "#ffffff",
-        color: "#000000",
+      .text(x, y + 30, 'Fechar', {
+        fontSize: '16px',
+        backgroundColor: '#ffffff',
+        color: '#000000',
         padding: { x: 10, y: 5 },
       })
       .setOrigin(0.5)
       .setInteractive();
 
     // Cria o container com todos os elementos da modal
-    const modalContainer = this.scene.add.container(0, 0, [
-      background,
-      message,
-      button,
-    ]);
+    const modalContainer = this.scene.add.container(0, 0, [background, message, button]);
 
     // Adiciona o evento de clique no botão para fechar a modal
-    button.on("pointerdown", () => {
+    button.on('pointerdown', () => {
       modalContainer.destroy(); // Remove completamente o container e todos seus filhos
     });
 
     // Opcional: permitir fechar clicando no fundo da modal
     background.setInteractive();
-    background.on("pointerdown", () => {
+    background.on('pointerdown', () => {
       modalContainer.destroy();
     });
   }

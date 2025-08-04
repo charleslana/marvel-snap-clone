@@ -1,4 +1,4 @@
-import Phaser from "phaser";
+import Phaser from 'phaser';
 
 export class EnergyDisplay {
   private scene: Phaser.Scene;
@@ -11,9 +11,9 @@ export class EnergyDisplay {
 
   initialize(x: number, y: number, initialEnergy: number): void {
     this.energyText = this.scene.add
-      .text(0, 0, "Energia: " + initialEnergy, {
-        fontSize: "20px",
-        color: "#ffffff",
+      .text(0, 0, 'Energia: ' + initialEnergy, {
+        fontSize: '20px',
+        color: '#ffffff',
       })
       .setOrigin(0, 0.5);
 
@@ -25,10 +25,7 @@ export class EnergyDisplay {
       .rectangle(0, 0, rectWidth, rectHeight, 0x222222)
       .setOrigin(0, 0.5);
 
-    this.energyContainer = this.scene.add.container(x, y, [
-      energyRect,
-      this.energyText,
-    ]);
+    this.energyContainer = this.scene.add.container(x, y, [energyRect, this.energyText]);
   }
 
   updateEnergy(energy: number): void {

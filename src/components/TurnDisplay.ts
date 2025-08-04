@@ -1,4 +1,4 @@
-import Phaser from "phaser";
+import Phaser from 'phaser';
 
 export class TurnDisplay {
   private scene: Phaser.Scene;
@@ -11,9 +11,9 @@ export class TurnDisplay {
   initialize(x: number, y: number, initialTurn: number): void {
     this.turnText = this.scene.add
       .text(x, y, `Turno: ${initialTurn}`, {
-        fontSize: "20px",
-        color: "#ffffff",
-        backgroundColor: "#000000",
+        fontSize: '20px',
+        color: '#ffffff',
+        backgroundColor: '#000000',
         padding: { x: 10, y: 5 },
       })
       .setOrigin(1, 0.5);
@@ -33,7 +33,7 @@ export class TurnDisplay {
       alpha: 0.7,
       duration: 150,
       yoyo: true,
-      ease: "Power2",
+      ease: 'Power2',
       onYoyo: () => {
         this.turnText!.setScale(1);
         this.turnText!.setAlpha(1);

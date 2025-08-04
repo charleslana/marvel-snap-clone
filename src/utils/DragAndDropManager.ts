@@ -1,8 +1,8 @@
-import Phaser from "phaser";
-import { CardData } from "../interfaces/Card";
-import { Lane } from "../interfaces/Lane";
-import { Slot } from "../interfaces/Slot";
-import { CardContainer } from "../components/CardContainer";
+import Phaser from 'phaser';
+import { CardData } from '@/interfaces/Card';
+import { Lane } from '@/interfaces/Lane';
+import { Slot } from '@/interfaces/Slot';
+import { CardContainer } from '@/components/CardContainer';
 
 export class DragAndDropManager {
   private scene: Phaser.Scene;
@@ -13,10 +13,7 @@ export class DragAndDropManager {
   private onCardRemovedFromHand: (index: number) => void;
   private onEnergyUpdated: () => void;
   private onLanePowersUpdated: () => void;
-  private onAnimateCardReturn: (
-    container: CardContainer,
-    onComplete?: () => void
-  ) => void;
+  private onAnimateCardReturn: (container: CardContainer, onComplete?: () => void) => void;
   private onRenderPlayerHand: () => void;
 
   constructor(
@@ -28,10 +25,7 @@ export class DragAndDropManager {
     onCardRemovedFromHand: (index: number) => void,
     onEnergyUpdated: () => void,
     onLanePowersUpdated: () => void,
-    onAnimateCardReturn: (
-      container: CardContainer,
-      onComplete?: () => void
-    ) => void,
+    onAnimateCardReturn: (container: CardContainer, onComplete?: () => void) => void,
     onRenderPlayerHand: () => void
   ) {
     this.scene = scene;
@@ -50,17 +44,14 @@ export class DragAndDropManager {
 
   private setupDragEvents(): void {
     this.scene.input.on(
-      "dragstart",
-      (
-        _pointer: Phaser.Input.Pointer,
-        gameObject: Phaser.GameObjects.GameObject
-      ) => {
+      'dragstart',
+      (_pointer: Phaser.Input.Pointer, gameObject: Phaser.GameObjects.GameObject) => {
         this.handleDragStart(gameObject as CardContainer);
       }
     );
 
     this.scene.input.on(
-      "drag",
+      'drag',
       (
         _pointer: Phaser.Input.Pointer,
         gameObject: Phaser.GameObjects.GameObject,
@@ -72,11 +63,8 @@ export class DragAndDropManager {
     );
 
     this.scene.input.on(
-      "dragend",
-      (
-        _pointer: Phaser.Input.Pointer,
-        gameObject: Phaser.GameObjects.GameObject
-      ) => {
+      'dragend',
+      (_pointer: Phaser.Input.Pointer, gameObject: Phaser.GameObjects.GameObject) => {
         this.handleDragEnd(gameObject as CardContainer);
       }
     );
@@ -96,11 +84,7 @@ export class DragAndDropManager {
     }
   }
 
-  private handleDrag(
-    container: CardContainer,
-    dragX: number,
-    dragY: number
-  ): void {
+  private handleDrag(container: CardContainer, dragX: number, dragY: number): void {
     container.x = dragX;
     container.y = dragY;
   }
@@ -120,10 +104,7 @@ export class DragAndDropManager {
       }
 
       for (const slot of lane.playerSlots) {
-        if (
-          !slot.occupied &&
-          Phaser.Math.Distance.Between(x, y, slot.x, slot.y) < 60
-        ) {
+        if (!slot.occupied && Phaser.Math.Distance.Between(x, y, slot.x, slot.y) < 60) {
           this.onCardPlaced(slot, container.cardData);
           this.onCardRemovedFromHand(index);
 

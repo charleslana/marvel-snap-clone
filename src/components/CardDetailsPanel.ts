@@ -1,5 +1,5 @@
-import Phaser from "phaser";
-import { CardData } from "../interfaces/Card";
+import Phaser from 'phaser';
+import { CardData } from '@/interfaces/Card';
 
 export class CardDetailsPanel {
   private scene: Phaser.Scene;
@@ -23,35 +23,35 @@ export class CardDetailsPanel {
       .setOrigin(0.5);
 
     this.cardNameText = this.scene.add
-      .text(0, height / 2 - 30, "Nome da Carta", {
-        fontSize: "20px",
-        color: "#ffffff",
-        align: "center",
+      .text(0, height / 2 - 30, 'Nome da Carta', {
+        fontSize: '20px',
+        color: '#ffffff',
+        align: 'center',
         wordWrap: { width: width - 40 },
       })
       .setOrigin(0.5, 0.5);
 
     this.cardPowerText = this.scene.add
-      .text(width / 2 - 20, -height / 2 + 20, "0", {
-        fontSize: "18px",
-        color: "#ffffff",
-        fontStyle: "bold",
+      .text(width / 2 - 20, -height / 2 + 20, '0', {
+        fontSize: '18px',
+        color: '#ffffff',
+        fontStyle: 'bold',
       })
       .setOrigin(1, 0.5);
 
     this.cardCostText = this.scene.add
-      .text(-width / 2 + 20, -height / 2 + 20, "0", {
-        fontSize: "18px",
-        color: "#ffff00",
-        fontStyle: "bold",
+      .text(-width / 2 + 20, -height / 2 + 20, '0', {
+        fontSize: '18px',
+        color: '#ffff00',
+        fontStyle: 'bold',
       })
       .setOrigin(0, 0.5);
 
     this.cardDescriptionText = this.scene.add
-      .text(0, 0, "Descrição detalhada da carta vai aqui.", {
-        fontSize: "16px",
-        color: "#cccccc",
-        align: "center",
+      .text(0, 0, 'Descrição detalhada da carta vai aqui.', {
+        fontSize: '16px',
+        color: '#cccccc',
+        align: 'center',
         wordWrap: { width: width - 40 },
       })
       .setOrigin(0.5);

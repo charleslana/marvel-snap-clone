@@ -1,18 +1,18 @@
-import Phaser from "phaser";
-import { Card } from "../interfaces/Card";
-import { Lane } from "../interfaces/Lane";
-import { Slot } from "../interfaces/Slot";
+import Phaser from 'phaser';
+import { Card } from '@/interfaces/Card';
+import { Lane } from '@/interfaces/Lane';
+import { Slot } from '@/interfaces/Slot';
 
 export class BotAI {
   private scene: Phaser.Scene;
   private lanes: Lane[];
-  private botHand: Omit<Card, "index">[];
+  private botHand: Omit<Card, 'index'>[];
   private botEnergy: number;
 
   constructor(
     scene: Phaser.Scene,
     lanes: Lane[],
-    botHand: Omit<Card, "index">[],
+    botHand: Omit<Card, 'index'>[],
     botEnergy: number
   ) {
     this.scene = scene;
@@ -22,7 +22,7 @@ export class BotAI {
   }
 
   public executeTurn(
-    onCardPlayed: (slot: Slot, card: Omit<Card, "index">) => void,
+    onCardPlayed: (slot: Slot, card: Omit<Card, 'index'>) => void,
     onHandUpdated: () => void,
     onLanePowersUpdated: () => void
   ): void {
@@ -49,10 +49,7 @@ export class BotAI {
         const { botPower, playerPower } = laneItem;
         const powerWithCard = botPower + card.power;
 
-        if (
-          (botPower <= playerPower && powerWithCard > playerPower) ||
-          botPower > playerPower
-        ) {
+        if ((botPower <= playerPower && powerWithCard > playerPower) || botPower > playerPower) {
           this.playCardOnSlot(slot, card, onCardPlayed);
           cardPlayed = true;
           break;
@@ -108,8 +105,8 @@ export class BotAI {
 
   private playCardOnSlot(
     slot: Slot,
-    card: Omit<Card, "index">,
-    onCardPlayed: (slot: Slot, card: Omit<Card, "index">) => void
+    card: Omit<Card, 'index'>,
+    onCardPlayed: (slot: Slot, card: Omit<Card, 'index'>) => void
   ): void {
     onCardPlayed(slot, card);
 
@@ -125,8 +122,8 @@ export class BotAI {
   }
 
   private playCardOnAnyAvailableSlot(
-    card: Omit<Card, "index">,
-    onCardPlayed: (slot: Slot, card: Omit<Card, "index">) => void
+    card: Omit<Card, 'index'>,
+    onCardPlayed: (slot: Slot, card: Omit<Card, 'index'>) => void
   ): void {
     for (const lane of this.lanes) {
       const slot = lane.botSlots.find((s) => !s.occupied);
@@ -141,7 +138,7 @@ export class BotAI {
     this.botEnergy = newEnergy;
   }
 
-  public updateBotHand(newHand: Omit<Card, "index">[]): void {
+  public updateBotHand(newHand: Omit<Card, 'index'>[]): void {
     this.botHand = newHand;
   }
 }

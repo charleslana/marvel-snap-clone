@@ -1,5 +1,5 @@
-import Phaser from "phaser";
-import { Slot } from "./Slot";
+import Phaser from 'phaser';
+import { Slot } from './Slot';
 
 export interface Lane {
   x: number;

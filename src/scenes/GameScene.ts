@@ -1,84 +1,84 @@
-import Phaser from "phaser";
-import { Card, CardData } from "../interfaces/Card";
-import { Lane } from "../interfaces/Lane";
-import { Slot } from "../interfaces/Slot";
+import Phaser from 'phaser';
+import { Card, CardData } from '@/interfaces/Card';
+import { Lane } from '@/interfaces/Lane';
+import { Slot } from '@/interfaces/Slot';
 
-import { CardContainer } from "../components/CardContainer";
-import { LaneDisplay } from "../components/LaneDisplay";
-import { EnergyDisplay } from "../components/EnergyDisplay";
-import { TurnDisplay } from "../components/TurnDisplay";
-import { EndTurnButton } from "../components/EndTurnButton";
-import { CardDetailsPanel } from "../components/CardDetailsPanel";
+import { CardContainer } from '@/components/CardContainer';
+import { LaneDisplay } from '@/components/LaneDisplay';
+import { EnergyDisplay } from '@/components/EnergyDisplay';
+import { TurnDisplay } from '@/components/TurnDisplay';
+import { EndTurnButton } from '@/components/EndTurnButton';
+import { CardDetailsPanel } from '@/components/CardDetailsPanel';
 
-import { DragAndDropManager } from "../utils/DragAndDropManager";
-import { BotAI } from "../utils/BotAI";
-import { GameEndManager } from "../utils/GameEndManager";
-import { EndBattleButton } from "@/components/EndBattleButton";
+import { DragAndDropManager } from '@/utils/DragAndDropManager';
+import { BotAI } from '@/utils/BotAI';
+import { GameEndManager } from '@/utils/GameEndManager';
+import { EndBattleButton } from '@/components/EndBattleButton';
 
 export default class GameScene extends Phaser.Scene {
-  private playerHand: Omit<Card, "index">[] = [
+  private playerHand: Omit<Card, 'index'>[] = [
     {
-      name: "Homem de Ferro",
+      name: 'Homem de Ferro',
       cost: 2,
       power: 3,
-      description: "Um herói inteligente e poderoso com armadura avançada.",
+      description: 'Um herói inteligente e poderoso com armadura avançada.',
     },
     {
-      name: "Hulk",
+      name: 'Hulk',
       cost: 3,
       power: 6,
-      description: "Força bruta imbatível quando está com raiva.",
+      description: 'Força bruta imbatível quando está com raiva.',
     },
     {
-      name: "Viúva Negra",
+      name: 'Viúva Negra',
       cost: 1,
       power: 2,
-      description: "Espiã ágil e mestre em combate corpo a corpo.",
+      description: 'Espiã ágil e mestre em combate corpo a corpo.',
     },
     {
-      name: "Capitão América",
+      name: 'Capitão América',
       cost: 2,
       power: 4,
-      description: "Líder nato com escudo indestrutível de vibranium.",
+      description: 'Líder nato com escudo indestrutível de vibranium.',
     },
     {
-      name: "Nick Fury",
+      name: 'Nick Fury',
       cost: 5,
       power: 9,
-      description: "Diretor da S.H.I.E.L.D. com acesso a recursos ilimitados.",
+      description: 'Diretor da S.H.I.E.L.D. com acesso a recursos ilimitados.',
     },
   ];
 
-  private botHand: Omit<Card, "index">[] = [
+  private botHand: Omit<Card, 'index'>[] = [
     {
-      name: "Thanos",
+      name: 'Thanos',
       cost: 3,
       power: 7,
-      description: "Titã Louco obcecado em equilibrar o universo.",
+      description: 'Titã Louco obcecado em equilibrar o universo.',
     },
     {
-      name: "Loki",
+      name: 'Loki',
       cost: 2,
       power: 4,
-      description: "Deus da trapaça com poderes mágicos e ilusões.",
+      description: 'Deus da trapaça com poderes mágicos e ilusões.',
     },
     {
-      name: "Ultron",
+      name: 'Ultron',
       cost: 1,
       power: 2,
-      description: "IA robótica com capacidade de evolução constante.",
+      description: 'IA robótica com capacidade de evolução constante.',
     },
     {
-      name: "Capitão América",
+      name: 'Capitão América',
       cost: 2,
       power: 4,
-      description: "Líder nato com escudo indestrutível de vibranium.",
+      description: 'Líder nato com escudo indestrutível de vibranium.',
     },
     {
-      name: "Thor",
+      name: 'Thor',
       cost: 4,
       power: 8,
-      description: "Deus do trovão com martelo místico Mjolnir.",
+      description: 'Deus do trovão com martelo místico Mjolnir.',
     },
   ];
 
@@ -143,9 +143,9 @@ export default class GameScene extends Phaser.Scene {
   }
 
   private initializeGameTitle(): void {
-    this.add.text(20, 20, "Marvel Snap Clone Offline", {
-      color: "#fff",
-      fontSize: "24px",
+    this.add.text(20, 20, 'Marvel Snap Clone Offline', {
+      color: '#fff',
+      fontSize: '24px',
     });
   }
 
@@ -188,11 +188,10 @@ export default class GameScene extends Phaser.Scene {
   }
 
   private initializeEndBattleButton(): void {
-    const screenWidth = this.scale.width;
     const screenHeight = this.scale.height;
     this.endBattleButton.initialize(20, screenHeight - 40, () => {
       if (this.gameEndManager.isGameEnded()) {
-        console.log("Finalizar batalha");
+        console.log('Finalizar batalha');
       }
     });
     this.endBattleButton.setVisible(false);
@@ -200,7 +199,6 @@ export default class GameScene extends Phaser.Scene {
 
   private initializeCardDetailsPanel(): void {
     const width = 220;
-    const height = 320;
     const x = this.scale.width - width / 2 - 20;
     const y = this.scale.height / 2;
     this.cardDetailsPanel.initialize(x, y);
@@ -274,15 +272,12 @@ export default class GameScene extends Phaser.Scene {
     });
   }
 
-  private animateCardReturn(
-    container: CardContainer,
-    onComplete?: () => void
-  ): void {
+  private animateCardReturn(container: CardContainer, onComplete?: () => void): void {
     this.tweens.add({
       targets: container,
       scale: 1,
       duration: 200,
-      ease: "Back.out",
+      ease: 'Back.out',
     });
 
     this.tweens.add({
@@ -290,7 +285,7 @@ export default class GameScene extends Phaser.Scene {
       x: container.startX,
       y: container.startY,
       duration: 300,
-      ease: "Power2.out",
+      ease: 'Power2.out',
       onComplete: () => {
         container.list.forEach((child) => {
           if (child instanceof Phaser.GameObjects.Text) {
@@ -310,27 +305,27 @@ export default class GameScene extends Phaser.Scene {
 
     const nameText = this.add
       .text(0, 45, name, {
-        color: "#ffffff",
-        fontSize: "14px",
-        align: "center",
+        color: '#ffffff',
+        fontSize: '14px',
+        align: 'center',
       })
       .setOrigin(0.5, 1)
       .setWordWrapWidth(70);
 
     const powerText = this.add
       .text(30, -45, String(power), {
-        color: "#ffffff",
-        fontSize: "14px",
-        align: "right",
+        color: '#ffffff',
+        fontSize: '14px',
+        align: 'right',
       })
       .setOrigin(1, 0);
 
     const costText = this.add
       .text(-30, -45, String(cost), {
-        color: "#ffff00",
-        fontSize: "14px",
-        fontStyle: "bold",
-        align: "left",
+        color: '#ffff00',
+        fontSize: '14px',
+        fontStyle: 'bold',
+        align: 'left',
       })
       .setOrigin(0, 0);
 
@@ -338,7 +333,7 @@ export default class GameScene extends Phaser.Scene {
     cardContainer.setSize(80, 110);
     cardContainer.setInteractive({ useHandCursor: true });
 
-    cardContainer.on("pointerdown", () => {
+    cardContainer.on('pointerdown', () => {
       this.removePlacedCard(cardContainer);
     });
 
@@ -416,7 +411,8 @@ export default class GameScene extends Phaser.Scene {
       this.dragAndDropManager.updatePlayerEnergy(this.playerEnergy);
       this.dragAndDropManager.updatePlayerTurnStatus(this.isPlayerTurn);
 
-      if (this.currentTurn >= 6) {
+      if (this.currentTurn >= 7) {
+        console.log(this.currentTurn);
         this.gameEndManager.checkGameEnd();
         // Habilita o botão de fim de batalha
         this.endBattleButton.setVisible(true);
@@ -428,33 +424,33 @@ export default class GameScene extends Phaser.Scene {
     });
   }
 
-  private playBotCardOnSlot(slot: Slot, card: Omit<Card, "index">): void {
+  private playBotCardOnSlot(slot: Slot, card: Omit<Card, 'index'>): void {
     const cardContainer = this.add.container(slot.x, slot.y);
     const cardRect = this.add.rectangle(0, 0, 80, 110, 0xff0000);
 
     const nameText = this.add
       .text(0, 45, card.name, {
-        color: "#ffffff",
-        fontSize: "14px",
-        align: "center",
+        color: '#ffffff',
+        fontSize: '14px',
+        align: 'center',
       })
       .setOrigin(0.5, 1)
       .setWordWrapWidth(70);
 
     const powerText = this.add
       .text(30, -45, String(card.power), {
-        color: "#ffffff",
-        fontSize: "14px",
-        align: "right",
+        color: '#ffffff',
+        fontSize: '14px',
+        align: 'right',
       })
       .setOrigin(1, 0);
 
     const costText = this.add
       .text(-30, -45, String(card.cost), {
-        color: "#ffff00",
-        fontSize: "14px",
-        fontStyle: "bold",
-        align: "left",
+        color: '#ffff00',
+        fontSize: '14px',
+        fontStyle: 'bold',
+        align: 'left',
       })
       .setOrigin(0, 0);
 
@@ -479,13 +475,13 @@ export default class GameScene extends Phaser.Scene {
     const turnPlayed = (container as any).turnPlayed as number;
 
     if (turnPlayed !== this.currentTurn) {
-      console.log("Carta jogada em turno anterior. Não pode voltar.");
+      console.log('Carta jogada em turno anterior. Não pode voltar.');
       return;
     }
 
     if (turnPlayed === this.currentTurn) {
       this.playerEnergy += (container as any).cardData.cost;
-      console.log("this.playerEnergy", this.playerEnergy);
+      console.log('this.playerEnergy', this.playerEnergy);
       this.updateEnergyText();
     }
 
@@ -523,11 +519,8 @@ export default class GameScene extends Phaser.Scene {
 
   private setupCardDetailsEvents(): void {
     this.input.on(
-      "gameobjectover",
-      (
-        pointer: Phaser.Input.Pointer,
-        gameObject: Phaser.GameObjects.GameObject
-      ) => {
+      'gameobjectover',
+      (_pointer: Phaser.Input.Pointer, gameObject: Phaser.GameObjects.GameObject) => {
         const container = gameObject as Phaser.GameObjects.Container & {
           cardData?: CardData;
         };
@@ -539,11 +532,8 @@ export default class GameScene extends Phaser.Scene {
     );
 
     this.input.on(
-      "gameobjectout",
-      (
-        pointer: Phaser.Input.Pointer,
-        gameObject: Phaser.GameObjects.GameObject
-      ) => {
+      'gameobjectout',
+      (_pointer: Phaser.Input.Pointer, _gameObject: Phaser.GameObjects.GameObject) => {
         this.cardDetailsPanel.hideCardDetails();
       }
     );

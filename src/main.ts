@@ -1,5 +1,5 @@
-import Phaser from "phaser";
-import GameScene from "./scenes/GameScene";
+import Phaser from 'phaser';
+import GameScene from './scenes/GameScene';
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -9,7 +9,7 @@ const config: Phaser.Types.Core.GameConfig = {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
   },
-  backgroundColor: "#1d1d1d",
+  backgroundColor: '#1d1d1d',
   scene: [GameScene],
 };
 

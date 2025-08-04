@@ -1,4 +1,4 @@
-import Phaser from "phaser";
+import Phaser from 'phaser';
 
 export class EndTurnButton {
   private scene: Phaser.Scene;
@@ -13,15 +13,15 @@ export class EndTurnButton {
     this.onEndTurnCallback = onEndTurn;
 
     this.button = this.scene.add
-      .text(x, y, "Finalizar Turno", {
-        fontSize: "20px",
-        color: "#ffffff",
-        backgroundColor: "#222222",
+      .text(x, y, 'Finalizar Turno', {
+        fontSize: '20px',
+        color: '#ffffff',
+        backgroundColor: '#222222',
         padding: { x: 10, y: 5 },
       })
       .setOrigin(1, 1)
       .setInteractive({ useHandCursor: true })
-      .on("pointerdown", () => {
+      .on('pointerdown', () => {
         if (this.onEndTurnCallback) {
           this.onEndTurnCallback();
         }
