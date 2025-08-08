@@ -360,20 +360,20 @@ export default class GameScene extends Phaser.Scene {
 
   private updateLanePowers(): void {
     for (const lane of this.lanes) {
-      const { botPower, playerPower } = this.calculateLanePower(lane);
+      const { enemyPower, playerPower } = this.calculateLanePower(lane);
 
-      lane.botPowerText?.setText(`Poder Bot: ${botPower}`);
-      lane.playerPowerText?.setText(`Poder Jogador: ${playerPower}`);
+      lane.enemyPowerText?.setText(enemyPower.toString());
+      lane.playerPowerText?.setText(playerPower.toString());
     }
   }
 
   private calculateLanePower(lane: Lane): {
-    botPower: number;
+    enemyPower: number;
     playerPower: number;
   } {
-    let botPower = 0;
+    let enemyPower = 0;
     for (const slot of lane.botSlots) {
-      botPower += slot.power ?? 0;
+      enemyPower += slot.power ?? 0;
     }
 
     let playerPower = 0;
@@ -381,7 +381,7 @@ export default class GameScene extends Phaser.Scene {
       playerPower += slot.power ?? 0;
     }
 
-    return { botPower, playerPower };
+    return { enemyPower, playerPower };
   }
 
   private endTurn(): void {
@@ -410,6 +410,11 @@ export default class GameScene extends Phaser.Scene {
 
       this.dragAndDropManager.updatePlayerEnergy(this.playerEnergy);
       this.dragAndDropManager.updatePlayerTurnStatus(this.isPlayerTurn);
+
+      for (const lane of this.lanes) {
+        const { enemyPower, playerPower } = this.calculateLanePower(lane);
+        this.laneDisplay.updateLanePowerColors(lane, playerPower, enemyPower);
+      }
 
       if (this.currentTurn >= 7) {
         console.log(this.currentTurn);

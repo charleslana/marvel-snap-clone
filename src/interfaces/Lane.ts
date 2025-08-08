@@ -8,6 +8,6 @@ export interface Lane {
   botSlots: Slot[];
   worldText?: Phaser.GameObjects.Text;
   playerPowerText?: Phaser.GameObjects.Text;
-  botPowerText?: Phaser.GameObjects.Text;
+  enemyPowerText?: Phaser.GameObjects.Text;
   worldContainer?: Phaser.GameObjects.Container;
 }
