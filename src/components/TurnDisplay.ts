@@ -41,6 +41,11 @@ export class TurnDisplay {
     });
   }
 
+  setVisible(visible: boolean): void {
+    if (!this.turnText) return;
+    this.turnText.setVisible(visible);
+  }
+
   getText(): Phaser.GameObjects.Text | undefined {
     return this.turnText;
   }

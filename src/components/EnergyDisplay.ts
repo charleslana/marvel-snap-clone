@@ -36,4 +36,9 @@ export class EnergyDisplay {
   getContainer(): Phaser.GameObjects.Container | undefined {
     return this.energyContainer;
   }
+
+  setVisible(visible: boolean): void {
+    if (!this.energyContainer) return;
+    this.energyContainer.setVisible(visible);
+  }
 }

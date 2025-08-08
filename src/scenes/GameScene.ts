@@ -89,6 +89,7 @@ export default class GameScene extends Phaser.Scene {
   private currentTurn = 1;
   private playerEnergy = 0;
   private botEnergy = 0;
+  private maxTurn = 7;
 
   // Instâncias dos componentes
   private laneDisplay!: LaneDisplay;
@@ -269,6 +270,8 @@ export default class GameScene extends Phaser.Scene {
 
       this.add.existing(cardContainer);
       this.botHandContainers.push(cardContainer);
+      // Ocultar mão do adversário
+      // cardContainer.setTextsVisible(false);
     });
   }
 
@@ -416,13 +419,15 @@ export default class GameScene extends Phaser.Scene {
         this.laneDisplay.updateLanePowerColors(lane, playerPower, enemyPower);
       }
 
-      if (this.currentTurn >= 7) {
+      if (this.currentTurn >= this.maxTurn) {
         console.log(this.currentTurn);
         this.gameEndManager.checkGameEnd();
         // Habilita o botão de fim de batalha
         this.endBattleButton.setVisible(true);
         // Desabilita o botão de fim de turno
         this.endTurnButton.setVisible(false);
+        this.turnDisplay.setVisible(false);
+        this.energyDisplay.setVisible(false);
       } else {
         this.isPlayerTurn = true;
       }

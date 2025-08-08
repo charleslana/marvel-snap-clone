@@ -6,6 +6,10 @@ export class CardContainer extends Phaser.GameObjects.Container {
   public startX: number;
   public startY: number;
 
+  private nameText: Phaser.GameObjects.Text;
+  private costText: Phaser.GameObjects.Text;
+  private powerText: Phaser.GameObjects.Text;
+
   constructor(
     scene: Phaser.Scene,
     x: number,
@@ -21,7 +25,7 @@ export class CardContainer extends Phaser.GameObjects.Container {
 
     const cardRect = scene.add.rectangle(0, 0, width, height, color);
 
-    const nameText = scene.add
+    this.nameText = scene.add
       .text(0, 60, card.name, {
         color: '#ffffff',
         fontSize: '14px',
@@ -30,7 +34,7 @@ export class CardContainer extends Phaser.GameObjects.Container {
       .setOrigin(0.5, 1)
       .setWordWrapWidth(width - 10);
 
-    const powerText = scene.add
+    this.powerText = scene.add
       .text(width / 2 - 10, -60, String(card.power), {
         color: '#ffffff',
         fontSize: '14px',
@@ -38,7 +42,7 @@ export class CardContainer extends Phaser.GameObjects.Container {
       })
       .setOrigin(1, 0);
 
-    const costText = scene.add
+    this.costText = scene.add
       .text(-width / 2 + 10, -60, String(card.cost), {
         color: '#ffff00',
         fontSize: '14px',
@@ -47,7 +51,7 @@ export class CardContainer extends Phaser.GameObjects.Container {
       })
       .setOrigin(0, 0);
 
-    this.add([cardRect, nameText, powerText, costText]);
+    this.add([cardRect, this.nameText, this.powerText, this.costText]);
 
     this.setSize(width, height);
     this.cardData = { ...card, index };
@@ -58,5 +62,11 @@ export class CardContainer extends Phaser.GameObjects.Container {
       this.setInteractive({ draggable: true });
       scene.input.setDraggable(this);
     }
+  }
+
+  public setTextsVisible(visible: boolean): void {
+    this.nameText.setVisible(visible);
+    this.costText.setVisible(visible);
+    this.powerText.setVisible(visible);
   }
 }
