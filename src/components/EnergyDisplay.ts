@@ -14,6 +14,7 @@ export class EnergyDisplay {
       .text(0, 0, 'Energia: ' + initialEnergy, {
         fontSize: '20px',
         color: '#ffffff',
+        padding: { x: 10, y: 5 },
       })
       .setOrigin(0, 0.5);
 

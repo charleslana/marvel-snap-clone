@@ -34,7 +34,7 @@ export class CardDetailsPanel {
     this.cardPowerText = this.scene.add
       .text(width / 2 - 20, -height / 2 + 20, '0', {
         fontSize: '18px',
-        color: '#ffffff',
+        color: '#ffff00',
         fontStyle: 'bold',
       })
       .setOrigin(1, 0.5);
@@ -42,7 +42,7 @@ export class CardDetailsPanel {
     this.cardCostText = this.scene.add
       .text(-width / 2 + 20, -height / 2 + 20, '0', {
         fontSize: '18px',
-        color: '#ffff00',
+        color: '#ffffff',
         fontStyle: 'bold',
       })
       .setOrigin(0, 0.5);

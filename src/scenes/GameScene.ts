@@ -14,73 +14,14 @@ import { DragAndDropManager } from '@/utils/DragAndDropManager';
 import { BotAI } from '@/utils/BotAI';
 import { GameEndManager } from '@/utils/GameEndManager';
 import { EndBattleButton } from '@/components/EndBattleButton';
+import { DeckDisplay } from '@/components/DeckDisplay';
+import { botDeck, playerDeck } from '@/data/CardPool';
 
 export default class GameScene extends Phaser.Scene {
-  private playerHand: Omit<Card, 'index'>[] = [
-    {
-      name: 'Homem de Ferro',
-      cost: 2,
-      power: 3,
-      description: 'Um herói inteligente e poderoso com armadura avançada.',
-    },
-    {
-      name: 'Hulk',
-      cost: 3,
-      power: 6,
-      description: 'Força bruta imbatível quando está com raiva.',
-    },
-    {
-      name: 'Viúva Negra',
-      cost: 1,
-      power: 2,
-      description: 'Espiã ágil e mestre em combate corpo a corpo.',
-    },
-    {
-      name: 'Capitão América',
-      cost: 2,
-      power: 4,
-      description: 'Líder nato com escudo indestrutível de vibranium.',
-    },
-    {
-      name: 'Nick Fury',
-      cost: 5,
-      power: 9,
-      description: 'Diretor da S.H.I.E.L.D. com acesso a recursos ilimitados.',
-    },
-  ];
-
-  private botHand: Omit<Card, 'index'>[] = [
-    {
-      name: 'Thanos',
-      cost: 3,
-      power: 7,
-      description: 'Titã Louco obcecado em equilibrar o universo.',
-    },
-    {
-      name: 'Loki',
-      cost: 2,
-      power: 4,
-      description: 'Deus da trapaça com poderes mágicos e ilusões.',
-    },
-    {
-      name: 'Ultron',
-      cost: 1,
-      power: 2,
-      description: 'IA robótica com capacidade de evolução constante.',
-    },
-    {
-      name: 'Capitão América',
-      cost: 2,
-      power: 4,
-      description: 'Líder nato com escudo indestrutível de vibranium.',
-    },
-    {
-      name: 'Thor',
-      cost: 4,
-      power: 8,
-      description: 'Deus do trovão com martelo místico Mjolnir.',
-    },
-  ];
+  private playerHand: Omit<Card, 'index'>[] = [];
+  private botHand: Omit<Card, 'index'>[] = [];
+  private playerDeckMutable: Omit<Card, 'index'>[] = [];
+  private botDeckMutable: Omit<Card, 'index'>[] = [];
 
   private isPlayerTurn = true;
   private lanes: Lane[] = [];
@@ -101,6 +42,8 @@ export default class GameScene extends Phaser.Scene {
   private botAI!: BotAI;
   private gameEndManager!: GameEndManager;
   private endBattleButton!: EndBattleButton;
+  private playerDeckDisplay!: DeckDisplay;
+  private enemyDeckDisplay!: DeckDisplay;
 
   create(): void {
     this.laneDisplay = new LaneDisplay(this);
@@ -109,8 +52,14 @@ export default class GameScene extends Phaser.Scene {
     this.endTurnButton = new EndTurnButton(this);
     this.cardDetailsPanel = new CardDetailsPanel(this);
     this.endBattleButton = new EndBattleButton(this);
+    this.playerDeckDisplay = new DeckDisplay(this, 'Deck jogador');
+    this.enemyDeckDisplay = new DeckDisplay(this, 'Deck adversário');
+    this.playerDeckMutable = [...playerDeck];
+    this.botDeckMutable = [...botDeck];
+    this.playerHand = this.drawInitialHand(this.playerDeckMutable, 4);
+    this.botHand = this.drawInitialHand(this.botDeckMutable, 4);
 
-    this.initializeGameTitle();
+    this.initializeGameDecks();
     this.initializeGameLanes();
     this.initializeEnergyDisplay();
     this.initializeTurnDisplay();
@@ -143,11 +92,11 @@ export default class GameScene extends Phaser.Scene {
     this.gameEndManager = new GameEndManager(this, this.lanes);
   }
 
-  private initializeGameTitle(): void {
-    this.add.text(20, 20, 'Marvel Snap Clone Offline', {
-      color: '#fff',
-      fontSize: '24px',
-    });
+  private initializeGameDecks(): void {
+    this.enemyDeckDisplay.initialize(20, 40, this.botHand.length);
+    this.playerDeckDisplay.initialize(20, this.scale.height - 40, this.playerHand.length);
+    this.playerDeckDisplay.updateDeck(this.playerDeckMutable.length);
+    this.enemyDeckDisplay.updateDeck(this.botDeckMutable.length);
   }
 
   private initializeGameLanes(): void {
@@ -190,7 +139,7 @@ export default class GameScene extends Phaser.Scene {
 
   private initializeEndBattleButton(): void {
     const screenHeight = this.scale.height;
-    this.endBattleButton.initialize(20, screenHeight - 40, () => {
+    this.endBattleButton.initialize(20, screenHeight - 60, () => {
       if (this.gameEndManager.isGameEnded()) {
         console.log('Finalizar batalha');
       }
@@ -238,6 +187,8 @@ export default class GameScene extends Phaser.Scene {
       this.add.existing(cardContainer);
       this.playerHandContainers.push(cardContainer);
     });
+
+    this.updatePlayableCardsBorder();
   }
 
   private renderBotHand(): void {
@@ -300,40 +251,41 @@ export default class GameScene extends Phaser.Scene {
     });
   }
 
+  private adjustTextFontSize(
+    textObj: Phaser.GameObjects.Text,
+    maxWidth: number,
+    maxFontSize: number = 14,
+    minFontSize: number = 8
+  ): void {
+    textObj.setWordWrapWidth(maxWidth, true);
+
+    let fontSize = maxFontSize;
+    while (fontSize >= minFontSize) {
+      textObj.setFontSize(fontSize);
+      if (textObj.width <= maxWidth) break;
+      fontSize--;
+    }
+  }
+
   private placeCardOnSlot(slot: Slot, cardData: CardData): void {
-    const { name, cost, power } = cardData;
+    const cardWidth = 80;
+    const cardHeight = 110;
+    const cardColor = 0x0088ff;
 
-    const cardContainer = this.add.container(slot.x, slot.y);
-    const cardRect = this.add.rectangle(0, 0, 80, 110, 0x00ccff);
+    const cardContainer = new CardContainer(
+      this,
+      slot.x,
+      slot.y,
+      cardWidth,
+      cardHeight,
+      cardColor,
+      cardData,
+      -1,
+      false
+    );
 
-    const nameText = this.add
-      .text(0, 45, name, {
-        color: '#ffffff',
-        fontSize: '14px',
-        align: 'center',
-      })
-      .setOrigin(0.5, 1)
-      .setWordWrapWidth(70);
+    this.add.existing(cardContainer);
 
-    const powerText = this.add
-      .text(30, -45, String(power), {
-        color: '#ffffff',
-        fontSize: '14px',
-        align: 'right',
-      })
-      .setOrigin(1, 0);
-
-    const costText = this.add
-      .text(-30, -45, String(cost), {
-        color: '#ffff00',
-        fontSize: '14px',
-        fontStyle: 'bold',
-        align: 'left',
-      })
-      .setOrigin(0, 0);
-
-    cardContainer.add([cardRect, nameText, powerText, costText]);
-    cardContainer.setSize(80, 110);
     cardContainer.setInteractive({ useHandCursor: true });
 
     cardContainer.on('pointerdown', () => {
@@ -341,7 +293,7 @@ export default class GameScene extends Phaser.Scene {
     });
 
     slot.occupied = true;
-    slot.power = power;
+    slot.power = cardData.power;
 
     this.playerEnergy -= cardData.cost;
     this.updateEnergyText();
@@ -359,6 +311,7 @@ export default class GameScene extends Phaser.Scene {
   private updateEnergyText(): void {
     this.energyDisplay.updateEnergy(this.playerEnergy);
     this.dragAndDropManager.updatePlayerEnergy(this.playerEnergy);
+    this.updatePlayableCardsBorder();
   }
 
   private updateLanePowers(): void {
@@ -428,8 +381,15 @@ export default class GameScene extends Phaser.Scene {
         this.endTurnButton.setVisible(false);
         this.turnDisplay.setVisible(false);
         this.energyDisplay.setVisible(false);
+        this.disablePlayerCardInteraction();
       } else {
         this.isPlayerTurn = true;
+        this.drawCardForPlayer(this.playerHand, this.playerDeckMutable);
+        this.drawCardForPlayer(this.botHand, this.botDeckMutable);
+        this.playerDeckDisplay.updateDeck(this.playerDeckMutable.length);
+        this.enemyDeckDisplay.updateDeck(this.botDeckMutable.length);
+        this.renderPlayerHand();
+        this.renderBotHand();
       }
     });
   }
@@ -444,22 +404,23 @@ export default class GameScene extends Phaser.Scene {
         fontSize: '14px',
         align: 'center',
       })
-      .setOrigin(0.5, 1)
-      .setWordWrapWidth(70);
+      .setOrigin(0.5, 1);
+
+    this.adjustTextFontSize(nameText, 70);
 
     const powerText = this.add
       .text(30, -45, String(card.power), {
-        color: '#ffffff',
+        color: '#ffff00',
         fontSize: '14px',
+        fontStyle: 'bold',
         align: 'right',
       })
       .setOrigin(1, 0);
 
     const costText = this.add
       .text(-30, -45, String(card.cost), {
-        color: '#ffff00',
+        color: '#ffffff',
         fontSize: '14px',
-        fontStyle: 'bold',
         align: 'left',
       })
       .setOrigin(0, 0);
@@ -547,5 +508,45 @@ export default class GameScene extends Phaser.Scene {
         this.cardDetailsPanel.hideCardDetails();
       }
     );
+  }
+
+  private drawInitialHand(deck: Omit<Card, 'index'>[], count: number): Omit<Card, 'index'>[] {
+    for (let i = deck.length - 1; i > 0; i--) {
+      const j = Phaser.Math.Between(0, i);
+      [deck[i], deck[j]] = [deck[j], deck[i]];
+    }
+
+    const hand: Omit<Card, 'index'>[] = [];
+    for (let i = 0; i < count; i++) {
+      if (deck.length === 0) break;
+      hand.push(deck.shift()!);
+    }
+    return hand;
+  }
+
+  private drawCardForPlayer(hand: Omit<Card, 'index'>[], deck: Omit<Card, 'index'>[]): void {
+    if (hand.length >= 7) return;
+    if (deck.length === 0) return;
+
+    const card = deck.shift()!;
+    hand.push(card);
+  }
+
+  private updatePlayableCardsBorder(): void {
+    this.playerHandContainers.forEach((cardContainer) => {
+      if (cardContainer.cardData.cost <= this.playerEnergy) {
+        cardContainer.showPlayableBorder(true);
+      } else {
+        cardContainer.showPlayableBorder(false);
+      }
+    });
+  }
+
+  private disablePlayerCardInteraction(): void {
+    this.playerHandContainers.forEach((cardContainer) => {
+      cardContainer.showPlayableBorder(false);
+    });
+
+    this.dragAndDropManager.disableDrag();
   }
 }

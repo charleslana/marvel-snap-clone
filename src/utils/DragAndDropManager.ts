@@ -15,6 +15,7 @@ export class DragAndDropManager {
   private onLanePowersUpdated: () => void;
   private onAnimateCardReturn: (container: CardContainer, onComplete?: () => void) => void;
   private onRenderPlayerHand: () => void;
+  private enabled: boolean = true;
 
   constructor(
     scene: Phaser.Scene,
@@ -43,9 +44,35 @@ export class DragAndDropManager {
   }
 
   private setupDragEvents(): void {
+    // Cursor ao passar o mouse sobre carta
+    this.scene.input.on(
+      'gameobjectover',
+      (_pointer: Phaser.Input.Pointer, gameObject: Phaser.GameObjects.GameObject) => {
+        if (gameObject instanceof CardContainer) {
+          const cardCost = gameObject.cardData.cost;
+          if (this.isPlayerTurn && this.playerEnergy >= cardCost) {
+            this.scene.input.setDefaultCursor('grabbing');
+          } else {
+            this.scene.input.setDefaultCursor('default');
+          }
+        }
+      }
+    );
+
+    // Cursor ao tirar o mouse da carta
+    this.scene.input.on(
+      'gameobjectout',
+      (_pointer: Phaser.Input.Pointer, gameObject: Phaser.GameObjects.GameObject) => {
+        if (gameObject instanceof CardContainer) {
+          this.scene.input.setDefaultCursor('default');
+        }
+      }
+    );
+
     this.scene.input.on(
       'dragstart',
       (_pointer: Phaser.Input.Pointer, gameObject: Phaser.GameObjects.GameObject) => {
+        this.scene.input.setDefaultCursor('grabbing');
         this.handleDragStart(gameObject as CardContainer);
       }
     );
@@ -65,12 +92,14 @@ export class DragAndDropManager {
     this.scene.input.on(
       'dragend',
       (_pointer: Phaser.Input.Pointer, gameObject: Phaser.GameObjects.GameObject) => {
+        this.scene.input.setDefaultCursor('default');
         this.handleDragEnd(gameObject as CardContainer);
       }
     );
   }
 
   private handleDragStart(container: CardContainer): void {
+    if (!this.enabled) return;
     container.startX = container.x;
     container.startY = container.y;
     container.setScale(0.8);
@@ -85,11 +114,13 @@ export class DragAndDropManager {
   }
 
   private handleDrag(container: CardContainer, dragX: number, dragY: number): void {
+    if (!this.enabled) return;
     container.x = dragX;
     container.y = dragY;
   }
 
   private handleDragEnd(container: CardContainer): void {
+    if (!this.enabled) return;
     const { x, y } = container;
     const { index, cost } = container.cardData;
 
@@ -136,6 +167,14 @@ export class DragAndDropManager {
         slot.overlay?.setVisible(false);
       }
     }
+  }
+
+  public enableDrag(): void {
+    this.enabled = true;
+  }
+
+  public disableDrag(): void {
+    this.enabled = false;
   }
 
   // Método para atualizar a energia do jogador (chamado de fora)
