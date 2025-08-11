@@ -16,6 +16,7 @@ import { GameEndManager } from '@/utils/GameEndManager';
 import { EndBattleButton } from '@/components/EndBattleButton';
 import { DeckDisplay } from '@/components/DeckDisplay';
 import { botDeck, playerDeck } from '@/data/CardPool';
+import { LogHistoryButton } from '@/components/LogHistoryButton';
 
 export default class GameScene extends Phaser.Scene {
   private playerHand: Omit<Card, 'index'>[] = [];
@@ -44,6 +45,7 @@ export default class GameScene extends Phaser.Scene {
   private endBattleButton!: EndBattleButton;
   private playerDeckDisplay!: DeckDisplay;
   private enemyDeckDisplay!: DeckDisplay;
+  private logHistoryButton!: LogHistoryButton;
 
   create(): void {
     this.laneDisplay = new LaneDisplay(this);
@@ -58,6 +60,7 @@ export default class GameScene extends Phaser.Scene {
     this.botDeckMutable = [...botDeck];
     this.playerHand = this.drawInitialHand(this.playerDeckMutable, 4);
     this.botHand = this.drawInitialHand(this.botDeckMutable, 4);
+    this.logHistoryButton = new LogHistoryButton(this);
 
     this.initializeGameDecks();
     this.initializeGameLanes();
@@ -66,6 +69,7 @@ export default class GameScene extends Phaser.Scene {
     this.initializeEndTurnButton();
     this.initializeEndBattleButton();
     this.initializeCardDetailsPanel();
+    this.initializeLogHistoryButton();
 
     this.dragAndDropManager = new DragAndDropManager(
       this,
@@ -153,6 +157,11 @@ export default class GameScene extends Phaser.Scene {
     const y = this.scale.height / 2;
     this.cardDetailsPanel.initialize(x, y);
     this.setupCardDetailsEvents();
+  }
+
+  private initializeLogHistoryButton(): void {
+    const screenWidth = this.scale.width;
+    this.logHistoryButton.initialize(screenWidth - 20, 60);
   }
 
   private renderPlayerHand(): void {
