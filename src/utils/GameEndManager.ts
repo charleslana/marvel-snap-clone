@@ -1,14 +1,17 @@
 import Phaser from 'phaser';
 import { Lane } from '@/interfaces/Lane';
+import { LogHistoryButton } from '@/components/LogHistoryButton';
 
 export class GameEndManager {
   private scene: Phaser.Scene;
   private lanes: Lane[];
   private gameEnded: boolean = false;
+  private logHistoryButton: LogHistoryButton;
 
-  constructor(scene: Phaser.Scene, lanes: Lane[]) {
+  constructor(scene: Phaser.Scene, lanes: Lane[], logHistoryButton: LogHistoryButton) {
     this.scene = scene;
     this.lanes = lanes;
+    this.logHistoryButton = logHistoryButton;
   }
 
   public checkGameEnd(): void {
@@ -45,6 +48,7 @@ export class GameEndManager {
       }
     }
 
+    this.logHistoryButton.addLog(message);
     this.gameEnded = true;
     this.showResultModal(message);
   }

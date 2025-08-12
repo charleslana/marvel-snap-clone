@@ -32,6 +32,7 @@ export default class GameScene extends Phaser.Scene {
   private playerEnergy = 0;
   private botEnergy = 0;
   private maxTurn = 7;
+  private isNextTurn: 0 | 1 = 0;
 
   // Instâncias dos componentes
   private laneDisplay!: LaneDisplay;
@@ -95,7 +96,7 @@ export default class GameScene extends Phaser.Scene {
 
     this.botAI = new BotAI(this, this.lanes, this.botHand, this.botEnergy);
 
-    this.gameEndManager = new GameEndManager(this, this.lanes);
+    this.gameEndManager = new GameEndManager(this, this.lanes, this.logHistoryButton);
   }
 
   private initializeGameDecks(): void {
@@ -387,28 +388,12 @@ export default class GameScene extends Phaser.Scene {
       this.dragAndDropManager.updatePlayerEnergy(this.playerEnergy);
       this.dragAndDropManager.updatePlayerTurnStatus(this.isPlayerTurn);
 
+      this.logMovesInOrder();
+
       for (const lane of this.lanes) {
         const { enemyPower, playerPower } = this.calculateLanePower(lane);
         this.laneDisplay.updateLanePowerColors(lane, playerPower, enemyPower);
       }
-
-      // Registrar os logs das jogadas do jogador
-      this.tempPlayerMoves.forEach((move) => {
-        this.logHistoryButton.addLog(
-          `Jogador jogou a carta ${move.cardName} na lane ${move.laneIndex}`
-        );
-      });
-
-      // Registrar os logs das jogadas do bot (depois)
-      this.tempBotMoves.forEach((move) => {
-        this.logHistoryButton.addLog(
-          `Bot jogou a carta ${move.cardName} na lane ${move.laneIndex}`
-        );
-      });
-
-      // Limpar as jogadas temporárias
-      this.tempPlayerMoves = [];
-      this.tempBotMoves = [];
 
       if (this.currentTurn >= this.maxTurn) {
         console.log(this.currentTurn);
@@ -602,5 +587,83 @@ export default class GameScene extends Phaser.Scene {
     });
 
     this.dragAndDropManager.disableDrag();
+  }
+
+  private logMovesInOrder(): void {
+    // separador do turno (o turno que acabou é currentTurn - 1)
+    this.logHistoryButton.addLog(`---------- Turno ${this.currentTurn - 1} ----------`);
+
+    // Define ordem pelo estado atual de isNextTurn
+    let firstMoves: Array<{ cardName: string; laneIndex: number }>;
+    let secondMoves: Array<{ cardName: string; laneIndex: number }>;
+    let firstLabel: string;
+    let secondLabel: string;
+
+    if (this.isNextTurn === 0) {
+      firstMoves = this.tempPlayerMoves;
+      firstLabel = 'Jogador';
+      secondMoves = this.tempBotMoves;
+      secondLabel = 'Bot';
+    } else {
+      firstMoves = this.tempBotMoves;
+      firstLabel = 'Bot';
+      secondMoves = this.tempPlayerMoves;
+      secondLabel = 'Jogador';
+    }
+
+    // Função para registrar logs
+    const registerLogs = (
+      moves: Array<{ cardName: string; laneIndex: number }>,
+      label: string
+    ): void => {
+      moves.forEach((move) => {
+        this.logHistoryButton.addLog(
+          `${label} jogou a carta ${move.cardName} na lane ${move.laneIndex}`
+        );
+      });
+    };
+
+    registerLogs(firstMoves, firstLabel);
+    registerLogs(secondMoves, secondLabel);
+
+    // Limpa buffers temporários do turno que acabou
+    this.tempPlayerMoves = [];
+    this.tempBotMoves = [];
+
+    // Agora define quem começa a logar no próximo turno baseado no estado final do jogo
+    this.isNextTurn = this.getLeadingPlayer();
+  }
+
+  private getLeadingPlayer(): 0 | 1 {
+    let playerWins = 0;
+    let botWins = 0;
+    let playerTotalPowerDifference = 0;
+    let botTotalPowerDifference = 0;
+
+    for (const lane of this.lanes) {
+      const { playerPower, enemyPower } = this.calculateLanePower(lane);
+
+      if (playerPower > enemyPower) {
+        playerWins++;
+        playerTotalPowerDifference += playerPower - enemyPower;
+      } else if (enemyPower > playerPower) {
+        botWins++;
+        botTotalPowerDifference += enemyPower - playerPower;
+      }
+    }
+
+    if (playerWins > botWins) {
+      return 0; // jogador
+    } else if (botWins > playerWins) {
+      return 1; // bot
+    } else {
+      if (playerTotalPowerDifference > botTotalPowerDifference) {
+        return 0;
+      } else if (botTotalPowerDifference > playerTotalPowerDifference) {
+        return 1;
+      } else {
+        return Phaser.Math.Between(0, 1) as 0 | 1; // empate total, random
+      }
+    }
   }
 }
