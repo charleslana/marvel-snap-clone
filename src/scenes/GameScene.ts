@@ -46,6 +46,8 @@ export default class GameScene extends Phaser.Scene {
   private playerDeckDisplay!: DeckDisplay;
   private enemyDeckDisplay!: DeckDisplay;
   private logHistoryButton!: LogHistoryButton;
+  private tempPlayerMoves: Array<{ cardName: string; laneIndex: number }> = [];
+  private tempBotMoves: Array<{ cardName: string; laneIndex: number }> = [];
 
   create(): void {
     this.laneDisplay = new LaneDisplay(this);
@@ -311,6 +313,15 @@ export default class GameScene extends Phaser.Scene {
     (cardContainer as any).slot = slot;
     (cardContainer as any).cardData = cardData;
     (cardContainer as any).turnPlayed = this.currentTurn;
+
+    // Substituir o log imediato por armazenamento temporário
+    const playerLaneIndex = this.lanes.findIndex((lane) => lane.playerSlots.includes(slot));
+    if (playerLaneIndex !== -1) {
+      this.tempPlayerMoves.push({
+        cardName: cardData.name,
+        laneIndex: playerLaneIndex + 1,
+      });
+    }
   }
 
   private removeCardFromPlayerHand(index: number): void {
@@ -381,6 +392,24 @@ export default class GameScene extends Phaser.Scene {
         this.laneDisplay.updateLanePowerColors(lane, playerPower, enemyPower);
       }
 
+      // Registrar os logs das jogadas do jogador
+      this.tempPlayerMoves.forEach((move) => {
+        this.logHistoryButton.addLog(
+          `Jogador jogou a carta ${move.cardName} na lane ${move.laneIndex}`
+        );
+      });
+
+      // Registrar os logs das jogadas do bot (depois)
+      this.tempBotMoves.forEach((move) => {
+        this.logHistoryButton.addLog(
+          `Bot jogou a carta ${move.cardName} na lane ${move.laneIndex}`
+        );
+      });
+
+      // Limpar as jogadas temporárias
+      this.tempPlayerMoves = [];
+      this.tempBotMoves = [];
+
       if (this.currentTurn >= this.maxTurn) {
         console.log(this.currentTurn);
         this.gameEndManager.checkGameEnd();
@@ -449,6 +478,15 @@ export default class GameScene extends Phaser.Scene {
     }
 
     this.botEnergy -= card.cost;
+
+    // Substituir o log imediato por armazenamento temporário
+    const botLaneIndex = this.lanes.findIndex((lane) => lane.botSlots.includes(slot));
+    if (botLaneIndex !== -1) {
+      this.tempBotMoves.push({
+        cardName: card.name,
+        laneIndex: botLaneIndex + 1,
+      });
+    }
   }
 
   private removePlacedCard(container: Phaser.GameObjects.Container): void {
@@ -465,13 +503,20 @@ export default class GameScene extends Phaser.Scene {
       this.updateEnergyText();
     }
 
+    // Remover a jogada do registro temporário se a carta for removida
     const slot = (container as any).slot as Slot;
-    if (!slot) return;
+    const cardData = (container as any).cardData as Card;
+    const playerLaneIndex = this.lanes.findIndex((lane) => lane.playerSlots.includes(slot));
+
+    if (playerLaneIndex !== -1) {
+      this.tempPlayerMoves = this.tempPlayerMoves.filter(
+        (move) => !(move.cardName === cardData.name && move.laneIndex === playerLaneIndex + 1)
+      );
+    }
 
     slot.occupied = false;
     delete slot.power;
 
-    const cardData = (container as any).cardData as Card;
     const originalIndex = (container as any).cardData.index;
 
     if (originalIndex !== undefined && originalIndex >= 0) {

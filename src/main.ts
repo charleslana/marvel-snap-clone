@@ -10,6 +10,17 @@ const config: Phaser.Types.Core.GameConfig = {
     autoCenter: Phaser.Scale.CENTER_BOTH,
   },
   backgroundColor: '#1d1d1d',
+  physics: {
+    default: 'arcade',
+    arcade: {
+      debug: true,
+    },
+  },
+  banner: false,
+  audio: {
+    disableWebAudio: true,
+  },
+  parent: 'game-container',
   scene: [GameScene],
 };
 
