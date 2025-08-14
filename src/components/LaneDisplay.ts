@@ -27,6 +27,7 @@ export class LaneDisplay {
     const botSlots = this.createSlots(x, y, false);
 
     return {
+      index,
       x,
       y,
       playerSlots,

@@ -52,6 +52,13 @@ export class CardContainer extends Phaser.GameObjects.Container {
     this.powerText.setVisible(visible);
   }
 
+  public updatePower(newPower: number): void {
+    if (this.powerText) {
+      this.powerText.setText(String(newPower));
+      this.powerText.setColor(newPower > this.cardData.power ? '#00ff00' : '#ffffff');
+    }
+  }
+
   private createCardRectangle(
     width: number,
     height: number,

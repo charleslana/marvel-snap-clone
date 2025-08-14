@@ -17,6 +17,7 @@ import { EndBattleButton } from '@/components/EndBattleButton';
 import { DeckDisplay } from '@/components/DeckDisplay';
 import { botDeck, playerDeck } from '@/data/CardPool';
 import { LogHistoryButton } from '@/components/LogHistoryButton';
+import { CardEffectManager } from '@/utils/CardEffectManager';
 
 type MoveLog = { cardName: string; laneIndex: number };
 
@@ -50,6 +51,11 @@ export default class GameScene extends Phaser.Scene {
   private logHistoryButton!: LogHistoryButton;
   private tempPlayerMoves: MoveLog[] = [];
   private tempBotMoves: MoveLog[] = [];
+  // ADICIONE ESTA LINHA:
+  private revealQueue: { card: CardData; laneIndex: number; slot: Slot; isPlayer: boolean }[] = [];
+  private effectManager!: CardEffectManager;
+  // Adicione esta lista na sua GameScene para rastrear as cartas no tabuleiro
+  private placedCardContainers: CardContainer[] = [];
 
   public create(): void {
     this.laneDisplay = new LaneDisplay(this);
@@ -65,6 +71,7 @@ export default class GameScene extends Phaser.Scene {
     this.playerHand = this.drawInitialHand(this.playerDeckMutable, 4);
     this.botHand = this.drawInitialHand(this.botDeckMutable, 4);
     this.logHistoryButton = new LogHistoryButton(this);
+    this.effectManager = new CardEffectManager(this.lanes);
 
     this.initializeGameDecks();
     this.initializeGameLanes();
@@ -261,11 +268,14 @@ export default class GameScene extends Phaser.Scene {
       false
     );
     this.add.existing(cardContainer);
+    // Adicione esta linha:
+    this.placedCardContainers.push(cardContainer);
     cardContainer.setInteractive({ useHandCursor: true });
     cardContainer.on('pointerdown', () => this.removePlacedCard(cardContainer));
 
     slot.occupied = true;
     slot.power = cardData.power;
+    slot.cardData = cardData;
 
     this.playerEnergy -= cardData.cost;
     this.updateEnergyText();
@@ -278,6 +288,9 @@ export default class GameScene extends Phaser.Scene {
     const playerLaneIndex = this.lanes.findIndex((lane) => lane.playerSlots.includes(slot));
     if (playerLaneIndex !== -1) {
       this.tempPlayerMoves.push({ cardName: cardData.name, laneIndex: playerLaneIndex + 1 });
+
+      // ADICIONE ESTA LINHA: Adiciona a carta à fila de revelação
+      this.revealQueue.push({ card: cardData, laneIndex: playerLaneIndex, slot, isPlayer: true });
     }
   }
 
@@ -314,6 +327,9 @@ export default class GameScene extends Phaser.Scene {
     this.endTurnButton.setVisible(false);
 
     this.time.delayedCall(1000, () => {
+      // 1. PROCESSA A REVELAÇÃO DAS CARTAS
+      this.processRevealQueue();
+
       this.executeBotTurn();
       this.advanceTurn();
       this.refreshEnergies();
@@ -359,6 +375,7 @@ export default class GameScene extends Phaser.Scene {
 
     slot.occupied = true;
     slot.power = card.power;
+    // slot.cardData = card;
 
     const index = this.botHand.indexOf(card);
     if (index >= 0) this.botHand.splice(index, 1);
@@ -368,10 +385,13 @@ export default class GameScene extends Phaser.Scene {
     const botLaneIndex = this.lanes.findIndex((lane) => lane.botSlots.includes(slot));
     if (botLaneIndex !== -1) {
       this.tempBotMoves.push({ cardName: card.name, laneIndex: botLaneIndex + 1 });
+
+      // ADICIONE ESTA LINHA: Adiciona a carta do bot à fila de revelação
+      // this.revealQueue.push({ card, laneIndex: botLaneIndex, slot, isPlayer: false });
     }
   }
 
-  private removePlacedCard(container: Phaser.GameObjects.Container): void {
+  private removePlacedCard(container: CardContainer): void {
     const turnPlayed = (container as any).turnPlayed as number;
     if (turnPlayed !== this.currentTurn) {
       console.log('Carta jogada em turno anterior. Não pode voltar.');
@@ -392,8 +412,25 @@ export default class GameScene extends Phaser.Scene {
       );
     }
 
+    // --- INÍCIO DA CORREÇÃO ---
+
+    // 1. REMOVA A CARTA DA FILA DE REVELAÇÃO
+    // Encontra o índice do item na fila que corresponde exatamente à carta e ao slot.
+    const queueIndex = this.revealQueue.findIndex(
+      (item) => item.card === cardData && item.slot === slot
+    );
+
+    // Se encontrou, remove.
+    if (queueIndex > -1) {
+      this.revealQueue.splice(queueIndex, 1);
+      console.log(`Carta ${cardData.name} removida da fila de revelação.`);
+    }
+
+    // --- FIM DA CORREÇÃO ---
+
     slot.occupied = false;
     delete slot.power;
+    delete slot.cardData;
 
     const originalIndex = (container as any).cardData.index as number | undefined;
     const cardToReturn: Omit<Card, 'index'> = {
@@ -401,12 +438,21 @@ export default class GameScene extends Phaser.Scene {
       cost: cardData.cost,
       power: cardData.power,
       description: cardData.description,
+      effect: cardData.effect,
     };
 
     if (originalIndex !== undefined && originalIndex >= 0) {
       this.playerHand.splice(originalIndex, 0, cardToReturn);
     } else {
       this.playerHand.push(cardToReturn);
+    }
+
+    // --- INÍCIO DA CORREÇÃO ---
+
+    // 1. Remova o container da lista de containers no tabuleiro ANTES de destruí-lo.
+    const containerIndex = this.placedCardContainers.indexOf(container);
+    if (containerIndex > -1) {
+      this.placedCardContainers.splice(containerIndex, 1);
     }
 
     container.destroy();
@@ -574,6 +620,18 @@ export default class GameScene extends Phaser.Scene {
   }
 
   private prepareNextRound(): void {
+    // 1. Aplica efeitos de fim de turno (como preparar o Hawkeye)
+    this.effectManager.applyEndOfTurnEffects();
+
+    // 2. Recalcula TODOS os efeitos constantes (Ongoing)
+    this.effectManager.recalcOngoingEffects();
+
+    // 3. Atualiza a UI das cartas no tabuleiro com os novos poderes
+    this.updatePlacedCardsUI();
+
+    // 4. Atualiza o poder total das lanes
+    this.updateLanePowers();
+
     this.isPlayerTurn = true;
     this.drawCardForPlayer(this.playerHand, this.playerDeckMutable);
     this.drawCardForPlayer(this.botHand, this.botDeckMutable);
@@ -600,5 +658,60 @@ export default class GameScene extends Phaser.Scene {
     this.botHandContainers.forEach((container) => {
       container.setTextsVisible(true);
     });
+  }
+
+  private updatePlacedCardsUI(): void {
+    this.placedCardContainers.forEach((container) => {
+      const slot = (container as any).slot as Slot;
+      if (slot && slot.occupied && slot.power !== undefined) {
+        // Atualiza o texto de poder do container da carta
+        container.updatePower(slot.power);
+      }
+    });
+  }
+
+  private processRevealQueue(): void {
+    // Determina quem revela primeiro (jogador que está na frente)
+    const playerRevealsFirst = this.getLeadingPlayer() === 0;
+
+    // Ordena a fila de revelação. O jogador que revela primeiro tem suas cartas no início da fila.
+    this.revealQueue.sort((a, b) => {
+      if (a.isPlayer === b.isPlayer) return 0; // Mantém a ordem entre cartas do mesmo jogador
+      return a.isPlayer === playerRevealsFirst ? -1 : 1;
+    });
+
+    console.log(
+      'Ordem de Revelação:',
+      this.revealQueue.map((item) => `${item.card.name} (${item.isPlayer ? 'Jogador' : 'Bot'})`)
+    );
+
+    // Processa cada carta na fila
+    for (const item of this.revealQueue) {
+      console.log(`Revelando ${item.card.name}...`);
+
+      // 1. Aplica o efeito OnReveal da carta que está sendo revelada
+      this.effectManager.applyOnRevealEffect(item.card, item.laneIndex, item.slot);
+
+      // 2. CHAMA O NOVO GATILHO: Notifica o sistema que uma carta foi jogada.
+      // Isso fará com que a Angela (e outras cartas) reajam.
+      this.effectManager.triggerOnCardPlayedEffects(item.card, item.laneIndex);
+
+      // --- INÍCIO DA CORREÇÃO ---
+      // 3. ATUALIZA A UI IMEDIATAMENTE APÓS CADA REVELAÇÃO E GATILHO.
+      // Isso garante que o poder da Angela (e de outras cartas) seja atualizado visualmente
+      // no exato momento em que o bônus é aplicado.
+      this.updatePlacedCardsUI();
+      this.updateLanePowers(); // Também é bom atualizar o total da lane
+      // --- FIM DA CORREÇÃO ---
+    }
+
+    // Limpa a fila para o próximo turno
+    this.revealQueue = [];
+
+    // Após TODAS as revelações, recalcula os efeitos constantes e atualiza a UI
+    console.log('Recalculando todos os efeitos Ongoing após as revelações.');
+    this.effectManager.recalcOngoingEffects();
+    this.updatePlacedCardsUI();
+    this.updateLanePowers();
   }
 }

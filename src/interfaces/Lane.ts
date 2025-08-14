@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { Slot } from './Slot';
 
 export interface Lane {
+  index: number;
   x: number;
   y: number;
   playerSlots: Slot[];
