@@ -7,19 +7,38 @@ export class DeckDisplay {
   private label: string;
   private modalContainer?: Phaser.GameObjects.Container;
   private deckCards: Omit<Card, 'index'>[] = [];
-  private canOpenModal = false; // usado para o adversário
+  private canOpenModal = false;
 
   constructor(scene: Phaser.Scene, label: string) {
     this.scene = scene;
     this.label = label;
   }
 
-  initialize(x: number, y: number, initialDeck: number, cards?: Omit<Card, 'index'>[]): void {
-    if (cards) {
-      this.deckCards = cards;
-    }
+  public initialize(
+    x: number,
+    y: number,
+    initialDeck: number,
+    cards?: Omit<Card, 'index'>[]
+  ): void {
+    if (cards) this.deckCards = cards;
 
-    this.deckText = this.scene.add
+    this.deckText = this.createDeckText(x, y, initialDeck);
+  }
+
+  public updateDeck(deck: number): void {
+    this.deckText?.setText(`${this.label}: ${deck}`);
+  }
+
+  public enableModalOpen(): void {
+    this.canOpenModal = true;
+  }
+
+  public disableModalOpen(): void {
+    this.canOpenModal = false;
+  }
+
+  private createDeckText(x: number, y: number, initialDeck: number): Phaser.GameObjects.Text {
+    return this.scene.add
       .text(x, y, `${this.label}: ${initialDeck}`, {
         fontSize: '20px',
         color: '#ffffff',
@@ -29,34 +48,8 @@ export class DeckDisplay {
       .setOrigin(0, 0.5)
       .setInteractive({ useHandCursor: true })
       .on('pointerdown', () => {
-        if (this.canOpenModal) {
-          this.showModal();
-        }
+        if (this.canOpenModal) this.showModal();
       });
-  }
-
-  updateDeck(deck: number): void {
-    this.deckText?.setText(`${this.label}: ${deck}`);
-  }
-
-  setVisible(visible: boolean): void {
-    this.deckText?.setVisible(visible);
-  }
-
-  getText(): Phaser.GameObjects.Text | undefined {
-    return this.deckText;
-  }
-
-  setDeckCards(cards: Omit<Card, 'index'>[]): void {
-    this.deckCards = cards;
-  }
-
-  enableModalOpen(): void {
-    this.canOpenModal = true;
-  }
-
-  disableModalOpen(): void {
-    this.canOpenModal = false;
   }
 
   private showModal(): void {
@@ -64,14 +57,40 @@ export class DeckDisplay {
 
     const { width, height } = this.scene.cameras.main;
 
-    // Fundo escuro
-    const background = this.scene.add
+    const background = this.createModalBackground(width, height);
+    const modalBox = this.createModalBox(width, height);
+    const cardObjects = this.createCardObjects(
+      modalBox.x - modalBox.width / 2 + 30,
+      modalBox.y - modalBox.height / 2 + 30,
+      modalBox.width - 60
+    );
+    const closeButton = this.createCloseButton(width, height);
+
+    this.modalContainer = this.scene.add.container(0, 0, [
+      background,
+      modalBox,
+      ...cardObjects,
+      closeButton,
+    ]);
+
+    this.scene.children.bringToTop(this.modalContainer);
+  }
+
+  private closeModal(): void {
+    if (!this.modalContainer) return;
+    this.modalContainer.destroy(true);
+    this.modalContainer = undefined;
+  }
+
+  private createModalBackground(width: number, height: number): Phaser.GameObjects.Rectangle {
+    return this.scene.add
       .rectangle(0, 0, width, height, 0x000000, 0.6)
       .setOrigin(0, 0)
       .setInteractive()
       .on('pointerdown', () => this.closeModal());
+  }
 
-    // Caixa da modal
+  private createModalBox(width: number, height: number): Phaser.GameObjects.Rectangle {
     const modalBox = this.scene.add.rectangle(
       width / 2,
       height / 2,
@@ -81,19 +100,21 @@ export class DeckDisplay {
       1
     );
     modalBox.setStrokeStyle(2, 0xffffff);
+    return modalBox;
+  }
 
-    // Embaralhar as cartas para exibição aleatória
-    const shuffled = Phaser.Utils.Array.Shuffle([...this.deckCards]);
-
-    // Criar grid
-    const startX = width / 2 - (width * 0.85) / 2 + 30;
-    const startY = height / 2 - (height * 0.85) / 2 + 30;
+  private createCardObjects(
+    startX: number,
+    startY: number,
+    modalWidth: number
+  ): Phaser.GameObjects.GameObject[] {
+    const spacing = 20;
     const cardWidth = 100;
     const cardHeight = 120;
-    const spacing = 20;
-    const cols = Math.floor((width * 0.85 - 60) / (cardWidth + spacing));
+    const cols = Math.floor(modalWidth / (cardWidth + spacing));
+    const shuffled = Phaser.Utils.Array.Shuffle([...this.deckCards]);
 
-    const cardObjects: Phaser.GameObjects.GameObject[] = [];
+    const objects: Phaser.GameObjects.GameObject[] = [];
 
     shuffled.forEach((card, i) => {
       const col = i % cols;
@@ -101,45 +122,72 @@ export class DeckDisplay {
       const x = startX + col * (cardWidth + spacing);
       const y = startY + row * (cardHeight + spacing);
 
-      const rect = this.scene.add
-        .rectangle(x, y, cardWidth, cardHeight, 0x333333, 1)
-        .setOrigin(0, 0);
-      rect.setStrokeStyle(1, 0xffffff);
+      const rect = this.createCardRectangle(x, y, cardWidth, cardHeight);
+      const nameText = this.createCardNameText(x, y, cardWidth, card.name);
+      const powerText = this.createCardPowerText(x, y, cardWidth, card.power);
+      const costText = this.createCardCostText(x, y, card.cost);
 
-      // Nome centralizado na parte inferior
-      const nameText = this.scene.add
-        .text(x + cardWidth / 2, y + cardHeight - 10, card.name, {
-          color: '#ffffff',
-          fontSize: '12px',
-          align: 'center',
-          wordWrap: { width: cardWidth - 10, useAdvancedWrap: true },
-        })
-        .setOrigin(0.5, 1);
-
-      // Poder canto superior direito (amarelo)
-      const powerText = this.scene.add
-        .text(x + cardWidth - 5, y + 5, String(card.power), {
-          color: '#ffff00',
-          fontSize: '12px',
-          fontStyle: 'bold',
-          align: 'right',
-        })
-        .setOrigin(1, 0);
-
-      // Custo canto superior esquerdo (branco)
-      const costText = this.scene.add
-        .text(x + 5, y + 5, String(card.cost), {
-          color: '#ffffff',
-          fontSize: '12px',
-          align: 'left',
-        })
-        .setOrigin(0, 0);
-
-      cardObjects.push(rect, nameText, powerText, costText);
+      objects.push(rect, nameText, powerText, costText);
     });
 
-    // Botão fechar
-    const closeButton = this.scene.add
+    return objects;
+  }
+
+  private createCardRectangle(
+    x: number,
+    y: number,
+    width: number,
+    height: number
+  ): Phaser.GameObjects.Rectangle {
+    const rect = this.scene.add.rectangle(x, y, width, height, 0x333333, 1).setOrigin(0, 0);
+    rect.setStrokeStyle(1, 0xffffff);
+    return rect;
+  }
+
+  private createCardNameText(
+    x: number,
+    y: number,
+    cardWidth: number,
+    name: string
+  ): Phaser.GameObjects.Text {
+    return this.scene.add
+      .text(x + cardWidth / 2, y + 120 - 10, name, {
+        color: '#ffffff',
+        fontSize: '12px',
+        align: 'center',
+        wordWrap: { width: cardWidth - 10, useAdvancedWrap: true },
+      })
+      .setOrigin(0.5, 1);
+  }
+
+  private createCardPowerText(
+    x: number,
+    y: number,
+    cardWidth: number,
+    power: number
+  ): Phaser.GameObjects.Text {
+    return this.scene.add
+      .text(x + cardWidth - 5, y + 5, String(power), {
+        color: '#ffff00',
+        fontSize: '12px',
+        fontStyle: 'bold',
+        align: 'right',
+      })
+      .setOrigin(1, 0);
+  }
+
+  private createCardCostText(x: number, y: number, cost: number): Phaser.GameObjects.Text {
+    return this.scene.add
+      .text(x + 5, y + 5, String(cost), {
+        color: '#ffffff',
+        fontSize: '12px',
+        align: 'left',
+      })
+      .setOrigin(0, 0);
+  }
+
+  private createCloseButton(width: number, height: number): Phaser.GameObjects.Text {
+    return this.scene.add
       .text(width / 2, height - height * 0.12, 'Fechar', {
         fontSize: '18px',
         color: '#ffffff',
@@ -149,20 +197,5 @@ export class DeckDisplay {
       .setOrigin(0.5)
       .setInteractive({ useHandCursor: true })
       .on('pointerdown', () => this.closeModal());
-
-    this.modalContainer = this.scene.add.container(0, 0, [
-      background,
-      modalBox,
-      ...cardObjects,
-      closeButton,
-    ]);
-    this.scene.children.bringToTop(this.modalContainer);
-  }
-
-  private closeModal(): void {
-    if (this.modalContainer) {
-      this.modalContainer.destroy(true);
-      this.modalContainer = undefined;
-    }
   }
 }

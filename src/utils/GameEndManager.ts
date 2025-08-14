@@ -3,50 +3,9 @@ import { Lane } from '@/interfaces/Lane';
 import { LogHistoryButton } from '@/components/LogHistoryButton';
 
 export class GameEndManager {
-  private scene: Phaser.Scene;
-  private lanes: Lane[];
-  private gameEnded: boolean = false;
-  private logHistoryButton: LogHistoryButton;
-
-  constructor(scene: Phaser.Scene, lanes: Lane[], logHistoryButton: LogHistoryButton) {
-    this.scene = scene;
-    this.lanes = lanes;
-    this.logHistoryButton = logHistoryButton;
-  }
-
   public checkGameEnd(): void {
-    let playerWins = 0;
-    let botWins = 0;
-    let playerTotalPowerDifference = 0;
-    let botTotalPowerDifference = 0;
-
-    for (const lane of this.lanes) {
-      const { playerPower, botPower } = this.calculateLanePower(lane);
-
-      if (playerPower > botPower) {
-        playerWins++;
-        playerTotalPowerDifference += playerPower - botPower;
-      } else if (botPower > playerPower) {
-        botWins++;
-        botTotalPowerDifference += botPower - playerPower;
-      }
-    }
-
-    let message = '';
-    if (playerWins > botWins) {
-      message = 'Você venceu!';
-    } else if (botWins > playerWins) {
-      message = 'Bot venceu!';
-    } else {
-      // Empate no número de lanes vencidas
-      if (playerTotalPowerDifference > botTotalPowerDifference) {
-        message = 'Você venceu por diferença de poder!';
-      } else if (botTotalPowerDifference > playerTotalPowerDifference) {
-        message = 'Bot venceu por diferença de poder!';
-      } else {
-        message = 'Empate!';
-      }
-    }
+    const { playerWins, botWins, playerPowerDiff, botPowerDiff } = this.calculateGameResult();
+    const message = this.determineWinnerMessage(playerWins, botWins, playerPowerDiff, botPowerDiff);
 
     this.logHistoryButton.addLog(message);
     this.gameEnded = true;
@@ -65,21 +24,64 @@ export class GameEndManager {
     this.gameEnded = false;
   }
 
-  private calculateLanePower(lane: Lane): {
-    botPower: number;
-    playerPower: number;
+  private scene: Phaser.Scene;
+  private lanes: Lane[];
+  private gameEnded: boolean = false;
+  private logHistoryButton: LogHistoryButton;
+
+  constructor(scene: Phaser.Scene, lanes: Lane[], logHistoryButton: LogHistoryButton) {
+    this.scene = scene;
+    this.lanes = lanes;
+    this.logHistoryButton = logHistoryButton;
+  }
+
+  private calculateGameResult(): {
+    playerWins: number;
+    botWins: number;
+    playerPowerDiff: number;
+    botPowerDiff: number;
   } {
-    let botPower = 0;
-    for (const slot of lane.botSlots) {
-      botPower += slot.power ?? 0;
+    let playerWins = 0;
+    let botWins = 0;
+    let playerPowerDiff = 0;
+    let botPowerDiff = 0;
+
+    for (const lane of this.lanes) {
+      const { playerPower, botPower } = this.calculateLanePower(lane);
+
+      if (playerPower > botPower) {
+        playerWins++;
+        playerPowerDiff += playerPower - botPower;
+      } else if (botPower > playerPower) {
+        botWins++;
+        botPowerDiff += botPower - playerPower;
+      }
     }
 
-    let playerPower = 0;
-    for (const slot of lane.playerSlots) {
-      playerPower += slot.power ?? 0;
-    }
+    return { playerWins, botWins, playerPowerDiff, botPowerDiff };
+  }
 
-    return { botPower, playerPower };
+  private determineWinnerMessage(
+    playerWins: number,
+    botWins: number,
+    playerPowerDiff: number,
+    botPowerDiff: number
+  ): string {
+    if (playerWins > botWins) return 'Você venceu!';
+    if (botWins > playerWins) return 'Bot venceu!';
+    if (playerPowerDiff > botPowerDiff) return 'Você venceu por diferença de poder!';
+    if (botPowerDiff > playerPowerDiff) return 'Bot venceu por diferença de poder!';
+    return 'Empate!';
+  }
+
+  private calculateLanePower(lane: Lane): { botPower: number; playerPower: number } {
+    const sumPower = (slots: typeof lane.playerSlots) =>
+      slots.reduce((sum, slot) => sum + (slot.power ?? 0), 0);
+
+    return {
+      botPower: sumPower(lane.botSlots),
+      playerPower: sumPower(lane.playerSlots),
+    };
   }
 
   private createBackground(
@@ -107,9 +109,10 @@ export class GameEndManager {
     paddingVertical: number = 40
   ): Phaser.GameObjects.Text {
     let fontSize = maxFontSize;
+    let message: Phaser.GameObjects.Text;
 
-    const createText = (size: number) => {
-      return this.scene.add
+    const createText = (size: number) =>
+      this.scene.add
         .text(x, y, text, {
           fontSize: `${size}px`,
           color: '#ffffff',
@@ -117,9 +120,8 @@ export class GameEndManager {
           wordWrap: { width: width - paddingHorizontal * 2, useAdvancedWrap: true },
         })
         .setOrigin(0.5);
-    };
 
-    let message = createText(fontSize);
+    message = createText(fontSize);
 
     while (message.height > height - paddingVertical && fontSize > minFontSize) {
       message.destroy();
@@ -145,9 +147,7 @@ export class GameEndManager {
       .setOrigin(0.5)
       .setInteractive();
 
-    button.on('pointerdown', () => {
-      modalContainer.destroy();
-    });
+    button.on('pointerdown', () => modalContainer.destroy());
 
     return button;
   }
@@ -165,8 +165,6 @@ export class GameEndManager {
     const button = this.createCloseButton(x, y + 30, modalContainer);
     modalContainer.add(button);
 
-    background.on('pointerdown', () => {
-      modalContainer.destroy();
-    });
+    background.on('pointerdown', () => modalContainer.destroy());
   }
 }

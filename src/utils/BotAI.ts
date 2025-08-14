@@ -26,37 +26,16 @@ export class BotAI {
     onHandUpdated: () => void,
     onLanePowersUpdated: () => void
   ): void {
-    const playableCards = this.botHand.filter((c) => c.cost <= this.botEnergy);
-
-    if (playableCards.length === 0) {
-      return;
-    }
-
-    playableCards.sort((a, b) => b.power - a.power);
+    const playableCards = this.getPlayableCards();
 
     for (const card of playableCards) {
       if (card.cost > this.botEnergy) continue;
 
       const lanesByPriority = this.getLanesByPriority();
 
-      let cardPlayed = false;
+      const played = this.tryPlayCardOnPrioritizedLane(card, lanesByPriority, onCardPlayed);
 
-      for (const laneItem of lanesByPriority) {
-        const lane = laneItem.lane;
-        const slot = lane.botSlots.find((s) => !s.occupied);
-        if (!slot) continue;
-
-        const { botPower, playerPower } = laneItem;
-        const powerWithCard = botPower + card.power;
-
-        if ((botPower <= playerPower && powerWithCard > playerPower) || botPower > playerPower) {
-          this.playCardOnSlot(slot, card, onCardPlayed);
-          cardPlayed = true;
-          break;
-        }
-      }
-
-      if (!cardPlayed) {
+      if (!played) {
         this.playCardOnAnyAvailableSlot(card, onCardPlayed);
       }
 
@@ -65,6 +44,18 @@ export class BotAI {
 
     onHandUpdated();
     onLanePowersUpdated();
+  }
+
+  public updateBotEnergy(newEnergy: number): void {
+    this.botEnergy = newEnergy;
+  }
+
+  public updateBotHand(newHand: Omit<Card, 'index'>[]): void {
+    this.botHand = newHand;
+  }
+
+  private getPlayableCards(): Omit<Card, 'index'>[] {
+    return this.botHand.filter((c) => c.cost <= this.botEnergy).sort((a, b) => b.power - a.power);
   }
 
   private getLanesByPriority(): Array<{
@@ -76,31 +67,37 @@ export class BotAI {
     return this.lanes
       .map((lane) => {
         const { botPower, playerPower } = this.calculateLanePower(lane);
-        return {
-          lane,
-          botPower,
-          playerPower,
-          difference: botPower - playerPower,
-        };
+        return { lane, botPower, playerPower, difference: botPower - playerPower };
       })
       .sort((a, b) => a.difference - b.difference);
   }
 
-  private calculateLanePower(lane: Lane): {
-    botPower: number;
-    playerPower: number;
-  } {
-    let botPower = 0;
-    for (const slot of lane.botSlots) {
-      botPower += slot.power ?? 0;
-    }
-
-    let playerPower = 0;
-    for (const slot of lane.playerSlots) {
-      playerPower += slot.power ?? 0;
-    }
-
+  private calculateLanePower(lane: Lane): { botPower: number; playerPower: number } {
+    const botPower = lane.botSlots.reduce((sum, s) => sum + (s.power ?? 0), 0);
+    const playerPower = lane.playerSlots.reduce((sum, s) => sum + (s.power ?? 0), 0);
     return { botPower, playerPower };
+  }
+
+  private tryPlayCardOnPrioritizedLane(
+    card: Omit<Card, 'index'>,
+    lanesByPriority: Array<{ lane: Lane; botPower: number; playerPower: number }>,
+    onCardPlayed: (slot: Slot, card: Omit<Card, 'index'>) => void
+  ): boolean {
+    for (const laneItem of lanesByPriority) {
+      const slot = laneItem.lane.botSlots.find((s) => !s.occupied);
+      if (!slot) continue;
+
+      const willOverpower =
+        (laneItem.botPower <= laneItem.playerPower &&
+          laneItem.botPower + card.power > laneItem.playerPower) ||
+        laneItem.botPower > laneItem.playerPower;
+
+      if (willOverpower) {
+        this.playCardOnSlot(slot, card, onCardPlayed);
+        return true;
+      }
+    }
+    return false;
   }
 
   private playCardOnSlot(
@@ -114,9 +111,7 @@ export class BotAI {
     slot.power = card.power;
 
     const index = this.botHand.indexOf(card);
-    if (index >= 0) {
-      this.botHand.splice(index, 1);
-    }
+    if (index >= 0) this.botHand.splice(index, 1);
 
     this.botEnergy -= card.cost;
   }
@@ -132,13 +127,5 @@ export class BotAI {
         break;
       }
     }
-  }
-
-  public updateBotEnergy(newEnergy: number): void {
-    this.botEnergy = newEnergy;
-  }
-
-  public updateBotHand(newHand: Omit<Card, 'index'>[]): void {
-    this.botHand = newHand;
   }
 }

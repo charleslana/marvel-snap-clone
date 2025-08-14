@@ -9,37 +9,35 @@ export class EnergyDisplay {
     this.scene = scene;
   }
 
-  initialize(x: number, y: number, initialEnergy: number): void {
-    this.energyText = this.scene.add
-      .text(0, 0, 'Energia: ' + initialEnergy, {
+  public initialize(x: number, y: number, initialEnergy: number): void {
+    this.energyText = this.createEnergyText(initialEnergy);
+    const energyRect = this.createEnergyBackground(this.energyText.width, 40);
+
+    this.energyContainer = this.scene.add.container(x, y, [energyRect, this.energyText]);
+  }
+
+  public updateEnergy(energy: number): void {
+    this.energyText?.setText(`Energia: ${energy}`);
+  }
+
+  public setVisible(visible: boolean): void {
+    this.energyContainer?.setVisible(visible);
+  }
+
+  private createEnergyText(initialEnergy: number): Phaser.GameObjects.Text {
+    return this.scene.add
+      .text(0, 0, `Energia: ${initialEnergy}`, {
         fontSize: '20px',
         color: '#ffffff',
         padding: { x: 10, y: 5 },
       })
       .setOrigin(0, 0.5);
+  }
 
+  private createEnergyBackground(textWidth: number, height: number): Phaser.GameObjects.Rectangle {
     const padding = 10;
-    const rectWidth = this.energyText.width + padding * 2;
-    const rectHeight = 40;
-
-    const energyRect = this.scene.add
-      .rectangle(0, 0, rectWidth, rectHeight, 0x222222)
+    return this.scene.add
+      .rectangle(0, 0, textWidth + padding * 2, height, 0x222222)
       .setOrigin(0, 0.5);
-
-    this.energyContainer = this.scene.add.container(x, y, [energyRect, this.energyText]);
-  }
-
-  updateEnergy(energy: number): void {
-    if (!this.energyText) return;
-    this.energyText.setText(`Energia: ${energy}`);
-  }
-
-  getContainer(): Phaser.GameObjects.Container | undefined {
-    return this.energyContainer;
-  }
-
-  setVisible(visible: boolean): void {
-    if (!this.energyContainer) return;
-    this.energyContainer.setVisible(visible);
   }
 }

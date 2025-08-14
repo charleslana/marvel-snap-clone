@@ -8,23 +8,15 @@ export class TurnDisplay {
     this.scene = scene;
   }
 
-  initialize(x: number, y: number, initialTurn: number): void {
-    this.turnText = this.scene.add
-      .text(x, y, `Turno: ${initialTurn}`, {
-        fontSize: '20px',
-        color: '#ffffff',
-        backgroundColor: '#000000',
-        padding: { x: 10, y: 5 },
-      })
-      .setOrigin(1, 0.5);
+  public initialize(x: number, y: number, initialTurn: number): void {
+    this.turnText = this.createTurnText(x, y, initialTurn);
   }
 
-  updateTurn(turn: string): void {
-    if (!this.turnText) return;
-    this.turnText.setText(`Turno: ${turn}`);
+  public updateTurn(turn: string | number): void {
+    this.turnText?.setText(`Turno: ${turn}`);
   }
 
-  animateTurnChange(): void {
+  public animateTurnChange(): void {
     if (!this.turnText) return;
 
     this.scene.tweens.add({
@@ -35,18 +27,26 @@ export class TurnDisplay {
       yoyo: true,
       ease: 'Power2',
       onYoyo: () => {
-        this.turnText!.setScale(1);
-        this.turnText!.setAlpha(1);
+        if (this.turnText) {
+          this.turnText.setScale(1);
+          this.turnText.setAlpha(1);
+        }
       },
     });
   }
 
-  setVisible(visible: boolean): void {
-    if (!this.turnText) return;
-    this.turnText.setVisible(visible);
+  public setVisible(visible: boolean): void {
+    this.turnText?.setVisible(visible);
   }
 
-  getText(): Phaser.GameObjects.Text | undefined {
-    return this.turnText;
+  private createTurnText(x: number, y: number, turn: number): Phaser.GameObjects.Text {
+    return this.scene.add
+      .text(x, y, `Turno: ${turn}`, {
+        fontSize: '20px',
+        color: '#ffffff',
+        backgroundColor: '#000000',
+        padding: { x: 10, y: 5 },
+      })
+      .setOrigin(1, 0.5);
   }
 }

@@ -4,50 +4,25 @@ import { Slot } from '@/interfaces/Slot';
 
 export class LaneDisplay {
   private scene: Phaser.Scene;
-  private enemyPowerText?: Phaser.GameObjects.Text;
-  private playerPowerText?: Phaser.GameObjects.Text;
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
   }
 
-  createLane(x: number, y: number, index: number): Lane {
-    // Elementos visuais da lane
-    const worldRect = this.scene.add
-      .rectangle(0, 0, 160, 100, 0x333333)
-      .setStrokeStyle(2, 0xffffff);
+  public createLane(x: number, y: number, index: number): Lane {
+    const worldRect = this.createWorldRect();
+    const worldText = this.createWorldText(index);
 
-    const worldText = this.scene.add
-      .text(0, 0, `Mundo ${index + 1}`, {
-        fontSize: '16px',
-        color: '#ffffff',
-      })
-      .setOrigin(0.5, 0.5);
-
-    this.enemyPowerText = this.scene.add
-      .text(0, -100 / 2 + 15, '0', {
-        fontSize: '14px',
-        color: '#888888',
-        fontStyle: 'bold',
-      })
-      .setOrigin(0.5, 0);
-
-    this.playerPowerText = this.scene.add
-      .text(0, 100 / 2 - 15, '0', {
-        fontSize: '14px',
-        color: '#888888',
-        fontStyle: 'bold',
-      })
-      .setOrigin(0.5, 1);
+    const enemyPowerText = this.createPowerText(-worldRect.height / 2 + 15);
+    const playerPowerText = this.createPowerText(worldRect.height / 2 - 15, true);
 
     const worldContainer = this.scene.add.container(x, y, [
       worldRect,
       worldText,
-      this.enemyPowerText,
-      this.playerPowerText,
+      enemyPowerText,
+      playerPowerText,
     ]);
 
-    // Slots para cartas
     const playerSlots = this.createSlots(x, y, true);
     const botSlots = this.createSlots(x, y, false);
 
@@ -57,23 +32,50 @@ export class LaneDisplay {
       playerSlots,
       botSlots,
       worldText,
-      enemyPowerText: this.enemyPowerText,
-      playerPowerText: this.playerPowerText,
+      enemyPowerText,
+      playerPowerText,
       worldContainer,
     };
   }
 
-  updateLanePowerColors(lane: Lane, playerPower: number, enemyPower: number): void {
+  public updateLanePowerColors(lane: Lane, playerPower: number, enemyPower: number): void {
+    const highlightColor = '#FFA500';
+    const defaultColor = '#888888';
+
     if (playerPower > enemyPower) {
-      lane.playerPowerText?.setColor('#FFA500');
-      lane.enemyPowerText?.setColor('#888888');
+      lane.playerPowerText?.setColor(highlightColor);
+      lane.enemyPowerText?.setColor(defaultColor);
     } else if (enemyPower > playerPower) {
-      lane.playerPowerText?.setColor('#888888');
-      lane.enemyPowerText?.setColor('#FFA500');
+      lane.playerPowerText?.setColor(defaultColor);
+      lane.enemyPowerText?.setColor(highlightColor);
     } else {
-      lane.playerPowerText?.setColor('#888888');
-      lane.enemyPowerText?.setColor('#888888');
+      lane.playerPowerText?.setColor(defaultColor);
+      lane.enemyPowerText?.setColor(defaultColor);
     }
+  }
+
+  private createWorldRect(): Phaser.GameObjects.Rectangle {
+    return this.scene.add.rectangle(0, 0, 160, 100, 0x333333).setStrokeStyle(2, 0xffffff);
+  }
+
+  private createWorldText(index: number): Phaser.GameObjects.Text {
+    return this.scene.add
+      .text(0, 0, `Mundo ${index + 1}`, {
+        fontSize: '16px',
+        color: '#ffffff',
+      })
+      .setOrigin(0.5, 0.5);
+  }
+
+  private createPowerText(y: number, isPlayer: boolean = false): Phaser.GameObjects.Text {
+    const originY = isPlayer ? 1 : 0;
+    return this.scene.add
+      .text(0, y, '0', {
+        fontSize: '14px',
+        color: '#888888',
+        fontStyle: 'bold',
+      })
+      .setOrigin(0.5, originY);
   }
 
   private createSlots(x: number, y: number, isPlayer: boolean): Slot[] {
@@ -85,7 +87,6 @@ export class LaneDisplay {
     const horizontalSpacing = 5;
     const verticalSpacing = 5;
     const marginFromRect = 10;
-
     const totalCardsWidth = cols * cardWidth + (cols - 1) * horizontalSpacing;
     const firstCardOffsetX = -totalCardsWidth / 2 + cardWidth / 2;
 
@@ -93,29 +94,40 @@ export class LaneDisplay {
       for (let col = 0; col < cols; col++) {
         const offsetX = firstCardOffsetX + col * (cardWidth + horizontalSpacing);
         const slotX = x + offsetX;
-
-        let slotY: number;
-        if (isPlayer) {
-          slotY =
-            y + 100 / 2 + marginFromRect + cardHeight / 2 + row * (cardHeight + verticalSpacing);
-        } else {
-          slotY =
-            y - 100 / 2 - marginFromRect - cardHeight / 2 - row * (cardHeight + verticalSpacing);
-        }
+        const slotY = this.calculateSlotY(
+          y,
+          row,
+          cardHeight,
+          verticalSpacing,
+          marginFromRect,
+          isPlayer
+        );
 
         const overlay = this.scene.add
           .rectangle(slotX, slotY, cardWidth, cardHeight, 0xffffff, 0.2)
           .setVisible(false);
 
-        slots.push({
-          x: slotX,
-          y: slotY,
-          occupied: false,
-          overlay,
-        });
+        slots.push({ x: slotX, y: slotY, occupied: false, overlay });
       }
     }
 
     return slots;
+  }
+
+  private calculateSlotY(
+    baseY: number,
+    row: number,
+    cardHeight: number,
+    verticalSpacing: number,
+    margin: number,
+    isPlayer: boolean
+  ): number {
+    const sideMultiplier = isPlayer ? 1 : -1;
+    const rectHalfHeight = 100 / 2;
+    return (
+      baseY +
+      sideMultiplier *
+        (rectHalfHeight + margin + cardHeight / 2 + row * (cardHeight + verticalSpacing))
+    );
   }
 }

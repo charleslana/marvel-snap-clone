@@ -24,43 +24,17 @@ export class CardContainer extends Phaser.GameObjects.Container {
   ) {
     super(scene, x, y);
 
-    const cardRect = scene.add.rectangle(0, 0, width, height, color);
-
-    // Ajustando posições relativas ao tamanho da carta
-    this.nameText = scene.add
-      .text(0, height / 2 - 10, card.name, {
-        color: '#ffffff',
-        fontSize: '14px',
-        align: 'center',
-        wordWrap: { width: width - 10, useAdvancedWrap: true },
-      })
-      .setOrigin(0.5, 1);
-
-    this.adjustFontSizeToFit(this.nameText, width - 10, 14, 8);
-
-    this.powerText = scene.add
-      .text(width / 2 - 10, -height / 2 + 10, String(card.power), {
-        color: '#ffff00',
-        fontSize: '14px',
-        fontStyle: 'bold',
-        align: 'right',
-      })
-      .setOrigin(1, 0);
-
-    this.costText = scene.add
-      .text(-width / 2 + 10, -height / 2 + 10, String(card.cost), {
-        color: '#ffffff',
-        fontSize: '14px',
-        align: 'left',
-      })
-      .setOrigin(0, 0);
-
-    this.add([cardRect, this.nameText, this.powerText, this.costText]);
-
-    this.setSize(width, height);
     this.cardData = { ...card, index };
     this.startX = x;
     this.startY = y;
+
+    const cardRect = this.createCardRectangle(width, height, color);
+    this.nameText = this.createNameText(card.name, width, height);
+    this.powerText = this.createPowerText(card.power, width, height);
+    this.costText = this.createCostText(card.cost, width, height);
+
+    this.add([cardRect, this.nameText, this.powerText, this.costText]);
+    this.setSize(width, height);
 
     if (isPlayer) {
       this.setInteractive({ draggable: true });
@@ -69,30 +43,7 @@ export class CardContainer extends Phaser.GameObjects.Container {
   }
 
   public showPlayableBorder(show: boolean): void {
-    if (show) {
-      if (!this.borderRect) {
-        this.borderRect = this.scene.add
-          .rectangle(0, 0, this.width + 6, this.height + 6)
-          .setStrokeStyle(3, 0x00ff00)
-          .setOrigin(0.5);
-        this.addAt(this.borderRect, 0);
-        // Animação de pulsar
-        this.scene.tweens.add({
-          targets: this.borderRect,
-          alpha: { from: 0.5, to: 1 },
-          duration: 800,
-          yoyo: true,
-          repeat: -1,
-          ease: 'Sine.easeInOut',
-        });
-      }
-    } else {
-      if (this.borderRect) {
-        this.scene.tweens.killTweensOf(this.borderRect);
-        this.borderRect.destroy();
-        this.borderRect = undefined;
-      }
-    }
+    show ? this.createPlayableBorder() : this.destroyPlayableBorder();
   }
 
   public setTextsVisible(visible: boolean): void {
@@ -101,12 +52,55 @@ export class CardContainer extends Phaser.GameObjects.Container {
     this.powerText.setVisible(visible);
   }
 
+  private createCardRectangle(
+    width: number,
+    height: number,
+    color: number
+  ): Phaser.GameObjects.Rectangle {
+    return this.scene.add.rectangle(0, 0, width, height, color);
+  }
+
+  private createNameText(cardName: string, width: number, height: number): Phaser.GameObjects.Text {
+    const text = this.scene.add
+      .text(0, height / 2 - 10, cardName, {
+        color: '#ffffff',
+        fontSize: '14px',
+        align: 'center',
+        wordWrap: { width: width - 10, useAdvancedWrap: true },
+      })
+      .setOrigin(0.5, 1);
+
+    this.adjustFontSizeToFit(text, width - 10, 14, 8);
+    return text;
+  }
+
+  private createPowerText(power: number, width: number, height: number): Phaser.GameObjects.Text {
+    return this.scene.add
+      .text(width / 2 - 10, -height / 2 + 10, String(power), {
+        color: '#ffff00',
+        fontSize: '14px',
+        fontStyle: 'bold',
+        align: 'right',
+      })
+      .setOrigin(1, 0);
+  }
+
+  private createCostText(cost: number, width: number, height: number): Phaser.GameObjects.Text {
+    return this.scene.add
+      .text(-width / 2 + 10, -height / 2 + 10, String(cost), {
+        color: '#ffffff',
+        fontSize: '14px',
+        align: 'left',
+      })
+      .setOrigin(0, 0);
+  }
+
   private adjustFontSizeToFit(
     textObj: Phaser.GameObjects.Text,
     maxWidth: number,
     maxFontSize: number,
     minFontSize: number
-  ) {
+  ): void {
     let fontSize = maxFontSize;
 
     while (fontSize >= minFontSize) {
@@ -114,5 +108,34 @@ export class CardContainer extends Phaser.GameObjects.Container {
       if (textObj.width <= maxWidth) break;
       fontSize--;
     }
+  }
+
+  private createPlayableBorder(): void {
+    if (this.borderRect) return;
+
+    this.borderRect = this.scene.add
+      .rectangle(0, 0, this.width + 6, this.height + 6)
+      .setStrokeStyle(3, 0x00ff00)
+      .setOrigin(0.5);
+
+    this.addAt(this.borderRect, 0);
+
+    this.scene.tweens.add({
+      targets: this.borderRect,
+      alpha: { from: 0.5, to: 1 },
+      duration: 800,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
+  }
+
+  private destroyPlayableBorder(): void {
+    if (!this.borderRect) {
+      return;
+    }
+    this.scene.tweens.killTweensOf(this.borderRect);
+    this.borderRect.destroy();
+    this.borderRect = undefined;
   }
 }

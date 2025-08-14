@@ -9,11 +9,18 @@ export class EndBattleButton {
     this.scene = scene;
   }
 
-  initialize(x: number, y: number, onEndBattle: () => void): void {
+  public initialize(x: number, y: number, onEndBattle: () => void): void {
     this.onEndBattleCallback = onEndBattle;
+    this.button = this.createButton(x, y, 'Finalizar Batalha');
+  }
 
-    this.button = this.scene.add
-      .text(x, y, 'Finalizar Batalha', {
+  public setVisible(visible: boolean): void {
+    this.button?.setVisible(visible);
+  }
+
+  private createButton(x: number, y: number, text: string): Phaser.GameObjects.Text {
+    const btn = this.scene.add
+      .text(x, y, text, {
         fontSize: '20px',
         color: '#ffffff',
         backgroundColor: '#222222',
@@ -21,18 +28,14 @@ export class EndBattleButton {
       })
       .setOrigin(0, 1)
       .setInteractive({ useHandCursor: true })
-      .on('pointerdown', () => {
-        if (this.onEndBattleCallback) {
-          this.onEndBattleCallback();
-        }
-      });
+      .on('pointerdown', () => this.handleClick());
+
+    return btn;
   }
 
-  setVisible(visible: boolean): void {
-    this.button?.setVisible(visible);
-  }
-
-  getButton(): Phaser.GameObjects.Text | undefined {
-    return this.button;
+  private handleClick(): void {
+    if (this.onEndBattleCallback) {
+      this.onEndBattleCallback();
+    }
   }
 }
