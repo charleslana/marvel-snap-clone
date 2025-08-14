@@ -100,9 +100,15 @@ export default class GameScene extends Phaser.Scene {
   }
 
   private initializeGameDecks(): void {
-    this.enemyDeckDisplay.initialize(20, 40, this.botHand.length);
-    this.playerDeckDisplay.initialize(20, this.scale.height - 40, this.playerHand.length);
+    this.enemyDeckDisplay.initialize(20, 40, this.botHand.length, this.botDeckMutable);
+    this.playerDeckDisplay.initialize(
+      20,
+      this.scale.height - 40,
+      this.playerHand.length,
+      this.playerDeckMutable
+    );
     this.playerDeckDisplay.updateDeck(this.playerDeckMutable.length);
+    this.playerDeckDisplay.enableModalOpen();
     this.enemyDeckDisplay.updateDeck(this.botDeckMutable.length);
   }
 
@@ -132,6 +138,7 @@ export default class GameScene extends Phaser.Scene {
     const screenWidth = this.scale.width;
     const centerY = this.scale.height / 2;
     this.turnDisplay.initialize(screenWidth - 20, centerY, this.currentTurn);
+    this.turnDisplay.updateTurn(`${this.currentTurn}/${this.maxTurn - 1}`);
   }
 
   private initializeEndTurnButton(): void {
@@ -145,8 +152,8 @@ export default class GameScene extends Phaser.Scene {
   }
 
   private initializeEndBattleButton(): void {
-    const screenHeight = this.scale.height;
-    this.endBattleButton.initialize(20, screenHeight - 60, () => {
+    const centerY = this.scale.height / 2;
+    this.endBattleButton.initialize(20, centerY, () => {
       if (this.gameEndManager.isGameEnded()) {
         console.log('Finalizar batalha');
       }
@@ -375,7 +382,7 @@ export default class GameScene extends Phaser.Scene {
       );
 
       this.currentTurn++;
-      this.turnDisplay.updateTurn(this.currentTurn);
+      this.turnDisplay.updateTurn(`${this.currentTurn}/${this.maxTurn - 1}`);
       this.turnDisplay.animateTurnChange();
 
       this.playerEnergy = this.currentTurn;
@@ -405,6 +412,7 @@ export default class GameScene extends Phaser.Scene {
         this.turnDisplay.setVisible(false);
         this.energyDisplay.setVisible(false);
         this.disablePlayerCardInteraction();
+        this.enemyDeckDisplay.enableModalOpen();
       } else {
         this.isPlayerTurn = true;
         this.drawCardForPlayer(this.playerHand, this.playerDeckMutable);

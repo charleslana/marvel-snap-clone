@@ -19,7 +19,7 @@ export class TurnDisplay {
       .setOrigin(1, 0.5);
   }
 
-  updateTurn(turn: number): void {
+  updateTurn(turn: string): void {
     if (!this.turnText) return;
     this.turnText.setText(`Turno: ${turn}`);
   }
