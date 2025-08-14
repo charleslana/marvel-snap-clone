@@ -55,7 +55,13 @@ export class CardContainer extends Phaser.GameObjects.Container {
   public updatePower(newPower: number): void {
     if (this.powerText) {
       this.powerText.setText(String(newPower));
-      this.powerText.setColor(newPower > this.cardData.power ? '#00ff00' : '#ffffff');
+      if (newPower > this.cardData.power) {
+        this.powerText.setColor('#00ff00');
+      } else if (newPower < this.cardData.power) {
+        this.powerText.setColor('#ff0000');
+      } else {
+        this.powerText.setColor('#ffff00');
+      }
     }
   }
 
