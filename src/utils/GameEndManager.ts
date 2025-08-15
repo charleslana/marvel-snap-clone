@@ -3,27 +3,6 @@ import { Lane } from '@/interfaces/Lane';
 import { LogHistoryButton } from '@/components/LogHistoryButton';
 
 export class GameEndManager {
-  public checkGameEnd(): void {
-    const { playerWins, botWins, playerPowerDiff, botPowerDiff } = this.calculateGameResult();
-    const message = this.determineWinnerMessage(playerWins, botWins, playerPowerDiff, botPowerDiff);
-
-    this.logHistoryButton.addLog(message);
-    this.gameEnded = true;
-    this.showResultModal(message);
-  }
-
-  public forceGameEnd(): void {
-    this.checkGameEnd();
-  }
-
-  public isGameEnded(): boolean {
-    return this.gameEnded;
-  }
-
-  public resetGameState(): void {
-    this.gameEnded = false;
-  }
-
   private scene: Phaser.Scene;
   private lanes: Lane[];
   private gameEnded: boolean = false;
@@ -35,7 +14,21 @@ export class GameEndManager {
     this.logHistoryButton = logHistoryButton;
   }
 
-  private calculateGameResult(): {
+  public checkGameEnd(finalLanePowers: { playerPower: number; botPower: number }[]): void {
+    const { playerWins, botWins, playerPowerDiff, botPowerDiff } =
+      this.calculateGameResult(finalLanePowers);
+    const message = this.determineWinnerMessage(playerWins, botWins, playerPowerDiff, botPowerDiff);
+
+    this.logHistoryButton.addLog(message);
+    this.gameEnded = true;
+    this.showResultModal(message);
+  }
+
+  public isGameEnded(): boolean {
+    return this.gameEnded;
+  }
+
+  private calculateGameResult(finalLanePowers: { playerPower: number; botPower: number }[]): {
     playerWins: number;
     botWins: number;
     playerPowerDiff: number;
@@ -46,8 +39,8 @@ export class GameEndManager {
     let playerPowerDiff = 0;
     let botPowerDiff = 0;
 
-    for (const lane of this.lanes) {
-      const { playerPower, botPower } = this.calculateLanePower(lane);
+    for (const result of finalLanePowers) {
+      const { playerPower, botPower } = result;
 
       if (playerPower > botPower) {
         playerWins++;
@@ -72,16 +65,6 @@ export class GameEndManager {
     if (playerPowerDiff > botPowerDiff) return 'Você venceu por diferença de poder!';
     if (botPowerDiff > playerPowerDiff) return 'Bot venceu por diferença de poder!';
     return 'Empate!';
-  }
-
-  private calculateLanePower(lane: Lane): { botPower: number; playerPower: number } {
-    const sumPower = (slots: typeof lane.playerSlots) =>
-      slots.reduce((sum, slot) => sum + (slot.power ?? 0), 0);
-
-    return {
-      botPower: sumPower(lane.botSlots),
-      playerPower: sumPower(lane.playerSlots),
-    };
   }
 
   private createBackground(

@@ -18,6 +18,7 @@ import { DeckDisplay } from '@/components/DeckDisplay';
 import { botDeck, playerDeck } from '@/data/CardPool';
 import { LogHistoryButton } from '@/components/LogHistoryButton';
 import { CardEffectManager } from '@/utils/CardEffectManager';
+import { CardEffect } from '@/enums/CardEffect';
 
 type MoveLog = { cardName: string; laneIndex: number };
 
@@ -294,13 +295,67 @@ export default class GameScene extends Phaser.Scene {
   }
 
   private calculateLanePower(lane: Lane): { enemyPower: number; playerPower: number } {
-    let enemyPower = 0;
-    for (const slot of lane.botSlots) enemyPower += slot.power ?? 0;
-
-    let playerPower = 0;
-    for (const slot of lane.playerSlots) playerPower += slot.power ?? 0;
-
+    const playerPower = this.calculateSideTotalPower(lane.playerSlots, lane.index);
+    const enemyPower = this.calculateSideTotalPower(lane.botSlots, lane.index);
     return { enemyPower, playerPower };
+  }
+
+  private getAdjacentBonus(adjacentLane: Lane | undefined, friendlySlots: Slot[]): number {
+    if (!adjacentLane) return 0;
+
+    const isPlayerSide = friendlySlots === adjacentLane.playerSlots;
+    const adjacentSideSlots = isPlayerSide ? adjacentLane.playerSlots : adjacentLane.botSlots;
+
+    const hasMisterFantastic = adjacentSideSlots.some(
+      (s) =>
+        s.occupied && s.cardData?.effect?.some((e) => e.effect === CardEffect.MisterFantasticBuff)
+    );
+
+    return hasMisterFantastic ? 2 : 0;
+  }
+
+  private calculateSideTotalPower(slots: Slot[], laneIndex: number): number {
+    let totalPower = slots.reduce((sum, slot) => sum + (slot.power ?? 0), 0);
+
+    const leftLane = this.lanes[laneIndex - 1];
+    const rightLane = this.lanes[laneIndex + 1];
+
+    const isPlayerSlots = slots === this.lanes[laneIndex].playerSlots;
+    const sideIdentifier = isPlayerSlots ? 'Jogador' : 'Bot';
+
+    const leftBonus = this.getAdjacentBonus(
+      leftLane,
+      isPlayerSlots ? leftLane?.playerSlots : leftLane?.botSlots
+    );
+    if (leftBonus > 0) {
+      console.log(
+        `Lane ${laneIndex + 1} (${sideIdentifier}) recebeu +${leftBonus} do Senhor Fantástico da esquerda.`
+      );
+      totalPower += leftBonus;
+    }
+
+    const rightBonus = this.getAdjacentBonus(
+      rightLane,
+      isPlayerSlots ? rightLane?.playerSlots : rightLane?.botSlots
+    );
+    if (rightBonus > 0) {
+      console.log(
+        `Lane ${laneIndex + 1} (${sideIdentifier}) recebeu +${rightBonus} do Senhor Fantástico da direita.`
+      );
+      totalPower += rightBonus;
+    }
+
+    const multiplierCards = slots.filter(
+      (s) =>
+        s.occupied && s.cardData?.effect?.some((e) => e.effect === CardEffect.IronManDoublePower)
+    );
+
+    if (multiplierCards.length > 0) {
+      const multiplier = Math.pow(2, multiplierCards.length);
+      totalPower *= multiplier;
+    }
+
+    return totalPower;
   }
 
   private endTurn(): void {
@@ -605,7 +660,17 @@ export default class GameScene extends Phaser.Scene {
   }
 
   private handleGameEnd(): void {
-    this.gameEndManager.checkGameEnd();
+    this.effectManager.recalcOngoingEffects();
+    this.updatePlacedCardsUI();
+    this.updateLanePowers();
+
+    const finalLanePowers = this.lanes.map((lane) => {
+      const { playerPower, enemyPower } = this.calculateLanePower(lane);
+      return { playerPower, botPower: enemyPower };
+    });
+
+    this.gameEndManager.checkGameEnd(finalLanePowers);
+
     this.endBattleButton.setVisible(true);
     this.endTurnButton.setVisible(false);
     this.turnDisplay.setVisible(false);

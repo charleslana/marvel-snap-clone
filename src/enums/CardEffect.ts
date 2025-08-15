@@ -17,4 +17,5 @@ export enum CardEffect {
   PunisherEnemyBuff = 15,
   SentinelAddToHand = 16,
   WolfsbaneBuff = 17,
+  NightcrawlerMove = 18,
 }

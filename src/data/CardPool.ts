@@ -15,7 +15,7 @@ export const playerDeck: Omit<Card, 'index'>[] = [
     cost: 1,
     power: 2,
     description: 'Você pode mover isto uma vez.',
-    effect: [{ type: CardEffectType.None, effect: CardEffect.None }],
+    effect: [{ type: CardEffectType.None, effect: CardEffect.NightcrawlerMove }],
   },
   {
     name: 'Angela',
