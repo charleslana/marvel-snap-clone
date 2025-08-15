@@ -19,8 +19,7 @@ export class CardContainer extends Phaser.GameObjects.Container {
     height: number,
     color: number,
     card: Omit<Card, 'index'>,
-    index: number,
-    isPlayer: boolean
+    index: number
   ) {
     super(scene, x, y);
 
@@ -35,10 +34,26 @@ export class CardContainer extends Phaser.GameObjects.Container {
 
     this.add([cardRect, this.nameText, this.powerText, this.costText]);
     this.setSize(width, height);
+  }
 
-    if (isPlayer) {
-      this.setInteractive({ draggable: true });
-      scene.input.setDraggable(this);
+  public setInteractivity(type: 'none' | 'hover' | 'draggable'): void {
+    this.disableInteractive();
+
+    switch (type) {
+      case 'none':
+        this.setTextsVisible(false);
+        break;
+
+      case 'hover':
+        this.setInteractive({ useHandCursor: true });
+        this.setTextsVisible(true);
+        break;
+
+      case 'draggable':
+        this.setInteractive({ useHandCursor: true });
+        this.scene.input.setDraggable(this, true);
+        this.setTextsVisible(true);
+        break;
     }
   }
 

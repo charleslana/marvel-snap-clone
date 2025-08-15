@@ -151,14 +151,14 @@ export const botDeck: Omit<Card, 'index'>[] = [
     cost: 2,
     power: 3,
     description: 'Ao revelar: adiciona outro Sentinela à sua mão.',
-    effect: [{ type: CardEffectType.OnReveal, effect: CardEffect.StarLordOpponentPlayedBuff }],
+    effect: [{ type: CardEffectType.OnReveal, effect: CardEffect.SentinelAddToHand }],
   },
   {
     name: 'Wolfsbane',
     cost: 2,
     power: 3,
     description: 'Ao revelar: +2 de poder para cada outra carta que voce tiver aqui.',
-    effect: [{ type: CardEffectType.OnReveal, effect: CardEffect.CosmoBlockOnReveal }],
+    effect: [{ type: CardEffectType.OnReveal, effect: CardEffect.WolfsbaneBuff }],
   },
   {
     name: 'Senhor das Estrelas',

@@ -51,10 +51,15 @@ export default class GameScene extends Phaser.Scene {
   private logHistoryButton!: LogHistoryButton;
   private tempPlayerMoves: MoveLog[] = [];
   private tempBotMoves: MoveLog[] = [];
-  // ADICIONE ESTA LINHA:
-  private revealQueue: { card: CardData; laneIndex: number; slot: Slot; isPlayer: boolean }[] = [];
+  private revealQueue: {
+    card: CardData;
+    laneIndex: number;
+    slot: Slot;
+    isPlayer: boolean;
+    turnPlayed: number;
+  }[] = [];
+
   private effectManager!: CardEffectManager;
-  // Adicione esta lista na sua GameScene para rastrear as cartas no tabuleiro
   private placedCardContainers: CardContainer[] = [];
 
   public create(): void {
@@ -182,17 +187,8 @@ export default class GameScene extends Phaser.Scene {
     const handY = height - 120;
     this.playerHand.forEach((card, index) => {
       const x = this.cardXPosition(width, this.playerHand.length, index);
-      const cardContainer = new CardContainer(
-        this,
-        x,
-        handY,
-        100,
-        140,
-        0x0088ff,
-        card,
-        index,
-        true
-      );
+      const cardContainer = new CardContainer(this, x, handY, 100, 140, 0x0088ff, card, index);
+      cardContainer.setInteractivity('draggable');
       this.add.existing(cardContainer);
       this.playerHandContainers.push(cardContainer);
     });
@@ -205,21 +201,12 @@ export default class GameScene extends Phaser.Scene {
     const handY = 100;
     this.botHand.forEach((card, index) => {
       const x = this.cardXPosition(width, this.botHand.length, index);
-      const cardContainer = new CardContainer(
-        this,
-        x,
-        handY,
-        100,
-        140,
-        0xff0000,
-        card,
-        index,
-        false
-      );
+      const cardContainer = new CardContainer(this, x, handY, 100, 140, 0xff0000, card, index);
+      cardContainer.setInteractivity('none');
       this.add.existing(cardContainer);
       this.botHandContainers.push(cardContainer);
-      // Oculta a mão do adversário
-      cardContainer.setTextsVisible(false);
+      // Mostra a mão do adversário
+      cardContainer.setTextsVisible(true);
     });
   }
 
@@ -256,19 +243,9 @@ export default class GameScene extends Phaser.Scene {
   }
 
   private placeCardOnSlot(slot: Slot, cardData: CardData): void {
-    const cardContainer = new CardContainer(
-      this,
-      slot.x,
-      slot.y,
-      80,
-      110,
-      0x0088ff,
-      cardData,
-      -1,
-      false
-    );
+    const cardContainer = new CardContainer(this, slot.x, slot.y, 80, 110, 0x0088ff, cardData, -1);
+    cardContainer.setInteractivity('hover');
     this.add.existing(cardContainer);
-    // Adicione esta linha:
     this.placedCardContainers.push(cardContainer);
     cardContainer.setInteractive({ useHandCursor: true });
     cardContainer.on('pointerdown', () => this.removePlacedCard(cardContainer));
@@ -288,9 +265,13 @@ export default class GameScene extends Phaser.Scene {
     const playerLaneIndex = this.lanes.findIndex((lane) => lane.playerSlots.includes(slot));
     if (playerLaneIndex !== -1) {
       this.tempPlayerMoves.push({ cardName: cardData.name, laneIndex: playerLaneIndex + 1 });
-
-      // ADICIONE ESTA LINHA: Adiciona a carta à fila de revelação
-      this.revealQueue.push({ card: cardData, laneIndex: playerLaneIndex, slot, isPlayer: true });
+      this.revealQueue.push({
+        card: cardData,
+        laneIndex: playerLaneIndex,
+        slot,
+        isPlayer: true,
+        turnPlayed: this.currentTurn,
+      });
     }
   }
 
@@ -327,10 +308,9 @@ export default class GameScene extends Phaser.Scene {
     this.endTurnButton.setVisible(false);
 
     this.time.delayedCall(1000, () => {
-      // 1. PROCESSA A REVELAÇÃO DAS CARTAS
+      this.executeBotTurn();
       this.processRevealQueue();
 
-      this.executeBotTurn();
       this.advanceTurn();
       this.refreshEnergies();
       this.enablePlayerTurnUI();
@@ -347,15 +327,61 @@ export default class GameScene extends Phaser.Scene {
   }
 
   private playBotCardOnSlot(slot: Slot, card: Omit<Card, 'index'>): void {
-    const cardContainer = this.add.container(slot.x, slot.y);
-    const cardRect = this.add.rectangle(0, 0, 80, 110, 0xff0000);
+    const cardData: CardData = { ...card, index: -1 };
+    const cardContainer = new CardContainer(
+      this,
+      slot.x,
+      slot.y,
+      80,
+      110,
+      0xff0000,
+      cardData,
+      cardData.index
+    );
+    cardContainer.setInteractivity('hover');
+    this.add.existing(cardContainer);
 
+    this.placedCardContainers.push(cardContainer);
+
+    (cardContainer as any).slot = slot;
+    (cardContainer as any).turnPlayed = this.currentTurn;
+
+    slot.occupied = true;
+    slot.power = cardData.power;
+    slot.cardData = cardData;
+
+    const indexInHand = this.botHand.indexOf(card);
+    if (indexInHand >= 0) this.botHand.splice(indexInHand, 1);
+    this.botEnergy -= cardData.cost;
+
+    const botLaneIndex = this.lanes.findIndex((lane) => lane.botSlots.includes(slot));
+    if (botLaneIndex !== -1) {
+      this.tempBotMoves.push({ cardName: cardData.name, laneIndex: botLaneIndex + 1 });
+      this.revealQueue.push({
+        card: cardData,
+        laneIndex: botLaneIndex,
+        slot,
+        isPlayer: false,
+        turnPlayed: this.currentTurn,
+      });
+    }
+  }
+
+  private createNameText(card: Omit<Card, 'index'>): Phaser.GameObjects.Text {
     const nameText = this.add
-      .text(0, 45, card.name, { color: '#ffffff', fontSize: '14px', align: 'center' })
+      .text(0, 45, card.name, {
+        color: '#ffffff',
+        fontSize: '14px',
+        align: 'center',
+      })
       .setOrigin(0.5, 1);
-    this.adjustTextFontSize(nameText, 70);
 
-    const powerText = this.add
+    this.adjustTextFontSize(nameText, 70);
+    return nameText;
+  }
+
+  private createPowerText(card: Omit<Card, 'index'>): Phaser.GameObjects.Text {
+    return this.add
       .text(30, -45, String(card.power), {
         color: '#ffff00',
         fontSize: '14px',
@@ -363,32 +389,16 @@ export default class GameScene extends Phaser.Scene {
         align: 'right',
       })
       .setOrigin(1, 0);
-    const costText = this.add
-      .text(-30, -45, String(card.cost), { color: '#ffffff', fontSize: '14px', align: 'left' })
+  }
+
+  private createCostText(card: Omit<Card, 'index'>): Phaser.GameObjects.Text {
+    return this.add
+      .text(-30, -45, String(card.cost), {
+        color: '#ffffff',
+        fontSize: '14px',
+        align: 'left',
+      })
       .setOrigin(0, 0);
-
-    cardContainer.add([cardRect, nameText, powerText, costText]);
-    cardContainer.setSize(80, 110);
-    cardContainer.setInteractive({ useHandCursor: true });
-
-    (cardContainer as any).cardData = card;
-
-    slot.occupied = true;
-    slot.power = card.power;
-    // slot.cardData = card;
-
-    const index = this.botHand.indexOf(card);
-    if (index >= 0) this.botHand.splice(index, 1);
-
-    this.botEnergy -= card.cost;
-
-    const botLaneIndex = this.lanes.findIndex((lane) => lane.botSlots.includes(slot));
-    if (botLaneIndex !== -1) {
-      this.tempBotMoves.push({ cardName: card.name, laneIndex: botLaneIndex + 1 });
-
-      // ADICIONE ESTA LINHA: Adiciona a carta do bot à fila de revelação
-      // this.revealQueue.push({ card, laneIndex: botLaneIndex, slot, isPlayer: false });
-    }
   }
 
   private removePlacedCard(container: CardContainer): void {
@@ -411,23 +421,13 @@ export default class GameScene extends Phaser.Scene {
         (move) => !(move.cardName === cardData.name && move.laneIndex === playerLaneIndex + 1)
       );
     }
-
-    // --- INÍCIO DA CORREÇÃO ---
-
-    // 1. REMOVA A CARTA DA FILA DE REVELAÇÃO
-    // Encontra o índice do item na fila que corresponde exatamente à carta e ao slot.
     const queueIndex = this.revealQueue.findIndex(
       (item) => item.card === cardData && item.slot === slot
     );
-
-    // Se encontrou, remove.
     if (queueIndex > -1) {
       this.revealQueue.splice(queueIndex, 1);
       console.log(`Carta ${cardData.name} removida da fila de revelação.`);
     }
-
-    // --- FIM DA CORREÇÃO ---
-
     slot.occupied = false;
     delete slot.power;
     delete slot.cardData;
@@ -446,10 +446,6 @@ export default class GameScene extends Phaser.Scene {
     } else {
       this.playerHand.push(cardToReturn);
     }
-
-    // --- INÍCIO DA CORREÇÃO ---
-
-    // 1. Remova o container da lista de containers no tabuleiro ANTES de destruí-lo.
     const containerIndex = this.placedCardContainers.indexOf(container);
     if (containerIndex > -1) {
       this.placedCardContainers.splice(containerIndex, 1);
@@ -620,16 +616,9 @@ export default class GameScene extends Phaser.Scene {
   }
 
   private prepareNextRound(): void {
-    // 1. Aplica efeitos de fim de turno (como preparar o Hawkeye)
     this.effectManager.applyEndOfTurnEffects();
-
-    // 2. Recalcula TODOS os efeitos constantes (Ongoing)
     this.effectManager.recalcOngoingEffects();
-
-    // 3. Atualiza a UI das cartas no tabuleiro com os novos poderes
     this.updatePlacedCardsUI();
-
-    // 4. Atualiza o poder total das lanes
     this.updateLanePowers();
 
     this.isPlayerTurn = true;
@@ -664,19 +653,15 @@ export default class GameScene extends Phaser.Scene {
     this.placedCardContainers.forEach((container) => {
       const slot = (container as any).slot as Slot;
       if (slot && slot.occupied && slot.power !== undefined) {
-        // Atualiza o texto de poder do container da carta
         container.updatePower(slot.power);
       }
     });
   }
 
   private processRevealQueue(): void {
-    // Determina quem revela primeiro (jogador que está na frente)
     const playerRevealsFirst = this.getLeadingPlayer() === 0;
-
-    // Ordena a fila de revelação. O jogador que revela primeiro tem suas cartas no início da fila.
     this.revealQueue.sort((a, b) => {
-      if (a.isPlayer === b.isPlayer) return 0; // Mantém a ordem entre cartas do mesmo jogador
+      if (a.isPlayer === b.isPlayer) return 0;
       return a.isPlayer === playerRevealsFirst ? -1 : 1;
     });
 
@@ -685,30 +670,22 @@ export default class GameScene extends Phaser.Scene {
       this.revealQueue.map((item) => `${item.card.name} (${item.isPlayer ? 'Jogador' : 'Bot'})`)
     );
 
-    // Processa cada carta na fila
     for (const item of this.revealQueue) {
       console.log(`Revelando ${item.card.name}...`);
-
-      // 1. Aplica o efeito OnReveal da carta que está sendo revelada
-      this.effectManager.applyOnRevealEffect(item.card, item.laneIndex, item.slot);
-
-      // 2. CHAMA O NOVO GATILHO: Notifica o sistema que uma carta foi jogada.
-      // Isso fará com que a Angela (e outras cartas) reajam.
+      this.effectManager.applyOnRevealEffect(
+        item.card,
+        item.laneIndex,
+        item.slot,
+        item.isPlayer,
+        item.turnPlayed,
+        this.revealQueue
+      );
       this.effectManager.triggerOnCardPlayedEffects(item.card, item.laneIndex);
-
-      // --- INÍCIO DA CORREÇÃO ---
-      // 3. ATUALIZA A UI IMEDIATAMENTE APÓS CADA REVELAÇÃO E GATILHO.
-      // Isso garante que o poder da Angela (e de outras cartas) seja atualizado visualmente
-      // no exato momento em que o bônus é aplicado.
       this.updatePlacedCardsUI();
-      this.updateLanePowers(); // Também é bom atualizar o total da lane
-      // --- FIM DA CORREÇÃO ---
+      this.updateLanePowers();
     }
-
-    // Limpa a fila para o próximo turno
     this.revealQueue = [];
 
-    // Após TODAS as revelações, recalcula os efeitos constantes e atualiza a UI
     console.log('Recalculando todos os efeitos Ongoing após as revelações.');
     this.effectManager.recalcOngoingEffects();
     this.updatePlacedCardsUI();

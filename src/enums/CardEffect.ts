@@ -15,4 +15,6 @@ export enum CardEffect {
   MedusaCenterBuff = 13,
   StarLordOpponentPlayedBuff = 14,
   PunisherEnemyBuff = 15,
+  SentinelAddToHand = 16,
+  WolfsbaneBuff = 17,
 }
