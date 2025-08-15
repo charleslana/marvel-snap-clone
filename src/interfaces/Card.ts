@@ -7,7 +7,7 @@ export interface Card {
   power: number;
   index: number;
   description: string;
-  effect?: { type: CardEffectType; effect: CardEffect }[];
+  effect?: { type: CardEffectType; effect: CardEffect; value?: number | number[] }[];
 }
 
 export interface CardData extends Card {

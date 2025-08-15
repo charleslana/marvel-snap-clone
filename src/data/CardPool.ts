@@ -8,7 +8,7 @@ export const playerDeck: Omit<Card, 'index'>[] = [
     cost: 1,
     power: 1,
     description: 'Constante: se tiver 3 outras cartas aqui, +3 de poder.',
-    effect: [{ type: CardEffectType.Ongoing, effect: CardEffect.AntManBuff }],
+    effect: [{ type: CardEffectType.Ongoing, effect: CardEffect.AntManBuff, value: 3 }],
   },
   {
     name: 'Noturno',
@@ -43,7 +43,7 @@ export const playerDeck: Omit<Card, 'index'>[] = [
     cost: 3,
     power: 1,
     description: 'Constante: Locais adjacentes tem +3 de Poder.',
-    effect: [{ type: CardEffectType.Ongoing, effect: CardEffect.MisterFantasticBuff }],
+    effect: [{ type: CardEffectType.Ongoing, effect: CardEffect.MisterFantasticBuff, value: 2 }],
   },
   {
     name: 'Cosmo',
@@ -71,7 +71,7 @@ export const playerDeck: Omit<Card, 'index'>[] = [
     cost: 5,
     power: 4,
     description: 'Constante: O local à direita tem +7 de Poder',
-    effect: [{ type: CardEffectType.Ongoing, effect: CardEffect.KlawRightBuff }],
+    effect: [{ type: CardEffectType.Ongoing, effect: CardEffect.KlawRightBuff, value: 7 }],
   },
   {
     name: 'Espectro',
@@ -137,7 +137,7 @@ export const botDeck: Omit<Card, 'index'>[] = [
     cost: 3,
     power: 2,
     description: 'Constante: +1 de poder para cada carta inimiga aqui.',
-    effect: [{ type: CardEffectType.Ongoing, effect: CardEffect.PunisherEnemyBuff }],
+    effect: [{ type: CardEffectType.Ongoing, effect: CardEffect.PunisherEnemyBuff, value: 1 }],
   },
   {
     name: 'Mercúrio',

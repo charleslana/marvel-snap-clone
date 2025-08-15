@@ -300,51 +300,68 @@ export default class GameScene extends Phaser.Scene {
     return { enemyPower, playerPower };
   }
 
-  private getAdjacentBonus(adjacentLane: Lane | undefined, friendlySlots: Slot[]): number {
-    if (!adjacentLane) return 0;
-
-    const isPlayerSide = friendlySlots === adjacentLane.playerSlots;
-    const adjacentSideSlots = isPlayerSide ? adjacentLane.playerSlots : adjacentLane.botSlots;
-
-    const hasMisterFantastic = adjacentSideSlots.some(
-      (s) =>
-        s.occupied && s.cardData?.effect?.some((e) => e.effect === CardEffect.MisterFantasticBuff)
-    );
-
-    return hasMisterFantastic ? 2 : 0;
-  }
-
   private calculateSideTotalPower(slots: Slot[], laneIndex: number): number {
     let totalPower = slots.reduce((sum, slot) => sum + (slot.power ?? 0), 0);
+    totalPower += this.getAdjacentLaneBonus(slots, laneIndex);
+    totalPower = this.applyMultiplicativeEffects(totalPower, slots, laneIndex);
 
-    const leftLane = this.lanes[laneIndex - 1];
-    const rightLane = this.lanes[laneIndex + 1];
+    return totalPower;
+  }
 
-    const isPlayerSlots = slots === this.lanes[laneIndex].playerSlots;
-    const sideIdentifier = isPlayerSlots ? 'Jogador' : 'Bot';
+  private getAdjacentLaneBonus(currentLaneSlots: Slot[], currentLaneIndex: number): number {
+    let totalBonus = 0;
+    const isPlayerSide = this.lanes[currentLaneIndex].playerSlots === currentLaneSlots;
 
-    const leftBonus = this.getAdjacentBonus(
-      leftLane,
-      isPlayerSlots ? leftLane?.playerSlots : leftLane?.botSlots
+    totalBonus += this.checkNeighboringLaneForBonus(
+      this.lanes[currentLaneIndex - 1],
+      isPlayerSide,
+      [CardEffect.MisterFantasticBuff, CardEffect.KlawRightBuff],
+      currentLaneIndex
     );
-    if (leftBonus > 0) {
-      console.log(
-        `Lane ${laneIndex + 1} (${sideIdentifier}) recebeu +${leftBonus} do Senhor Fantástico da esquerda.`
-      );
-      totalPower += leftBonus;
-    }
 
-    const rightBonus = this.getAdjacentBonus(
-      rightLane,
-      isPlayerSlots ? rightLane?.playerSlots : rightLane?.botSlots
+    totalBonus += this.checkNeighboringLaneForBonus(
+      this.lanes[currentLaneIndex + 1],
+      isPlayerSide,
+      [CardEffect.MisterFantasticBuff],
+      currentLaneIndex
     );
-    if (rightBonus > 0) {
-      console.log(
-        `Lane ${laneIndex + 1} (${sideIdentifier}) recebeu +${rightBonus} do Senhor Fantástico da direita.`
-      );
-      totalPower += rightBonus;
-    }
 
+    return totalBonus;
+  }
+
+  private checkNeighboringLaneForBonus(
+    neighborLane: Lane | undefined,
+    isCheckingPlayerSide: boolean,
+    effectsToLookFor: CardEffect[],
+    receivingLaneIndex: number
+  ): number {
+    if (!neighborLane) return 0;
+
+    let bonusFromThisLane = 0;
+    const neighborSlots = isCheckingPlayerSide ? neighborLane.playerSlots : neighborLane.botSlots;
+    const sideIdentifier = isCheckingPlayerSide ? 'Jogador' : 'Bot';
+
+    for (const slot of neighborSlots) {
+      if (slot.occupied && slot.cardData?.effect) {
+        for (const effect of slot.cardData.effect) {
+          if (effectsToLookFor.includes(effect.effect)) {
+            const value = typeof effect.value === 'number' ? effect.value : 0;
+            bonusFromThisLane += value;
+            console.log(
+              `Lane ${receivingLaneIndex + 1} (${sideIdentifier}) recebeu +${value} de ${slot.cardData.name} da lane ${neighborLane.index + 1}.`
+            );
+          }
+        }
+      }
+    }
+    return bonusFromThisLane;
+  }
+
+  private applyMultiplicativeEffects(
+    currentPower: number,
+    slots: Slot[],
+    laneIndex: number
+  ): number {
     const multiplierCards = slots.filter(
       (s) =>
         s.occupied && s.cardData?.effect?.some((e) => e.effect === CardEffect.IronManDoublePower)
@@ -352,10 +369,13 @@ export default class GameScene extends Phaser.Scene {
 
     if (multiplierCards.length > 0) {
       const multiplier = Math.pow(2, multiplierCards.length);
-      totalPower *= multiplier;
+      console.log(
+        `Poder da lane ${laneIndex + 1} multiplicado por ${multiplier} por ${multiplierCards.map((c) => c.cardData?.name).join(', ')}!`
+      );
+      return currentPower * multiplier;
     }
 
-    return totalPower;
+    return currentPower;
   }
 
   private endTurn(): void {
