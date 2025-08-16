@@ -757,7 +757,7 @@ export default class GameScene extends Phaser.Scene {
 
     for (const item of this.revealQueue) {
       console.log(`Revelando ${item.card.name}...`);
-      this.effectManager.applyOnRevealEffect(
+      const actions = this.effectManager.applyOnRevealEffect(
         item.card,
         item.laneIndex,
         item.slot,
@@ -765,15 +765,38 @@ export default class GameScene extends Phaser.Scene {
         item.turnPlayed,
         this.revealQueue
       );
+
+      for (const action of actions) {
+        if (action.type === 'ADD_TO_HAND') {
+          this.addCardToHand(action.payload.card, action.payload.isPlayer);
+        }
+      }
+
       this.effectManager.triggerOnCardPlayedEffects(item.card, item.laneIndex);
       this.updatePlacedCardsUI();
       this.updateLanePowers();
     }
     this.revealQueue = [];
 
+    this.renderPlayerHand();
+    this.renderBotHand();
+
     console.log('Recalculando todos os efeitos Ongoing após as revelações.');
     this.effectManager.recalcOngoingEffects();
     this.updatePlacedCardsUI();
     this.updateLanePowers();
+  }
+
+  private addCardToHand(card: Omit<Card, 'index'>, isPlayer: boolean): void {
+    const targetHand = isPlayer ? this.playerHand : this.botHand;
+
+    if (targetHand.length < this.maxTurn) {
+      targetHand.push(card);
+      console.log(`${card.name} adicionado à mão de ${isPlayer ? 'Jogador' : 'Bot'}.`);
+    } else {
+      console.log(
+        `Mão de ${isPlayer ? 'Jogador' : 'Bot'} está cheia. ${card.name} não foi adicionado.`
+      );
+    }
   }
 }

@@ -1,6 +1,7 @@
 import { CardEffect } from '@/enums/CardEffect';
 import { CardEffectType } from '@/enums/CardEffectType';
-import { CardData } from '@/interfaces/Card';
+import { Card, CardData } from '@/interfaces/Card';
+import { AddToHandAction, EffectAction } from '@/interfaces/EffectAction';
 import { Lane } from '@/interfaces/Lane';
 import { Slot } from '@/interfaces/Slot';
 
@@ -19,8 +20,9 @@ export class CardEffectManager {
       turnPlayed: number;
       isPlayer: boolean;
     }[]
-  ): void {
-    if (!card.effect) return;
+  ): EffectAction[] {
+    const actions: EffectAction[] = [];
+    if (!card.effect) return actions;
 
     const lane = this.lanes[laneIndex];
     const isCosmoPresent = [...lane.playerSlots, ...lane.botSlots].some(
@@ -30,7 +32,7 @@ export class CardEffectManager {
 
     if (isCosmoPresent) {
       console.log(`Cosmo bloqueou o efeito OnReveal de ${card.name} na lane ${laneIndex + 1}!`);
-      return;
+      return actions;
     }
 
     for (const e of card.effect) {
@@ -82,12 +84,33 @@ export class CardEffectManager {
             break;
           }
 
-          case CardEffect.SentinelAddToHand:
-            console.log(`Efeito do Sentinela ativado, mas a lógica ainda não foi implementada.`);
+          case CardEffect.SentinelAddToHand: {
+            const sentinelCardToAdd: Omit<Card, 'index'> = {
+              name: 'Sentinela',
+              cost: 2,
+              power: 3,
+              description: 'Ao revelar: adiciona outro Sentinela à sua mão.',
+              effect: [{ type: CardEffectType.OnReveal, effect: CardEffect.SentinelAddToHand }],
+            };
+
+            const action: AddToHandAction = {
+              type: 'ADD_TO_HAND',
+              payload: {
+                card: sentinelCardToAdd,
+                isPlayer: isPlayerCard,
+              },
+            };
+
+            actions.push(action);
+            console.log(
+              `Ação criada: Adicionar Sentinela à mão de ${isPlayerCard ? 'Jogador' : 'Bot'}.`
+            );
             break;
+          }
         }
       }
     }
+    return actions;
   }
 
   public recalcOngoingEffects(): void {
