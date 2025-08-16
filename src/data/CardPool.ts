@@ -123,7 +123,7 @@ export const botDeck: Omit<Card, 'index'>[] = [
     cost: 2,
     power: 2,
     description: 'Ao revelar: se esta carta estiver na localização do meio, +3 de poder.',
-    effect: [{ type: CardEffectType.OnReveal, effect: CardEffect.MedusaCenterBuff }],
+    effect: [{ type: CardEffectType.OnReveal, effect: CardEffect.MedusaCenterBuff, value: 3 }],
   },
   {
     name: 'Misty Knight',
@@ -158,14 +158,16 @@ export const botDeck: Omit<Card, 'index'>[] = [
     cost: 2,
     power: 3,
     description: 'Ao revelar: +2 de poder para cada outra carta que voce tiver aqui.',
-    effect: [{ type: CardEffectType.OnReveal, effect: CardEffect.WolfsbaneBuff }],
+    effect: [{ type: CardEffectType.OnReveal, effect: CardEffect.WolfsbaneBuff, value: 2 }],
   },
   {
     name: 'Senhor das Estrelas',
     cost: 2,
     power: 2,
     description: 'Ao revelar: se seu oponente jogou uma carta aqui neste turno, +4 de poder.',
-    effect: [{ type: CardEffectType.OnReveal, effect: CardEffect.StarLordOpponentPlayedBuff }],
+    effect: [
+      { type: CardEffectType.OnReveal, effect: CardEffect.StarLordOpponentPlayedBuff, value: 4 },
+    ],
   },
   {
     name: 'Coisa',

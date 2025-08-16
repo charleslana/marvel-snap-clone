@@ -36,26 +36,47 @@ export class CardEffectManager {
     for (const e of card.effect) {
       if (e.type === CardEffectType.OnReveal) {
         switch (e.effect) {
-          case CardEffect.MedusaCenterBuff:
-            if (laneIndex === 1) {
-              slot.power = (slot.power ?? 0) + 3;
-              console.log(`Medusa ganhou +3 de poder na lane central.`);
+          case CardEffect.MedusaCenterBuff: {
+            const bonus = typeof e.value === 'number' ? e.value : 0;
+            if (laneIndex === 1 && bonus > 0) {
+              slot.power = (slot.power ?? 0) + bonus;
+              console.log(`Medusa ganhou +${bonus} de poder na lane central.`);
             }
             break;
+          }
 
           case CardEffect.StarLordOpponentPlayedBuff: {
             const opponentName = isPlayerCard ? 'Bot' : 'Jogador';
             const opponentPlayedHere = revealQueue.some(
               (item) =>
-                item.isPlayer !== isPlayerCard && // É do oponente
-                item.laneIndex === laneIndex && // Na mesma lane
-                item.turnPlayed === turnPlayed // No mesmo turno
+                item.isPlayer !== isPlayerCard &&
+                item.laneIndex === laneIndex &&
+                item.turnPlayed === turnPlayed
             );
 
-            if (opponentPlayedHere) {
-              slot.power = (slot.power ?? 0) + 4;
+            const bonus = typeof e.value === 'number' ? e.value : 0;
+            if (opponentPlayedHere && bonus > 0) {
+              slot.power = (slot.power ?? 0) + bonus;
               console.log(
-                `Senhor das Estrelas ganhou +4 porque o ${opponentName} também jogou aqui!`
+                `Senhor das Estrelas ganhou +${bonus} porque o ${opponentName} também jogou aqui!`
+              );
+            }
+            break;
+          }
+
+          case CardEffect.WolfsbaneBuff: {
+            const friendlySlots = isPlayerCard ? lane.playerSlots : lane.botSlots;
+            const sideIdentifier = isPlayerCard ? 'Jogador' : 'Bot';
+
+            const otherCardsCount = friendlySlots.filter((s) => s.occupied && s !== slot).length;
+
+            const bonusPerCard = typeof e.value === 'number' ? e.value : 0;
+
+            const totalBonus = otherCardsCount * bonusPerCard;
+            if (totalBonus > 0) {
+              slot.power = (slot.power ?? 0) + totalBonus;
+              console.log(
+                `Loba Venenosa (${sideIdentifier}) ganhou +${totalBonus} de poder por encontrar ${otherCardsCount} outra(s) carta(s) aliada(s).`
               );
             }
             break;
