@@ -341,15 +341,28 @@ export default class GameScene extends Phaser.Scene {
     const neighborSlots = isCheckingPlayerSide ? neighborLane.playerSlots : neighborLane.botSlots;
     const sideIdentifier = isCheckingPlayerSide ? 'Jogador' : 'Bot';
 
+    const onslaughtCount = neighborSlots.filter(
+      (s) =>
+        s.occupied &&
+        s.cardData?.effect?.some((e) => e.effect === CardEffect.OnslaughtDoubleOngoing)
+    ).length;
+    const effectMultiplier = Math.pow(2, onslaughtCount);
+
     for (const slot of neighborSlots) {
       if (slot.occupied && slot.cardData?.effect) {
         for (const effect of slot.cardData.effect) {
           if (effectsToLookFor.includes(effect.effect)) {
             const value = typeof effect.value === 'number' ? effect.value : 0;
-            bonusFromThisLane += value;
+
+            const finalBonus = value * effectMultiplier;
+            bonusFromThisLane += finalBonus;
+
             console.log(
-              `Lane ${receivingLaneIndex + 1} (${sideIdentifier}) recebeu +${value} de ${slot.cardData.name} da lane ${neighborLane.index + 1}.`
+              `Lane ${receivingLaneIndex + 1} (${sideIdentifier}) recebeu +${finalBonus} de ${slot.cardData.name} da lane ${neighborLane.index + 1}.`
             );
+            if (effectMultiplier > 1) {
+              console.log(`(Efeito dobrado por Onslaught na lane ${neighborLane.index + 1}!)`);
+            }
           }
         }
       }
@@ -362,17 +375,29 @@ export default class GameScene extends Phaser.Scene {
     slots: Slot[],
     laneIndex: number
   ): number {
-    const multiplierCards = slots.filter(
+    const ironManCards = slots.filter(
       (s) =>
         s.occupied && s.cardData?.effect?.some((e) => e.effect === CardEffect.IronManDoublePower)
     );
 
-    if (multiplierCards.length > 0) {
-      const multiplier = Math.pow(2, multiplierCards.length);
+    const onslaughtCards = slots.filter(
+      (s) =>
+        s.occupied &&
+        s.cardData?.effect?.some((e) => e.effect === CardEffect.OnslaughtDoubleOngoing)
+    );
+
+    if (ironManCards.length === 0) {
+      return currentPower;
+    }
+
+    const ironManEffectApplications = Math.pow(2, onslaughtCards.length);
+    const finalMultiplier = Math.pow(2, ironManCards.length * ironManEffectApplications);
+
+    if (finalMultiplier > 1) {
       console.log(
-        `Poder da lane ${laneIndex + 1} multiplicado por ${multiplier} por ${multiplierCards.map((c) => c.cardData?.name).join(', ')}!`
+        `Poder da lane ${laneIndex + 1} multiplicado por ${finalMultiplier}x devido a Homem de Ferro e Onslaught!`
       );
-      return currentPower * multiplier;
+      return currentPower * finalMultiplier;
     }
 
     return currentPower;

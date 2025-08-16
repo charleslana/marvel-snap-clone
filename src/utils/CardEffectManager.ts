@@ -156,17 +156,55 @@ export class CardEffectManager {
     const friendlySlots = isPlayer ? lane.playerSlots : lane.botSlots;
     const enemySlots = isPlayer ? lane.botSlots : lane.playerSlots;
 
+    const onslaughtCount = friendlySlots.filter(
+      (s) =>
+        s.occupied &&
+        s.cardData?.effect?.some((e) => e.effect === CardEffect.OnslaughtDoubleOngoing)
+    ).length;
+    const effectMultiplier = Math.pow(2, onslaughtCount);
+
     switch (effect) {
-      case CardEffect.AntManBuff:
+      case CardEffect.AntManBuff: {
+        const bonus =
+          typeof targetSlot.cardData?.effect?.find((e) => e.effect === CardEffect.AntManBuff)
+            ?.value === 'number'
+            ? (targetSlot.cardData.effect.find((e) => e.effect === CardEffect.AntManBuff)!
+                .value as number)
+            : 0;
+
         if (friendlySlots.filter((s) => s.occupied).length >= 4) {
-          targetSlot.power = (targetSlot.power ?? 0) + 3;
+          targetSlot.power = (targetSlot.power ?? 0) + bonus * effectMultiplier;
+          if (effectMultiplier > 1) console.log(`Onslaught dobrou o efeito do Homem-Formiga!`);
         }
         break;
+      }
 
-      case CardEffect.PunisherEnemyBuff:
+      case CardEffect.PunisherEnemyBuff: {
+        const bonusPerCard =
+          typeof targetSlot.cardData?.effect?.find((e) => e.effect === CardEffect.PunisherEnemyBuff)
+            ?.value === 'number'
+            ? (targetSlot.cardData.effect.find((e) => e.effect === CardEffect.PunisherEnemyBuff)!
+                .value as number)
+            : 0;
         const enemyCount = enemySlots.filter((s) => s.occupied).length;
-        targetSlot.power = (targetSlot.power ?? 0) + enemyCount;
+        targetSlot.power = (targetSlot.power ?? 0) + enemyCount * bonusPerCard * effectMultiplier;
+        if (effectMultiplier > 1) console.log(`Onslaught dobrou o efeito do Justiceiro!`);
         break;
+      }
+
+      case CardEffect.NamorBuff: {
+        if (friendlySlots.filter((s) => s.occupied).length === 1) {
+          const bonus =
+            typeof targetSlot.cardData?.effect?.find((e) => e.effect === CardEffect.NamorBuff)
+              ?.value === 'number'
+              ? (targetSlot.cardData.effect.find((e) => e.effect === CardEffect.NamorBuff)!
+                  .value as number)
+              : 0;
+
+          targetSlot.power = (targetSlot.power ?? 0) + bonus;
+        }
+        break;
+      }
     }
   }
 

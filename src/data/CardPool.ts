@@ -43,7 +43,7 @@ export const playerDeck: Omit<Card, 'index'>[] = [
     cost: 3,
     power: 1,
     description: 'Constante: Locais adjacentes tem +3 de Poder.',
-    effect: [{ type: CardEffectType.Ongoing, effect: CardEffect.MisterFantasticBuff, value: 2 }],
+    effect: [{ type: CardEffectType.Ongoing, effect: CardEffect.MisterFantasticBuff, value: 3 }],
   },
   {
     name: 'Cosmo',
@@ -57,7 +57,7 @@ export const playerDeck: Omit<Card, 'index'>[] = [
     cost: 4,
     power: 6,
     description: 'Constante: +5 de Poder se esta for sua única carta aqui.',
-    effect: [{ type: CardEffectType.Ongoing, effect: CardEffect.NamorBuff }],
+    effect: [{ type: CardEffectType.Ongoing, effect: CardEffect.NamorBuff, value: 5 }],
   },
   {
     name: 'Homem de Ferro',
