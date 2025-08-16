@@ -96,7 +96,8 @@ export class CardContainer extends Phaser.GameObjects.Container {
         align: 'center',
         wordWrap: { width: width - 10, useAdvancedWrap: true },
       })
-      .setOrigin(0.5, 1);
+      .setOrigin(0.5, 1)
+      .setStroke('#000000', 3);
 
     this.adjustFontSizeToFit(text, width - 10, 14, 8);
     return text;
@@ -110,7 +111,8 @@ export class CardContainer extends Phaser.GameObjects.Container {
         fontStyle: 'bold',
         align: 'right',
       })
-      .setOrigin(1, 0);
+      .setOrigin(1, 0)
+      .setStroke('#000000', 3);
   }
 
   private createCostText(cost: number, width: number, height: number): Phaser.GameObjects.Text {
@@ -120,7 +122,8 @@ export class CardContainer extends Phaser.GameObjects.Container {
         fontSize: '14px',
         align: 'left',
       })
-      .setOrigin(0, 0);
+      .setOrigin(0, 0)
+      .setStroke('#000000', 3);
   }
 
   private adjustFontSizeToFit(

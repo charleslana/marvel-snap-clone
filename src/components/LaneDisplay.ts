@@ -76,7 +76,8 @@ export class LaneDisplay {
         color: '#888888',
         fontStyle: 'bold',
       })
-      .setOrigin(0.5, originY);
+      .setOrigin(0.5, originY)
+      .setStroke('#000000', 3);
   }
 
   private createSlots(x: number, y: number, isPlayer: boolean): Slot[] {
