@@ -9,11 +9,16 @@ import { botDeck, playerDeck } from '@/data/CardPool';
 import { ScrollableContainer } from '@/components/ScrollableContainer';
 import { Card } from '@/interfaces/Card';
 import { FontEnum } from '@/enums/FontEnum';
+import { Select } from '@/components/Select';
+import { userDecks } from '@/data/UserDecks';
 
 export class DeckScene extends Phaser.Scene {
   private cardDetails!: CardDetailsPanel;
   private allCardsData = [...playerDeck, ...botDeck, ...playerDeck, ...botDeck];
-  private currentDeckData = playerDeck.slice(0, 12);
+  private currentDeckData: Omit<Card, 'index'>[] = [];
+  private deckGridContainer!: Phaser.GameObjects.Container;
+  private deckTitleText!: Phaser.GameObjects.Text;
+  private deckSelect!: Select;
 
   constructor() {
     super(SceneEnum.Deck);
@@ -49,6 +54,8 @@ export class DeckScene extends Phaser.Scene {
 
   private createDeckColumn(startX: number, width: number, _height: number) {
     const centerX = startX + width / 2;
+    let currentY = 50;
+
     this.add
       .text(centerX, 50, 'Decks', {
         fontSize: '24px',
@@ -56,7 +63,40 @@ export class DeckScene extends Phaser.Scene {
         fontFamily: FontEnum.RedHatDisplay500,
       })
       .setOrigin(0.5);
-    new GameButton(this, centerX, 120, 'Criar Novo Deck', () => {}, {
+
+    currentY += 50;
+
+    this.add.text(centerX, currentY, 'Selecionar Deck', { fontSize: '18px' }).setOrigin(0.5);
+    currentY += 40;
+
+    const deckOptions = userDecks.map((deck) => ({
+      value: deck.id,
+      text: deck.name,
+    }));
+
+    this.deckSelect = new Select(this, centerX, currentY, {
+      width: 220,
+      options: deckOptions,
+      defaultValue: 'Selecione um Deck...',
+    });
+
+    this.deckSelect.on('change', (event: Event) => {
+      const selectElement = event.target as HTMLSelectElement;
+      const selectedDeckId = selectElement.value;
+      const selectedDeck = userDecks.find((d) => d.id === selectedDeckId);
+
+      if (selectedDeck) {
+        this.currentDeckData = selectedDeck.cards;
+      } else {
+        this.currentDeckData = [];
+      }
+
+      this.updateDeckGrid();
+    });
+
+    currentY += 80;
+
+    new GameButton(this, centerX, currentY, 'Criar Novo Deck', () => {}, {
       color: ButtonColor.Blue,
       width: 200,
       height: 50,
@@ -68,16 +108,18 @@ export class DeckScene extends Phaser.Scene {
     let currentY = 50;
     const sectionSpacing = 30;
 
-    this.add.text(startX, currentY, `Deck Atual: ${this.currentDeckData.length}`, {
+    this.deckTitleText = this.add.text(startX, currentY, '', {
       fontSize: '20px',
       fontStyle: 'normal',
       fontFamily: FontEnum.RedHatDisplay400,
     });
     currentY += 40;
 
-    const deckGridContainer = this.add.container(startX, currentY);
-    deckGridContainer.width = width;
-    this.populateCardGrid(deckGridContainer, this.currentDeckData);
+    this.deckGridContainer = this.add.container(startX, currentY);
+    this.deckGridContainer.width = width;
+
+    this.updateDeckGrid();
+
     currentY += 260 + sectionSpacing;
 
     this.add.text(startX, currentY, 'Filtros', {
@@ -103,7 +145,7 @@ export class DeckScene extends Phaser.Scene {
       scrollAreaHeight
     );
     this.populateCardGrid(availableCardsGrid, this.allCardsData);
-    this.setupCardHover(deckGridContainer);
+    this.setupCardHover(this.deckGridContainer);
     this.setupCardHover(availableCardsGrid);
   }
 
@@ -172,5 +214,14 @@ export class DeckScene extends Phaser.Scene {
       height: 50,
       fontSize: '24px',
     });
+  }
+
+  private updateDeckGrid() {
+    this.deckGridContainer.removeAll(true);
+    const selectedDeck = userDecks.find((d) => d.id === this.deckSelect.getValue());
+    const deckName = selectedDeck ? selectedDeck.name : 'Nenhum';
+    this.deckTitleText.setText(`Deck: ${deckName} (${this.currentDeckData.length}/12)`);
+    this.populateCardGrid(this.deckGridContainer, this.currentDeckData);
+    this.setupCardHover(this.deckGridContainer);
   }
 }
