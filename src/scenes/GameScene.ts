@@ -20,8 +20,6 @@ import { LogHistoryButton } from '@/components/LogHistoryButton';
 import { CardEffectManager } from '@/utils/CardEffectManager';
 import { CardEffect } from '@/enums/CardEffect';
 
-type MoveLog = { cardName: string; laneIndex: number };
-
 export default class GameScene extends Phaser.Scene {
   private playerHand: Omit<Card, 'index'>[] = [];
   private botHand: Omit<Card, 'index'>[] = [];
@@ -36,7 +34,8 @@ export default class GameScene extends Phaser.Scene {
   private playerEnergy = 0;
   private botEnergy = 0;
   private maxTurn = 7;
-  private isNextTurn: 0 | 1 = 0;
+  // private isNextTurn: 0 | 1 = 0;
+  private isNextTurn: 0 | 1 = Phaser.Math.Between(0, 1) as 0 | 1;
 
   private laneDisplay!: LaneDisplay;
   private energyDisplay!: EnergyDisplay;
@@ -50,8 +49,6 @@ export default class GameScene extends Phaser.Scene {
   private playerDeckDisplay!: DeckDisplay;
   private enemyDeckDisplay!: DeckDisplay;
   private logHistoryButton!: LogHistoryButton;
-  private tempPlayerMoves: MoveLog[] = [];
-  private tempBotMoves: MoveLog[] = [];
   private revealQueue: {
     card: CardData;
     laneIndex: number;
@@ -123,6 +120,7 @@ export default class GameScene extends Phaser.Scene {
     this.playerDeckDisplay.updateDeck(this.playerDeckMutable.length);
     this.playerDeckDisplay.enableModalOpen();
     this.enemyDeckDisplay.updateDeck(this.botDeckMutable.length);
+    this.updatePriorityHighlights();
   }
 
   private initializeGameLanes(): void {
@@ -266,7 +264,6 @@ export default class GameScene extends Phaser.Scene {
 
     const playerLaneIndex = this.lanes.findIndex((lane) => lane.playerSlots.includes(slot));
     if (playerLaneIndex !== -1) {
-      this.tempPlayerMoves.push({ cardName: cardData.name, laneIndex: playerLaneIndex + 1 });
       this.revealQueue.push({
         card: cardData,
         laneIndex: playerLaneIndex,
@@ -416,8 +413,9 @@ export default class GameScene extends Phaser.Scene {
       this.refreshEnergies();
       this.enablePlayerTurnUI();
       this.syncDragState();
-      this.logMovesInOrder();
       this.updateLaneColors();
+      this.isNextTurn = this.getLeadingPlayer();
+      this.updatePriorityHighlights();
 
       if (this.currentTurn >= this.maxTurn) {
         this.handleGameEnd();
@@ -457,7 +455,6 @@ export default class GameScene extends Phaser.Scene {
 
     const botLaneIndex = this.lanes.findIndex((lane) => lane.botSlots.includes(slot));
     if (botLaneIndex !== -1) {
-      this.tempBotMoves.push({ cardName: cardData.name, laneIndex: botLaneIndex + 1 });
       this.revealQueue.push({
         card: cardData,
         laneIndex: botLaneIndex,
@@ -516,12 +513,7 @@ export default class GameScene extends Phaser.Scene {
 
     const slot = (container as any).slot as Slot;
     const cardData = (container as any).cardData as Card;
-    const playerLaneIndex = this.lanes.findIndex((lane) => lane.playerSlots.includes(slot));
-    if (playerLaneIndex !== -1) {
-      this.tempPlayerMoves = this.tempPlayerMoves.filter(
-        (move) => !(move.cardName === cardData.name && move.laneIndex === playerLaneIndex + 1)
-      );
-    }
+
     const queueIndex = this.revealQueue.findIndex(
       (item) => item.card === cardData && item.slot === slot
     );
@@ -608,40 +600,6 @@ export default class GameScene extends Phaser.Scene {
     this.dragAndDropManager.disableDrag();
   }
 
-  private logMovesInOrder(): void {
-    this.logHistoryButton.addLog(`---------- Turno ${this.currentTurn - 1} ----------`);
-
-    let firstMoves: MoveLog[];
-    let secondMoves: MoveLog[];
-    let firstLabel: string;
-    let secondLabel: string;
-
-    if (this.isNextTurn === 0) {
-      firstMoves = this.tempPlayerMoves;
-      firstLabel = 'Jogador';
-      secondMoves = this.tempBotMoves;
-      secondLabel = 'Bot';
-    } else {
-      firstMoves = this.tempBotMoves;
-      firstLabel = 'Bot';
-      secondMoves = this.tempPlayerMoves;
-      secondLabel = 'Jogador';
-    }
-
-    const registerLogs = (moves: MoveLog[], label: string): void => {
-      moves.forEach((m) =>
-        this.logHistoryButton.addLog(`${label} jogou a carta ${m.cardName} na lane ${m.laneIndex}`)
-      );
-    };
-
-    registerLogs(firstMoves, firstLabel);
-    registerLogs(secondMoves, secondLabel);
-
-    this.tempPlayerMoves = [];
-    this.tempBotMoves = [];
-    this.isNextTurn = this.getLeadingPlayer();
-  }
-
   private getLeadingPlayer(): 0 | 1 {
     let playerWins = 0;
     let botWins = 0;
@@ -706,6 +664,8 @@ export default class GameScene extends Phaser.Scene {
   }
 
   private handleGameEnd(): void {
+    this.playerDeckDisplay.showPriorityBorder(false);
+    this.enemyDeckDisplay.showPriorityBorder(false);
     this.effectManager.recalcOngoingEffects();
     this.updatePlacedCardsUI();
     this.updateLanePowers();
@@ -776,13 +736,23 @@ export default class GameScene extends Phaser.Scene {
       return a.isPlayer === playerRevealsFirst ? -1 : 1;
     });
 
+    this.logHistoryButton.addLog(`---------- Turno ${this.currentTurn} ----------`);
+
     console.log(
       'Ordem de Revelação:',
       this.revealQueue.map((item) => `${item.card.name} (${item.isPlayer ? 'Jogador' : 'Bot'})`)
     );
 
     for (const item of this.revealQueue) {
+      const playerName = item.isPlayer ? 'Jogador' : 'Bot';
+      this.logHistoryButton.addLog(
+        `${playerName} jogou a carta ${item.card.name} na lane ${item.laneIndex + 1}`
+      );
+
       console.log(`Revelando ${item.card.name}...`);
+      if (item.slot.cardData) {
+        item.slot.cardData.isRevealed = true;
+      }
       const actions = this.effectManager.applyOnRevealEffect(
         item.card,
         item.laneIndex,
@@ -824,5 +794,12 @@ export default class GameScene extends Phaser.Scene {
         `Mão de ${isPlayer ? 'Jogador' : 'Bot'} está cheia. ${card.name} não foi adicionado.`
       );
     }
+  }
+
+  private updatePriorityHighlights(): void {
+    const playerHasPriority = this.isNextTurn === 0;
+
+    this.playerDeckDisplay.showPriorityBorder(playerHasPriority);
+    this.enemyDeckDisplay.showPriorityBorder(!playerHasPriority);
   }
 }

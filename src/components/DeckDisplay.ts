@@ -8,6 +8,7 @@ export class DeckDisplay {
   private modalContainer?: Phaser.GameObjects.Container;
   private deckCards: Omit<Card, 'index'>[] = [];
   private canOpenModal = false;
+  private borderRect?: Phaser.GameObjects.Rectangle;
 
   constructor(scene: Phaser.Scene, label: string) {
     this.scene = scene;
@@ -35,6 +36,47 @@ export class DeckDisplay {
 
   public disableModalOpen(): void {
     this.canOpenModal = false;
+  }
+
+  public showPriorityBorder(show: boolean): void {
+    if (show) {
+      this.createPriorityBorder();
+    } else {
+      this.destroyPriorityBorder();
+    }
+  }
+
+  private createPriorityBorder(): void {
+    if (this.borderRect || !this.deckText) return;
+
+    this.borderRect = this.scene.add
+      .rectangle(
+        this.deckText.x,
+        this.deckText.y,
+        this.deckText.width + 5,
+        this.deckText.height + 10,
+        0x000000,
+        0
+      )
+      .setOrigin(this.deckText.originX, this.deckText.originY)
+      .setStrokeStyle(3, 0x00ff00);
+
+    this.scene.tweens.add({
+      targets: this.borderRect,
+      alpha: { from: 0.5, to: 1 },
+      duration: 800,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
+  }
+
+  private destroyPriorityBorder(): void {
+    if (this.borderRect) {
+      this.scene.tweens.killTweensOf(this.borderRect);
+      this.borderRect.destroy();
+      this.borderRect = undefined;
+    }
   }
 
   private createDeckText(x: number, y: number, initialDeck: number): Phaser.GameObjects.Text {

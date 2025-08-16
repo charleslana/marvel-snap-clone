@@ -25,14 +25,18 @@ export class CardEffectManager {
     if (!card.effect) return actions;
 
     const lane = this.lanes[laneIndex];
-    const isCosmoPresent = [...lane.playerSlots, ...lane.botSlots].some(
+
+    const cosmoCard = [...lane.playerSlots, ...lane.botSlots].find(
       (s) =>
         s.occupied && s.cardData?.effect?.some((e) => e.effect === CardEffect.CosmoBlockOnReveal)
-    );
+    )?.cardData;
 
-    if (isCosmoPresent) {
-      console.log(`Cosmo bloqueou o efeito OnReveal de ${card.name} na lane ${laneIndex + 1}!`);
-      return actions;
+    if (cosmoCard && cosmoCard.isRevealed) {
+      if (card.name === 'Cosmo') {
+      } else {
+        console.log(`Cosmo bloqueou o efeito OnReveal de ${card.name} na lane ${laneIndex + 1}!`);
+        return actions;
+      }
     }
 
     for (const e of card.effect) {

@@ -12,4 +12,5 @@ export interface Card {
 
 export interface CardData extends Card {
   index: number;
+  isRevealed?: boolean;
 }
