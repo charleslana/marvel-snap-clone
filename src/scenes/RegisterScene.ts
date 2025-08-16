@@ -137,7 +137,7 @@ export class RegisterScene extends Phaser.Scene {
 
       if (user && pass) {
         this.showFeedback('Cadastro realizado com sucesso!', '#00ff00');
-        // this.scene.start(SceneEnum.Login);
+        // this.scene.start(SceneEnum.Home);
       } else {
         this.showFeedback('Preencha todos os campos!', '#ff0000');
       }

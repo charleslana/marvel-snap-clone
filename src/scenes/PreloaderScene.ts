@@ -25,7 +25,7 @@ export class PreloaderScene extends Phaser.Scene {
   }
 
   create() {
-    this.scene.start(SceneEnum.Login);
+    this.scene.start(SceneEnum.Deck);
   }
 
   private createBg(): void {

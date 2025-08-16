@@ -4,6 +4,8 @@ import { BootScene } from './scenes/BootScene';
 import { PreloaderScene } from './scenes/PreloaderScene';
 import { LoginScene } from './scenes/LoginScene';
 import { RegisterScene } from './scenes/RegisterScene';
+import { HomeScene } from './scenes/HomeScene';
+import { DeckScene } from './scenes/DeckScene';
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -28,7 +30,7 @@ const config: Phaser.Types.Core.GameConfig = {
     disableWebAudio: true,
   },
   parent: 'game-container',
-  scene: [BootScene, PreloaderScene, LoginScene, RegisterScene, GameScene],
+  scene: [BootScene, PreloaderScene, LoginScene, RegisterScene, HomeScene, DeckScene, GameScene],
 };
 
 new Phaser.Game(config);

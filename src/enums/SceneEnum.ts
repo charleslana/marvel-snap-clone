@@ -5,12 +5,5 @@ export enum SceneEnum {
   Register = 'Register',
   Home = 'Home',
   Deck = 'Deck',
-  Setting = 'Setting',
-  Credit = 'Credit',
-  HowToPlay = 'HowToPlay',
-  Multiplayer = 'Multiplayer',
-  Password = 'Password',
-  Lobby = 'Lobby',
-  Private = 'Private',
   Game = 'Game',
 }

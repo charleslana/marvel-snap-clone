@@ -6,7 +6,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint . --ext .ts",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "kill": "kill -9 $(lsof -ti:3000)"
   },
   "dependencies": {
     "phaser": "^3.90.0"

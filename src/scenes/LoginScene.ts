@@ -128,6 +128,7 @@ export class LoginScene extends Phaser.Scene {
 
       if (user === 'admin' && pass === '123') {
         this.showFeedback('Login realizado com sucesso!', '#00ff00');
+        this.scene.start(SceneEnum.Home);
       } else {
         this.showFeedback('Usuário ou senha inválidos!', '#ff0000');
       }
