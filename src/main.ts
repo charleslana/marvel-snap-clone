@@ -1,5 +1,9 @@
 import Phaser from 'phaser';
 import GameScene from './scenes/GameScene';
+import { BootScene } from './scenes/BootScene';
+import { PreloaderScene } from './scenes/PreloaderScene';
+import { LoginScene } from './scenes/LoginScene';
+import { RegisterScene } from './scenes/RegisterScene';
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -10,6 +14,9 @@ const config: Phaser.Types.Core.GameConfig = {
     autoCenter: Phaser.Scale.CENTER_BOTH,
   },
   backgroundColor: '#1d1d1d',
+  dom: {
+    createContainer: true,
+  },
   physics: {
     default: 'arcade',
     arcade: {
@@ -21,7 +28,7 @@ const config: Phaser.Types.Core.GameConfig = {
     disableWebAudio: true,
   },
   parent: 'game-container',
-  scene: [GameScene],
+  scene: [BootScene, PreloaderScene, LoginScene, RegisterScene, GameScene],
 };
 
 new Phaser.Game(config);

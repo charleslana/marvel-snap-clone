@@ -19,6 +19,7 @@ import { botDeck, playerDeck } from '@/data/CardPool';
 import { LogHistoryButton } from '@/components/LogHistoryButton';
 import { CardEffectManager } from '@/utils/CardEffectManager';
 import { CardEffect } from '@/enums/CardEffect';
+import { SceneEnum } from '@/enums/SceneEnum';
 
 export default class GameScene extends Phaser.Scene {
   private playerHand: Omit<Card, 'index'>[] = [];
@@ -59,6 +60,10 @@ export default class GameScene extends Phaser.Scene {
 
   private effectManager!: CardEffectManager;
   private placedCardContainers: CardContainer[] = [];
+
+  constructor() {
+    super(SceneEnum.Game);
+  }
 
   public create(): void {
     this.laneDisplay = new LaneDisplay(this);
