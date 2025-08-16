@@ -8,4 +8,5 @@ export interface Slot {
   overlay?: Phaser.GameObjects.Rectangle;
   power?: number;
   cardData?: CardData;
+  permanentBonus?: number;
 }

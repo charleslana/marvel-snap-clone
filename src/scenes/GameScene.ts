@@ -254,6 +254,7 @@ export default class GameScene extends Phaser.Scene {
     slot.occupied = true;
     slot.power = cardData.power;
     slot.cardData = cardData;
+    slot.permanentBonus = 0;
 
     this.playerEnergy -= cardData.cost;
     this.updateEnergyText();

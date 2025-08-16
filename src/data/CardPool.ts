@@ -50,7 +50,7 @@ export const playerDeck: Omit<Card, 'index'>[] = [
     cost: 3,
     power: 3,
     description: 'Constante: As habilidades de revelação não acontecerão aqui.',
-    effect: [{ type: CardEffectType.OnReveal, effect: CardEffect.CosmoBlockOnReveal }],
+    effect: [{ type: CardEffectType.Ongoing, effect: CardEffect.CosmoBlockOnReveal }],
   },
   {
     name: 'Namor',
@@ -78,7 +78,7 @@ export const playerDeck: Omit<Card, 'index'>[] = [
     cost: 6,
     power: 7,
     description: 'Ao revelar: conceda +2 de Poder ás suas cartas constantes.',
-    effect: [{ type: CardEffectType.OnReveal, effect: CardEffect.SpectrumBuffOngoing }],
+    effect: [{ type: CardEffectType.OnReveal, effect: CardEffect.SpectrumBuffOngoing, value: 2 }],
   },
   {
     name: 'Onslaught',

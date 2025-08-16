@@ -107,6 +107,32 @@ export class CardEffectManager {
             );
             break;
           }
+
+          case CardEffect.SpectrumBuffOngoing: {
+            const bonus = typeof e.value === 'number' ? e.value : 0;
+            if (bonus === 0) break;
+
+            const sideIdentifier = isPlayerCard ? 'Jogador' : 'Bot';
+            console.log(`Espectro (${sideIdentifier}) ativou seu efeito!`);
+
+            this.lanes.forEach((targetLane) => {
+              const friendlySlots = isPlayerCard ? targetLane.playerSlots : targetLane.botSlots;
+              for (const targetSlot of friendlySlots) {
+                if (
+                  targetSlot.occupied &&
+                  targetSlot.cardData &&
+                  targetSlot.cardData.effect?.some((eff) => eff.type === CardEffectType.Ongoing)
+                ) {
+                  if (targetSlot.permanentBonus === undefined) {
+                    targetSlot.permanentBonus = 0;
+                  }
+                  targetSlot.permanentBonus += bonus;
+                  console.log(`  -> ${targetSlot.cardData.name} recebeu +${bonus} de poder.`);
+                }
+              }
+            });
+            break;
+          }
         }
       }
     }
@@ -121,7 +147,7 @@ export class CardEffectManager {
           slot.occupied &&
           slot.cardData?.effect?.some((e) => e.type === CardEffectType.Ongoing)
         ) {
-          slot.power = slot.cardData.power;
+          slot.power = slot.cardData.power + (slot.permanentBonus ?? 0);
         }
       }
     }
