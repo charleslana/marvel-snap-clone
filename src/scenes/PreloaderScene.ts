@@ -22,10 +22,11 @@ export class PreloaderScene extends Phaser.Scene {
     for (let i = 0; i < 1; i++) {
       this.load.image(`${ImageEnum.Example}_${i}`, 'images/background.jpg');
     }
+    this.loadCards();
   }
 
   create() {
-    this.scene.start(SceneEnum.Deck);
+    this.scene.start(SceneEnum.Game);
   }
 
   private createBg(): void {
@@ -76,5 +77,32 @@ export class PreloaderScene extends Phaser.Scene {
       progressIndicator.width = 4 + (barWidth - 8) * progress;
       this.loadingText.setText(`Carregando... ${Math.round(progress * 100)}%`);
     });
+  }
+
+  private loadCards(): void {
+    this.load.image(ImageEnum.CardAntMan, 'images/cards/ant-man.jpg');
+    this.load.image(ImageEnum.CardAngela, 'images/cards/angela.jpg');
+    this.load.image(ImageEnum.CardArmor, 'images/cards/armor.jpg');
+    this.load.image(ImageEnum.CardColossus, 'images/cards/colossus.jpg');
+    this.load.image(ImageEnum.CardCosmo, 'images/cards/cosmo.jpg');
+    this.load.image(ImageEnum.CardIronMan, 'images/cards/iron-man.jpg');
+    this.load.image(ImageEnum.CardMrFantastic, 'images/cards/mr-fantastic.jpg');
+    this.load.image(ImageEnum.CardNamor, 'images/cards/namor.jpg');
+    this.load.image(ImageEnum.CardNightcrawler, 'images/cards/nightcrawler.jpg');
+    this.load.image(ImageEnum.CardKlaw, 'images/cards/klaw.jpg');
+    this.load.image(ImageEnum.CardSpectrum, 'images/cards/spectrum.jpg');
+    this.load.image(ImageEnum.CardOnslaught, 'images/cards/onslaught.jpg');
+    this.load.image(ImageEnum.CardAbomination, 'images/cards/abomination.jpg');
+    this.load.image(ImageEnum.CardCyclops, 'images/cards/cyclops.jpg');
+    this.load.image(ImageEnum.CardHawkEye, 'images/cards/hawkeye.jpg');
+    this.load.image(ImageEnum.CardHulk, 'images/cards/hulk.jpg');
+    this.load.image(ImageEnum.CardMedusa, 'images/cards/medusa.jpg');
+    this.load.image(ImageEnum.CardMistyKnight, 'images/cards/misty-knight.jpg');
+    this.load.image(ImageEnum.CardPunisher, 'images/cards/punisher.jpg');
+    this.load.image(ImageEnum.CardQuickSilver, 'images/cards/quick-silver.jpg');
+    this.load.image(ImageEnum.CardSentinel, 'images/cards/sentinel.jpg');
+    this.load.image(ImageEnum.CardWolfsbane, 'images/cards/wolfsbane.jpg');
+    this.load.image(ImageEnum.CardStarlord, 'images/cards/starlord.jpg');
+    this.load.image(ImageEnum.CardTheThing, 'images/cards/the-thing.jpg');
   }
 }

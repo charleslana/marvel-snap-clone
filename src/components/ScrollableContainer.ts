@@ -9,30 +9,21 @@ export class ScrollableContainer extends Phaser.GameObjects.Container {
     super(scene, x, y);
     this.width = width;
     this.viewHeight = height;
-
-    // Container interno que guardará o conteúdo e será movido
     this.contentContainer = this.scene.add.container(0, 0);
     this.add(this.contentContainer);
-
-    // Máscara para a área visível
     const maskShape = this.scene.make.graphics().fillRect(x, y, width, height);
     this.scrollMask = maskShape.createGeometryMask();
     this.contentContainer.setMask(this.scrollMask);
-
-    // Adiciona o listener de rolagem
     this.scene.input.on('wheel', this.onWheel, this);
-
     scene.add.existing(this);
   }
 
-  // Adiciona um ou mais GameObjects ao conteúdo rolável
   public addContent(
     gameObjects: Phaser.GameObjects.GameObject | Phaser.GameObjects.GameObject[]
   ): void {
     this.contentContainer.add(gameObjects);
   }
 
-  // Retorna a lista de GameObjects do conteúdo
   public getContent(): Phaser.GameObjects.GameObject[] {
     return this.contentContainer.list;
   }
@@ -60,7 +51,6 @@ export class ScrollableContainer extends Phaser.GameObjects.Container {
     this.contentContainer.y = Phaser.Math.Clamp(newY, minY, maxY);
   }
 
-  // Limpa o listener quando a cena for destruída
   preDestroy() {
     this.scene.input.off('wheel', this.onWheel, this);
     super.preDestroy();

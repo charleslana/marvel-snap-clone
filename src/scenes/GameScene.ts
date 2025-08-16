@@ -20,6 +20,7 @@ import { LogHistoryButton } from '@/components/LogHistoryButton';
 import { CardEffectManager } from '@/utils/CardEffectManager';
 import { CardEffect } from '@/enums/CardEffect';
 import { SceneEnum } from '@/enums/SceneEnum';
+import { ImageEnum } from '@/enums/ImageEnum';
 
 export default class GameScene extends Phaser.Scene {
   private playerHand: Omit<Card, 'index'>[] = [];
@@ -37,6 +38,7 @@ export default class GameScene extends Phaser.Scene {
   private maxTurn = 7;
   // private isNextTurn: 0 | 1 = 0;
   private isNextTurn: 0 | 1 = Phaser.Math.Between(0, 1) as 0 | 1;
+  private showBotHand = true;
 
   private laneDisplay!: LaneDisplay;
   private energyDisplay!: EnergyDisplay;
@@ -65,6 +67,19 @@ export default class GameScene extends Phaser.Scene {
     super(SceneEnum.Game);
   }
 
+  init(): void {
+    this.playerHand = [];
+    this.botHand = [];
+    this.placedCardContainers = [];
+    this.playerDeckMutable = [];
+    this.botDeckMutable = [];
+    this.currentTurn = 1;
+    this.playerEnergy = 1;
+    this.lanes = [];
+    this.playerHandContainers = [];
+    this.botHandContainers = [];
+  }
+
   public create(): void {
     this.laneDisplay = new LaneDisplay(this);
     this.energyDisplay = new EnergyDisplay(this);
@@ -81,6 +96,7 @@ export default class GameScene extends Phaser.Scene {
     this.logHistoryButton = new LogHistoryButton(this);
     this.effectManager = new CardEffectManager(this.lanes);
 
+    this.createBackground();
     this.initializeGameDecks();
     this.initializeGameLanes();
     this.initializeEnergyDisplay();
@@ -112,6 +128,11 @@ export default class GameScene extends Phaser.Scene {
 
     this.botAI = new BotAI(this, this.lanes, this.botHand, this.botEnergy);
     this.gameEndManager = new GameEndManager(this, this.lanes, this.logHistoryButton);
+  }
+
+  private createBackground() {
+    const bg = this.add.image(0, 0, ImageEnum.Background).setOrigin(0);
+    bg.setDisplaySize(this.cameras.main.width, this.cameras.main.height);
   }
 
   private initializeGameDecks(): void {
@@ -167,7 +188,9 @@ export default class GameScene extends Phaser.Scene {
   private initializeEndBattleButton(): void {
     const centerY = this.scale.height / 2;
     this.endBattleButton.initialize(20, centerY, () => {
-      if (this.gameEndManager.isGameEnded()) console.log('Finalizar batalha');
+      if (this.gameEndManager.isGameEnded()) {
+        this.scene.start(SceneEnum.Home);
+      }
     });
     this.endBattleButton.setVisible(false);
   }
@@ -209,8 +232,7 @@ export default class GameScene extends Phaser.Scene {
       cardContainer.setInteractivity('none');
       this.add.existing(cardContainer);
       this.botHandContainers.push(cardContainer);
-      // Mostra a mão do adversário
-      cardContainer.setTextsVisible(true);
+      cardContainer.setRevealed(this.showBotHand);
     });
   }
 
@@ -537,6 +559,7 @@ export default class GameScene extends Phaser.Scene {
       power: cardData.power,
       description: cardData.description,
       effect: cardData.effect,
+      image: cardData.image,
     };
 
     if (originalIndex !== undefined && originalIndex >= 0) {
@@ -722,7 +745,7 @@ export default class GameScene extends Phaser.Scene {
 
   private revealBotHand(): void {
     this.botHandContainers.forEach((container) => {
-      container.setTextsVisible(true);
+      container.setRevealed(true);
     });
   }
 

@@ -1,5 +1,6 @@
 import { CardEffect } from '@/enums/CardEffect';
 import { CardEffectType } from '@/enums/CardEffectType';
+import { ImageEnum } from '@/enums/ImageEnum';
 import { Card } from '@/interfaces/Card';
 
 export const playerDeck: Omit<Card, 'index'>[] = [
@@ -8,6 +9,7 @@ export const playerDeck: Omit<Card, 'index'>[] = [
     cost: 1,
     power: 1,
     description: 'Constante: se tiver 3 outras cartas aqui, +3 de poder.',
+    image: ImageEnum.CardAntMan,
     effect: [{ type: CardEffectType.Ongoing, effect: CardEffect.AntManBuff, value: 3 }],
   },
   {
@@ -15,6 +17,7 @@ export const playerDeck: Omit<Card, 'index'>[] = [
     cost: 1,
     power: 2,
     description: 'Você pode mover isto uma vez.',
+    image: ImageEnum.CardNightcrawler,
     effect: [{ type: CardEffectType.None, effect: CardEffect.NightcrawlerMove }],
   },
   {
@@ -22,6 +25,7 @@ export const playerDeck: Omit<Card, 'index'>[] = [
     cost: 2,
     power: 3,
     description: 'Quando você jogar uma carta aqui, +1 de poder.',
+    image: ImageEnum.CardAngela,
     effect: [{ type: CardEffectType.OnCardPlayed, effect: CardEffect.AngelaBuff }],
   },
   {
@@ -29,6 +33,7 @@ export const playerDeck: Omit<Card, 'index'>[] = [
     cost: 2,
     power: 3,
     description: 'Constante: As cartas aqui não podem ser destruídas.',
+    image: ImageEnum.CardArmor,
     effect: [{ type: CardEffectType.Ongoing, effect: CardEffect.ArmorPreventDestroy }],
   },
   {
@@ -36,6 +41,7 @@ export const playerDeck: Omit<Card, 'index'>[] = [
     cost: 2,
     power: 3,
     description: 'Constante: Não pode ser destruído, movido ou ter seu Poder reduzido.',
+    image: ImageEnum.CardColossus,
     effect: [{ type: CardEffectType.Ongoing, effect: CardEffect.ColossusImmune }],
   },
   {
@@ -43,6 +49,7 @@ export const playerDeck: Omit<Card, 'index'>[] = [
     cost: 3,
     power: 1,
     description: 'Constante: Locais adjacentes tem +3 de Poder.',
+    image: ImageEnum.CardMrFantastic,
     effect: [{ type: CardEffectType.Ongoing, effect: CardEffect.MisterFantasticBuff, value: 3 }],
   },
   {
@@ -50,6 +57,7 @@ export const playerDeck: Omit<Card, 'index'>[] = [
     cost: 3,
     power: 3,
     description: 'Constante: As habilidades de revelação não acontecerão aqui.',
+    image: ImageEnum.CardCosmo,
     effect: [{ type: CardEffectType.Ongoing, effect: CardEffect.CosmoBlockOnReveal }],
   },
   {
@@ -57,6 +65,7 @@ export const playerDeck: Omit<Card, 'index'>[] = [
     cost: 4,
     power: 6,
     description: 'Constante: +5 de Poder se esta for sua única carta aqui.',
+    image: ImageEnum.CardNamor,
     effect: [{ type: CardEffectType.Ongoing, effect: CardEffect.NamorBuff, value: 5 }],
   },
   {
@@ -64,6 +73,7 @@ export const playerDeck: Omit<Card, 'index'>[] = [
     cost: 5,
     power: 0,
     description: 'Constante: seu poder total é dobrado aqui.',
+    image: ImageEnum.CardIronMan,
     effect: [{ type: CardEffectType.Ongoing, effect: CardEffect.IronManDoublePower }],
   },
   {
@@ -71,6 +81,7 @@ export const playerDeck: Omit<Card, 'index'>[] = [
     cost: 5,
     power: 4,
     description: 'Constante: O local à direita tem +7 de Poder',
+    image: ImageEnum.CardKlaw,
     effect: [{ type: CardEffectType.Ongoing, effect: CardEffect.KlawRightBuff, value: 7 }],
   },
   {
@@ -78,6 +89,7 @@ export const playerDeck: Omit<Card, 'index'>[] = [
     cost: 6,
     power: 7,
     description: 'Ao revelar: conceda +2 de Poder ás suas cartas constantes.',
+    image: ImageEnum.CardSpectrum,
     effect: [{ type: CardEffectType.OnReveal, effect: CardEffect.SpectrumBuffOngoing, value: 2 }],
   },
   {
@@ -85,6 +97,7 @@ export const playerDeck: Omit<Card, 'index'>[] = [
     cost: 6,
     power: 8,
     description: 'Constante: Duplique seus outros efeitos constantes aqui.',
+    image: ImageEnum.CardOnslaught,
     effect: [{ type: CardEffectType.Ongoing, effect: CardEffect.OnslaughtDoubleOngoing }],
   },
 ];
@@ -95,6 +108,7 @@ export const botDeck: Omit<Card, 'index'>[] = [
     cost: 5,
     power: 9,
     description: 'Rá! Vermes tolos! Vocês estão abaixo de mim!',
+    image: ImageEnum.CardAbomination,
     effect: [{ type: CardEffectType.None, effect: CardEffect.None }],
   },
   {
@@ -102,6 +116,7 @@ export const botDeck: Omit<Card, 'index'>[] = [
     cost: 3,
     power: 4,
     description: 'Vamos, X-Men.',
+    image: ImageEnum.CardCyclops,
     effect: [{ type: CardEffectType.None, effect: CardEffect.None }],
   },
   {
@@ -109,6 +124,7 @@ export const botDeck: Omit<Card, 'index'>[] = [
     cost: 1,
     power: 1,
     description: 'Ao revelar: se você jogar uma carta aqui no próximo turno, +3 de poder.',
+    image: ImageEnum.CardHawkEye,
     effect: [{ type: CardEffectType.EndOfTurn, effect: CardEffect.HawkeyeNextTurnBuff }],
   },
   {
@@ -116,6 +132,7 @@ export const botDeck: Omit<Card, 'index'>[] = [
     cost: 6,
     power: 12,
     description: 'HULK ESMAGAR!',
+    image: ImageEnum.CardHulk,
     effect: [{ type: CardEffectType.None, effect: CardEffect.None }],
   },
   {
@@ -123,6 +140,7 @@ export const botDeck: Omit<Card, 'index'>[] = [
     cost: 2,
     power: 2,
     description: 'Ao revelar: se esta carta estiver na localização do meio, +3 de poder.',
+    image: ImageEnum.CardMedusa,
     effect: [{ type: CardEffectType.OnReveal, effect: CardEffect.MedusaCenterBuff, value: 3 }],
   },
   {
@@ -130,6 +148,7 @@ export const botDeck: Omit<Card, 'index'>[] = [
     cost: 1,
     power: 2,
     description: 'Temos que salvar esta cidade.',
+    image: ImageEnum.CardMistyKnight,
     effect: [{ type: CardEffectType.None, effect: CardEffect.None }],
   },
   {
@@ -137,6 +156,7 @@ export const botDeck: Omit<Card, 'index'>[] = [
     cost: 3,
     power: 2,
     description: 'Constante: +1 de poder para cada carta inimiga aqui.',
+    image: ImageEnum.CardPunisher,
     effect: [{ type: CardEffectType.Ongoing, effect: CardEffect.PunisherEnemyBuff, value: 1 }],
   },
   {
@@ -144,6 +164,7 @@ export const botDeck: Omit<Card, 'index'>[] = [
     cost: 1,
     power: 2,
     description: 'Começa na sua mão inicial.',
+    image: ImageEnum.CardQuickSilver,
     effect: [{ type: CardEffectType.None, effect: CardEffect.None }],
   },
   {
@@ -151,6 +172,7 @@ export const botDeck: Omit<Card, 'index'>[] = [
     cost: 2,
     power: 3,
     description: 'Ao revelar: adiciona outro Sentinela à sua mão.',
+    image: ImageEnum.CardSentinel,
     effect: [{ type: CardEffectType.OnReveal, effect: CardEffect.SentinelAddToHand }],
   },
   {
@@ -158,6 +180,7 @@ export const botDeck: Omit<Card, 'index'>[] = [
     cost: 2,
     power: 3,
     description: 'Ao revelar: +2 de poder para cada outra carta que voce tiver aqui.',
+    image: ImageEnum.CardWolfsbane,
     effect: [{ type: CardEffectType.OnReveal, effect: CardEffect.WolfsbaneBuff, value: 2 }],
   },
   {
@@ -165,6 +188,7 @@ export const botDeck: Omit<Card, 'index'>[] = [
     cost: 2,
     power: 2,
     description: 'Ao revelar: se seu oponente jogou uma carta aqui neste turno, +4 de poder.',
+    image: ImageEnum.CardStarlord,
     effect: [
       { type: CardEffectType.OnReveal, effect: CardEffect.StarLordOpponentPlayedBuff, value: 4 },
     ],
@@ -174,6 +198,7 @@ export const botDeck: Omit<Card, 'index'>[] = [
     cost: 4,
     power: 7,
     description: 'Tá na hora do pau!',
+    image: ImageEnum.CardTheThing,
     effect: [{ type: CardEffectType.None, effect: CardEffect.None }],
   },
 ];

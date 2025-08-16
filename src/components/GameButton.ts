@@ -79,7 +79,7 @@ export class GameButton extends Phaser.GameObjects.Container {
 
   private adjustFontSizeToFit() {
     let fontSize = parseInt(this.fontSize);
-    const maxWidth = this.buttonWidth - 20; // padding interno
+    const maxWidth = this.buttonWidth - 20;
     while (this.label.width > maxWidth && fontSize > 10) {
       fontSize -= 1;
       this.label.setFontSize(fontSize);

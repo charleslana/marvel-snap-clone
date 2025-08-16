@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { Card } from '@/interfaces/Card';
+import { CardContainer } from './CardContainer';
 
 export class DeckDisplay {
   private scene: Phaser.Scene;
@@ -22,7 +23,6 @@ export class DeckDisplay {
     cards?: Omit<Card, 'index'>[]
   ): void {
     if (cards) this.deckCards = cards;
-
     this.deckText = this.createDeckText(x, y, initialDeck);
   }
 
@@ -48,19 +48,17 @@ export class DeckDisplay {
 
   private createPriorityBorder(): void {
     if (this.borderRect || !this.deckText) return;
-
     this.borderRect = this.scene.add
       .rectangle(
         this.deckText.x,
         this.deckText.y,
-        this.deckText.width + 5,
+        this.deckText.width + 3,
         this.deckText.height + 10,
         0x000000,
         0
       )
       .setOrigin(this.deckText.originX, this.deckText.originY)
       .setStrokeStyle(3, 0x00ff00);
-
     this.scene.tweens.add({
       targets: this.borderRect,
       alpha: { from: 0.5, to: 1 },
@@ -96,9 +94,7 @@ export class DeckDisplay {
 
   private showModal(): void {
     if (this.modalContainer) return;
-
     const { width, height } = this.scene.cameras.main;
-
     const background = this.createModalBackground(width, height);
     const modalBox = this.createModalBox(width, height);
     const cardObjects = this.createCardObjects(
@@ -107,14 +103,12 @@ export class DeckDisplay {
       modalBox.width - 60
     );
     const closeButton = this.createCloseButton(width, height);
-
     this.modalContainer = this.scene.add.container(0, 0, [
       background,
       modalBox,
       ...cardObjects,
       closeButton,
     ]);
-
     this.scene.children.bringToTop(this.modalContainer);
   }
 
@@ -145,87 +139,38 @@ export class DeckDisplay {
     return modalBox;
   }
 
-  private createCardObjects(
-    startX: number,
-    startY: number,
-    modalWidth: number
-  ): Phaser.GameObjects.GameObject[] {
+  private createCardObjects(startX: number, startY: number, modalWidth: number): CardContainer[] {
     const spacing = 20;
     const cardWidth = 100;
     const cardHeight = 120;
     const cols = Math.floor(modalWidth / (cardWidth + spacing));
     const shuffled = Phaser.Utils.Array.Shuffle([...this.deckCards]);
 
-    const objects: Phaser.GameObjects.GameObject[] = [];
+    const cardContainers: CardContainer[] = [];
 
     shuffled.forEach((card, i) => {
       const col = i % cols;
       const row = Math.floor(i / cols);
-      const x = startX + col * (cardWidth + spacing);
-      const y = startY + row * (cardHeight + spacing);
 
-      const rect = this.createCardRectangle(x, y, cardWidth, cardHeight);
-      const nameText = this.createCardNameText(x, y, cardWidth, card.name);
-      const powerText = this.createCardPowerText(x, y, cardWidth, card.power);
-      const costText = this.createCardCostText(x, y, card.cost);
+      const x = startX + col * (cardWidth + spacing) + cardWidth / 2;
+      const y = startY + row * (cardHeight + spacing) + cardHeight / 2;
 
-      objects.push(rect, nameText, powerText, costText);
+      const cardContainer = new CardContainer(
+        this.scene,
+        x,
+        y,
+        cardWidth,
+        cardHeight,
+        0x333333,
+        card,
+        i
+      );
+      cardContainer.setRevealed(true);
+
+      cardContainers.push(cardContainer);
     });
 
-    return objects;
-  }
-
-  private createCardRectangle(
-    x: number,
-    y: number,
-    width: number,
-    height: number
-  ): Phaser.GameObjects.Rectangle {
-    const rect = this.scene.add.rectangle(x, y, width, height, 0x333333, 1).setOrigin(0, 0);
-    rect.setStrokeStyle(1, 0xffffff);
-    return rect;
-  }
-
-  private createCardNameText(
-    x: number,
-    y: number,
-    cardWidth: number,
-    name: string
-  ): Phaser.GameObjects.Text {
-    return this.scene.add
-      .text(x + cardWidth / 2, y + 120 - 10, name, {
-        color: '#ffffff',
-        fontSize: '12px',
-        align: 'center',
-        wordWrap: { width: cardWidth - 10, useAdvancedWrap: true },
-      })
-      .setOrigin(0.5, 1);
-  }
-
-  private createCardPowerText(
-    x: number,
-    y: number,
-    cardWidth: number,
-    power: number
-  ): Phaser.GameObjects.Text {
-    return this.scene.add
-      .text(x + cardWidth - 5, y + 5, String(power), {
-        color: '#ffff00',
-        fontSize: '12px',
-        fontStyle: 'bold',
-        align: 'right',
-      })
-      .setOrigin(1, 0);
-  }
-
-  private createCardCostText(x: number, y: number, cost: number): Phaser.GameObjects.Text {
-    return this.scene.add
-      .text(x + 5, y + 5, String(cost), {
-        color: '#ffffff',
-        fontSize: '12px',
-        align: 'left',
-      })
-      .setOrigin(0, 0);
+    return cardContainers;
   }
 
   private createCloseButton(width: number, height: number): Phaser.GameObjects.Text {

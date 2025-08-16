@@ -8,14 +8,12 @@ export class Checkbox extends Phaser.GameObjects.Container {
   constructor(scene: Phaser.Scene, x: number, y: number, size = 26) {
     super(scene, x, y);
 
-    // Caixa
     this.box = scene.add
       .rectangle(0, 0, size, size, 0x1b1e29)
       .setStrokeStyle(1, 0x292d3e)
       .setOrigin(0, 0)
       .setInteractive({ useHandCursor: true });
 
-    // Check (usando Graphics)
     this.check = scene.add.graphics();
     this.drawCheck(false);
 

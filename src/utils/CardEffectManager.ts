@@ -1,5 +1,6 @@
 import { CardEffect } from '@/enums/CardEffect';
 import { CardEffectType } from '@/enums/CardEffectType';
+import { ImageEnum } from '@/enums/ImageEnum';
 import { Card, CardData } from '@/interfaces/Card';
 import { AddToHandAction, EffectAction } from '@/interfaces/EffectAction';
 import { Lane } from '@/interfaces/Lane';
@@ -95,6 +96,7 @@ export class CardEffectManager {
               power: 3,
               description: 'Ao revelar: adiciona outro Sentinela à sua mão.',
               effect: [{ type: CardEffectType.OnReveal, effect: CardEffect.SentinelAddToHand }],
+              image: ImageEnum.CardSentinel,
             };
 
             const action: AddToHandAction = {

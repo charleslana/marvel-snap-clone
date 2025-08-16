@@ -1,5 +1,6 @@
 import { CardEffect } from '@/enums/CardEffect';
 import { CardEffectType } from '@/enums/CardEffectType';
+import { ImageEnum } from '@/enums/ImageEnum';
 
 export interface Card {
   name: string;
@@ -7,6 +8,7 @@ export interface Card {
   power: number;
   index: number;
   description: string;
+  image?: ImageEnum;
   effect?: { type: CardEffectType; effect: CardEffect; value?: number | number[] }[];
 }
 

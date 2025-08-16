@@ -8,6 +8,8 @@ export class CardDetailsPanel {
   private powerText?: Phaser.GameObjects.Text;
   private costText?: Phaser.GameObjects.Text;
   private descriptionText?: Phaser.GameObjects.Text;
+  private cardImage?: Phaser.GameObjects.Image;
+  private backgroundRect?: Phaser.GameObjects.Rectangle;
 
   private readonly width = 220;
   private readonly height = 320;
@@ -17,14 +19,12 @@ export class CardDetailsPanel {
   }
 
   public initialize(x: number, y: number): void {
-    const background = this.createBackground();
     this.nameText = this.createNameText();
     this.powerText = this.createPowerText();
     this.costText = this.createCostText();
     this.descriptionText = this.createDescriptionText();
 
     this.panel = this.scene.add.container(x, y, [
-      background,
       this.nameText,
       this.powerText,
       this.costText,
@@ -36,6 +36,18 @@ export class CardDetailsPanel {
 
   public showCardDetails(card: CardData): void {
     if (!this.panel) return;
+
+    this.cardImage?.destroy();
+    this.backgroundRect?.destroy();
+
+    if (card.image) {
+      this.cardImage = this.scene.add.image(0, 0, card.image);
+      this.cardImage.setDisplaySize(this.width, this.height);
+      this.panel.addAt(this.cardImage, 0);
+    } else {
+      this.backgroundRect = this.createBackground();
+      this.panel.addAt(this.backgroundRect, 0);
+    }
 
     this.nameText?.setText(card.name);
     this.powerText?.setText(card.power.toString());
@@ -64,7 +76,8 @@ export class CardDetailsPanel {
         align: 'center',
         wordWrap: { width: this.width - 40 },
       })
-      .setOrigin(0.5, 0.5);
+      .setOrigin(0.5, 0.5)
+      .setStroke('#000000', 3);
   }
 
   private createPowerText(): Phaser.GameObjects.Text {
@@ -74,7 +87,8 @@ export class CardDetailsPanel {
         color: '#ffff00',
         fontStyle: 'bold',
       })
-      .setOrigin(1, 0.5);
+      .setOrigin(1, 0.5)
+      .setStroke('#000000', 3);
   }
 
   private createCostText(): Phaser.GameObjects.Text {
@@ -84,7 +98,8 @@ export class CardDetailsPanel {
         color: '#ffffff',
         fontStyle: 'bold',
       })
-      .setOrigin(0, 0.5);
+      .setOrigin(0, 0.5)
+      .setStroke('#000000', 3);
   }
 
   private createDescriptionText(): Phaser.GameObjects.Text {
@@ -95,6 +110,7 @@ export class CardDetailsPanel {
         align: 'center',
         wordWrap: { width: this.width - 40 },
       })
-      .setOrigin(0.5);
+      .setOrigin(0.5)
+      .setStroke('#000000', 3);
   }
 }

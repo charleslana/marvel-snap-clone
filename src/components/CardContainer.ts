@@ -10,6 +10,8 @@ export class CardContainer extends Phaser.GameObjects.Container {
   private costText: Phaser.GameObjects.Text;
   private powerText: Phaser.GameObjects.Text;
   private borderRect?: Phaser.GameObjects.Rectangle;
+  private cardImage?: Phaser.GameObjects.Image;
+  private backgroundRect?: Phaser.GameObjects.Rectangle;
 
   constructor(
     scene: Phaser.Scene,
@@ -26,13 +28,22 @@ export class CardContainer extends Phaser.GameObjects.Container {
     this.cardData = { ...card, index };
     this.startX = x;
     this.startY = y;
+    this.backgroundRect = this.createCardRectangle(width, height, color);
+    const children: Phaser.GameObjects.GameObject[] = [this.backgroundRect];
 
-    const cardRect = this.createCardRectangle(width, height, color);
+    if (card.image) {
+      this.cardImage = scene.add.image(0, 0, card.image);
+      this.cardImage.setDisplaySize(width, height);
+      children.push(this.cardImage);
+    }
+
     this.nameText = this.createNameText(card.name, width, height);
     this.powerText = this.createPowerText(card.power, width, height);
     this.costText = this.createCostText(card.cost, width, height);
+    children.push(this.nameText, this.powerText, this.costText);
 
-    this.add([cardRect, this.nameText, this.powerText, this.costText]);
+    this.add(children);
+
     this.setSize(width, height);
   }
 
@@ -41,18 +52,18 @@ export class CardContainer extends Phaser.GameObjects.Container {
 
     switch (type) {
       case 'none':
-        this.setTextsVisible(false);
+        this.setRevealed(false);
         break;
 
       case 'hover':
         this.setInteractive({ useHandCursor: true });
-        this.setTextsVisible(true);
+        this.setRevealed(true);
         break;
 
       case 'draggable':
         this.setInteractive({ useHandCursor: true });
         this.scene.input.setDraggable(this, true);
-        this.setTextsVisible(true);
+        this.setRevealed(true);
         break;
     }
   }
@@ -61,10 +72,11 @@ export class CardContainer extends Phaser.GameObjects.Container {
     show ? this.createPlayableBorder() : this.destroyPlayableBorder();
   }
 
-  public setTextsVisible(visible: boolean): void {
-    this.nameText.setVisible(visible);
-    this.costText.setVisible(visible);
-    this.powerText.setVisible(visible);
+  public setRevealed(isVisible: boolean): void {
+    this.nameText.setVisible(isVisible);
+    this.costText.setVisible(isVisible);
+    this.powerText.setVisible(isVisible);
+    this.cardImage?.setVisible(isVisible);
   }
 
   public updatePower(newPower: number): void {

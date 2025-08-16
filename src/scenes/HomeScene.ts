@@ -79,7 +79,7 @@ export class HomeScene extends Phaser.Scene {
 
   private handlePlay() {
     console.log('Jogar clicado!');
-    // this.scene.start(SceneEnum.Game);
+    this.scene.start(SceneEnum.Game);
   }
 
   private handleDecks() {

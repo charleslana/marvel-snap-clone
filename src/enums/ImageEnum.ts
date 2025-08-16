@@ -1,9 +1,28 @@
 export enum ImageEnum {
   Background = 'Background',
   Example = 'Example',
-}
-
-export function getImageEnum(value: string): string {
-  const enumValue = Object.values(ImageEnum).find((enumValue) => enumValue === value);
-  return enumValue ?? '';
+  CardAntMan = 'CardAntMan',
+  CardAngela = 'CardAngela',
+  CardArmor = 'CardArmor',
+  CardColossus = 'CardColossus',
+  CardCosmo = 'CardCosmos',
+  CardIronMan = 'CardIronMan',
+  CardMrFantastic = 'CardMrFantastic',
+  CardNamor = 'CardNamor',
+  CardNightcrawler = 'CardNightcrawler',
+  CardKlaw = 'CardKlaw',
+  CardSpectrum = 'CardSpectrum',
+  CardOnslaught = 'CardOnslaught',
+  CardAbomination = 'CardAbomination',
+  CardCyclops = 'CardCyclops',
+  CardHawkEye = 'CardHawkEye',
+  CardHulk = 'CardHulk',
+  CardMedusa = 'CardMedusa',
+  CardMistyKnight = 'CardMistyKnight',
+  CardPunisher = 'CardPunisher',
+  CardQuickSilver = 'CardQuickSilver',
+  CardSentinel = 'CardSentinel',
+  CardWolfsbane = 'CardWolfsbane',
+  CardStarlord = 'CardStarlord',
+  CardTheThing = 'CardTheThing',
 }
