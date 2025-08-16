@@ -689,6 +689,7 @@ export default class GameScene extends Phaser.Scene {
   private prepareNextRound(): void {
     this.effectManager.applyEndOfTurnEffects();
     this.effectManager.recalcOngoingEffects();
+    this.updateLaneProperties();
     this.updatePlacedCardsUI();
     this.updateLanePowers();
 
@@ -779,6 +780,7 @@ export default class GameScene extends Phaser.Scene {
 
     console.log('Recalculando todos os efeitos Ongoing após as revelações.');
     this.effectManager.recalcOngoingEffects();
+    this.updateLaneProperties();
     this.updatePlacedCardsUI();
     this.updateLanePowers();
   }
@@ -801,5 +803,21 @@ export default class GameScene extends Phaser.Scene {
 
     this.playerDeckDisplay.showPriorityBorder(playerHasPriority);
     this.enemyDeckDisplay.showPriorityBorder(!playerHasPriority);
+  }
+
+  private updateLaneProperties(): void {
+    for (const lane of this.lanes) {
+      if (!lane.properties) lane.properties = {};
+      lane.properties.cardsCannotBeDestroyed = false;
+
+      const isArmorPresent = [...lane.playerSlots, ...lane.botSlots].some(
+        (s) =>
+          s.occupied && s.cardData?.effect?.some((e) => e.effect === CardEffect.ArmorPreventDestroy)
+      );
+      if (isArmorPresent) {
+        lane.properties.cardsCannotBeDestroyed = true;
+        console.log(`Lane ${lane.index + 1} está protegida pela Armor!`);
+      }
+    }
   }
 }

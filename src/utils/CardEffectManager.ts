@@ -235,6 +235,18 @@ export class CardEffectManager {
         }
         break;
       }
+
+      case CardEffect.ColossusImmune: {
+        if (!targetSlot.cardData!.immunities) {
+          targetSlot.cardData!.immunities = {};
+        }
+        targetSlot.cardData!.immunities.cannotBeDestroyed = true;
+        targetSlot.cardData!.immunities.cannotBeMoved = true;
+        targetSlot.cardData!.immunities.cannotHavePowerReduced = true;
+
+        console.log(`${targetSlot.cardData!.name} está com suas imunidades ativas.`);
+        break;
+      }
     }
   }
 

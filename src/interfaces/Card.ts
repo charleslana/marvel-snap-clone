@@ -13,4 +13,9 @@ export interface Card {
 export interface CardData extends Card {
   index: number;
   isRevealed?: boolean;
+  immunities?: {
+    cannotBeDestroyed?: boolean;
+    cannotBeMoved?: boolean;
+    cannotHavePowerReduced?: boolean;
+  };
 }

@@ -11,4 +11,7 @@ export interface Lane {
   playerPowerText?: Phaser.GameObjects.Text;
   enemyPowerText?: Phaser.GameObjects.Text;
   worldContainer?: Phaser.GameObjects.Container;
+  properties?: {
+    cardsCannotBeDestroyed?: boolean;
+  };
 }
