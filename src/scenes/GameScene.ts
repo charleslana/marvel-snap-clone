@@ -19,6 +19,7 @@ import { SceneEnum } from '@/enums/SceneEnum';
 import { ImageEnum } from '@/enums/ImageEnum';
 import { GameButton } from '@/components/GameButton';
 import { ButtonColor } from '@/enums/ButtonColor';
+import { UIFactory } from '@/components/UIFactory';
 
 export default class GameScene extends Phaser.Scene {
   private playerHand: Omit<Card, 'index'>[] = [];
@@ -37,6 +38,12 @@ export default class GameScene extends Phaser.Scene {
   // private isNextTurn: 0 | 1 = 0;
   private isNextTurn: 0 | 1 = Phaser.Math.Between(0, 1) as 0 | 1;
   private showBotHand = true;
+  private playerNameText!: Phaser.GameObjects.Text;
+  private opponentNameText!: Phaser.GameObjects.Text;
+  private priorityGlowFx?: Phaser.FX.Glow;
+  private priorityGlowTween?: Phaser.Tweens.Tween;
+  private playerName = 'Você';
+  private opponentName = 'Adversário';
 
   private laneDisplay!: LaneDisplay;
   private energyDisplay!: GameButton;
@@ -79,6 +86,8 @@ export default class GameScene extends Phaser.Scene {
   }
 
   public create(): void {
+    this.lights.enable();
+    this.lights.setAmbientColor(0x808080);
     this.laneDisplay = new LaneDisplay(this);
     this.cardDetailsPanel = new CardDetailsPanel(this);
     this.playerDeckDisplay = new DeckDisplay(this, 'Deck jogador');
@@ -91,6 +100,7 @@ export default class GameScene extends Phaser.Scene {
     this.effectManager = new CardEffectManager(this.lanes);
 
     this.createBackground();
+    this.initializePlayerNames();
     this.initializeGameDecks();
     this.initializeGameLanes();
     this.initializeEnergyDisplay();
@@ -127,6 +137,24 @@ export default class GameScene extends Phaser.Scene {
   private createBackground() {
     const bg = this.add.image(0, 0, ImageEnum.Background).setOrigin(0);
     bg.setDisplaySize(this.cameras.main.width, this.cameras.main.height);
+  }
+
+  private initializePlayerNames(): void {
+    const spacing = 25;
+
+    const opponentDeckY = 40;
+    const opponentNameY = opponentDeckY + 40 + spacing;
+    this.opponentNameText = UIFactory.createText(this, 20, opponentNameY, this.opponentName, {
+      fontSize: '22px',
+      fontStyle: 'bold',
+    }).setOrigin(0, 0.5);
+
+    const playerDeckY = this.scale.height - 40;
+    const playerNameY = playerDeckY - 40 - spacing;
+    this.playerNameText = UIFactory.createText(this, 20, playerNameY, this.playerName, {
+      fontSize: '22px',
+      fontStyle: 'bold',
+    }).setOrigin(0, 0.5);
   }
 
   private initializeGameDecks(): void {
@@ -753,8 +781,9 @@ export default class GameScene extends Phaser.Scene {
   }
 
   private handleGameEnd(): void {
-    this.playerDeckDisplay.showPriorityBorder(false);
-    this.enemyDeckDisplay.showPriorityBorder(false);
+    this.playerNameText.setColor('#ffffff');
+    this.opponentNameText.setColor('#ffffff');
+
     this.effectManager.recalcOngoingEffects();
     this.updatePlacedCardsUI();
     this.updateLanePowers();
@@ -890,8 +919,11 @@ export default class GameScene extends Phaser.Scene {
   private updatePriorityHighlights(): void {
     const playerHasPriority = this.isNextTurn === 0;
 
-    this.playerDeckDisplay.showPriorityBorder(playerHasPriority);
-    this.enemyDeckDisplay.showPriorityBorder(!playerHasPriority);
+    this.playerNameText.setColor('#ffffff');
+    this.opponentNameText.setColor('#ffffff');
+    const targetText = playerHasPriority ? this.playerNameText : this.opponentNameText;
+
+    targetText.setColor('#00ff00');
   }
 
   private updateLaneProperties(): void {

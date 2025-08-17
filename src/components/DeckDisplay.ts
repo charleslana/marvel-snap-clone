@@ -40,49 +40,6 @@ export class DeckDisplay {
     this.canOpenModal = false;
   }
 
-  public showPriorityBorder(show: boolean): void {
-    if (show) {
-      this.createPriorityBorder();
-    } else {
-      this.destroyPriorityBorder();
-    }
-  }
-
-  private createPriorityBorder(): void {
-    if (this.borderRect || !this.deckButton) return;
-    this.borderRect = this.scene.add
-      .rectangle(
-        this.deckButton.x,
-        this.deckButton.y,
-        this.deckButton.width + 6,
-        this.deckButton.height + 6,
-        0x000000,
-        0
-      )
-      .setOrigin(0.5)
-      .setStrokeStyle(3, 0x00ff00);
-
-    this.scene.children.bringToTop(this.borderRect);
-    this.deckButton.parentContainer?.bringToTop(this.deckButton);
-
-    this.scene.tweens.add({
-      targets: this.borderRect,
-      alpha: { from: 0.5, to: 1 },
-      duration: 800,
-      yoyo: true,
-      repeat: -1,
-      ease: 'Sine.easeInOut',
-    });
-  }
-
-  private destroyPriorityBorder(): void {
-    if (this.borderRect) {
-      this.scene.tweens.killTweensOf(this.borderRect);
-      this.borderRect.destroy();
-      this.borderRect = undefined;
-    }
-  }
-
   private createDeckButton(x: number, y: number, initialDeck: number): GameButton {
     const buttonWidth = 180;
     const buttonHeight = 50;
