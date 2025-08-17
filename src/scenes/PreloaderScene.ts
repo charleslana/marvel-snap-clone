@@ -20,6 +20,7 @@ export class PreloaderScene extends Phaser.Scene {
   preload() {
     this.load.setPath('assets');
     this.loadCards();
+    this.load.image(ImageEnum.CardBack01, 'images/backs/back01.jpg');
   }
 
   create() {

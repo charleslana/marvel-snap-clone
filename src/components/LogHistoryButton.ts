@@ -103,12 +103,9 @@ export class LogHistoryButton {
       logsText.y = Phaser.Math.Clamp(logsText.y, bottomBound, topBound);
     });
 
-    this.modalContainer = this.scene.add.container(0, 0, [
-      background,
-      modalBox,
-      logsText,
-      closeButton,
-    ]);
+    this.modalContainer = this.scene.add
+      .container(0, 0, [background, modalBox, logsText, closeButton])
+      .setDepth(100);
     this.scene.children.bringToTop(this.modalContainer);
   }
 

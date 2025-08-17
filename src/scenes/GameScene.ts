@@ -20,6 +20,7 @@ import { ImageEnum } from '@/enums/ImageEnum';
 import { GameButton } from '@/components/GameButton';
 import { ButtonColor } from '@/enums/ButtonColor';
 import { UIFactory } from '@/components/UIFactory';
+import { RetreatButton } from '@/components/RetreatButton';
 
 export default class GameScene extends Phaser.Scene {
   private playerHand: Omit<Card, 'index'>[] = [];
@@ -37,11 +38,9 @@ export default class GameScene extends Phaser.Scene {
   private maxTurn = 7;
   // private isNextTurn: 0 | 1 = 0;
   private isNextTurn: 0 | 1 = Phaser.Math.Between(0, 1) as 0 | 1;
-  private showBotHand = true;
+  private showBotHand = false;
   private playerNameText!: Phaser.GameObjects.Text;
   private opponentNameText!: Phaser.GameObjects.Text;
-  private priorityGlowFx?: Phaser.FX.Glow;
-  private priorityGlowTween?: Phaser.Tweens.Tween;
   private playerName = 'Você';
   private opponentName = 'Adversário';
 
@@ -57,6 +56,7 @@ export default class GameScene extends Phaser.Scene {
   private playerDeckDisplay!: DeckDisplay;
   private enemyDeckDisplay!: DeckDisplay;
   private logHistoryButton!: LogHistoryButton;
+  private retreatButton!: RetreatButton;
   private revealQueue: {
     card: CardData;
     laneIndex: number;
@@ -83,6 +83,7 @@ export default class GameScene extends Phaser.Scene {
     this.lanes = [];
     this.playerHandContainers = [];
     this.botHandContainers = [];
+    this.showBotHand = false;
   }
 
   public create(): void {
@@ -109,6 +110,7 @@ export default class GameScene extends Phaser.Scene {
     this.initializeEndBattleButton();
     this.initializeCardDetailsPanel();
     this.initializeLogHistoryButton();
+    this.initializeRetreatButton();
 
     this.dragAndDropManager = new DragAndDropManager(
       this,
@@ -297,6 +299,38 @@ export default class GameScene extends Phaser.Scene {
     this.logHistoryButton.initialize(screenWidth - 20, 60);
   }
 
+  private initializeRetreatButton(): void {
+    const energyButtonY = this.energyDisplay.y;
+    const spacing = 15;
+    const buttonHeight = 50;
+    const buttonCenterX = this.energyDisplay.x;
+    const buttonCenterY =
+      energyButtonY + this.energyDisplay.height / 2 + spacing + buttonHeight / 2;
+
+    this.retreatButton = new RetreatButton(this, buttonCenterX, buttonCenterY, () =>
+      this.handleRetreat()
+    );
+  }
+
+  private handleRetreat(): void {
+    const retreatResult = [
+      { playerPower: 0, botPower: 1 },
+      { playerPower: 0, botPower: 1 },
+      { playerPower: 0, botPower: 1 },
+    ];
+    this.gameEndManager.checkGameEnd(retreatResult);
+
+    this.endBattleButton.setVisible(true);
+    this.endTurnButton.setVisible(false);
+    this.turnDisplay.setVisible(false);
+    this.energyDisplay.setVisible(false);
+    this.retreatButton.setVisible(false);
+    this.disablePlayerCardInteraction();
+    this.enemyDeckDisplay.enableModalOpen();
+    this.showBotHand = true;
+    this.revealBotHand();
+  }
+
   private renderPlayerHand(): void {
     this.clearContainers(this.playerHandContainers);
     const { width, height } = this.scale;
@@ -321,7 +355,7 @@ export default class GameScene extends Phaser.Scene {
       cardContainer.setInteractivity('none');
       this.add.existing(cardContainer);
       this.botHandContainers.push(cardContainer);
-      cardContainer.setRevealed(this.showBotHand);
+      this.revealBotHand();
     });
   }
 
@@ -781,6 +815,7 @@ export default class GameScene extends Phaser.Scene {
   }
 
   private handleGameEnd(): void {
+    this.retreatButton.setVisible(false);
     this.playerNameText.setColor('#ffffff');
     this.opponentNameText.setColor('#ffffff');
 
@@ -801,6 +836,7 @@ export default class GameScene extends Phaser.Scene {
     this.energyDisplay.setVisible(false);
     this.disablePlayerCardInteraction();
     this.enemyDeckDisplay.enableModalOpen();
+    this.showBotHand = true;
     this.revealBotHand();
   }
 
@@ -834,8 +870,10 @@ export default class GameScene extends Phaser.Scene {
   }
 
   private revealBotHand(): void {
+    if (!this.showBotHand) return;
     this.botHandContainers.forEach((container) => {
       container.setRevealed(true);
+      container.setInteractivity('hover');
     });
   }
 

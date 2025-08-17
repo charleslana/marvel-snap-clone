@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { Card, CardData } from '@/interfaces/Card';
 import { UIFactory } from './UIFactory';
 import { FontEnum } from '@/enums/FontEnum';
+import { ImageEnum } from '@/enums/ImageEnum';
 
 export class CardContainer extends Phaser.GameObjects.Container {
   public cardData: CardData;
@@ -13,7 +14,8 @@ export class CardContainer extends Phaser.GameObjects.Container {
   private powerText: Phaser.GameObjects.Text;
   private borderRect?: Phaser.GameObjects.Rectangle;
   private cardImage?: Phaser.GameObjects.Image;
-  private backgroundRect?: Phaser.GameObjects.Rectangle;
+  private backgroundRect!: Phaser.GameObjects.Rectangle;
+  private cardBackImage!: Phaser.GameObjects.Image;
 
   constructor(
     scene: Phaser.Scene,
@@ -30,8 +32,11 @@ export class CardContainer extends Phaser.GameObjects.Container {
     this.cardData = { ...card, index };
     this.startX = x;
     this.startY = y;
+
     this.backgroundRect = this.createCardRectangle(width, height, color);
-    const children: Phaser.GameObjects.GameObject[] = [this.backgroundRect];
+    this.cardBackImage = scene.add.image(0, 0, ImageEnum.CardBack01).setDisplaySize(width, height);
+
+    const children: Phaser.GameObjects.GameObject[] = [this.backgroundRect, this.cardBackImage];
 
     if (card.image) {
       this.cardImage = scene.add.image(0, 0, card.image);
@@ -79,6 +84,8 @@ export class CardContainer extends Phaser.GameObjects.Container {
     this.costText.setVisible(isVisible);
     this.powerText.setVisible(isVisible);
     this.cardImage?.setVisible(isVisible);
+    this.backgroundRect.setVisible(isVisible && !this.cardImage);
+    this.cardBackImage.setVisible(!isVisible);
   }
 
   public updatePower(newPower: number): void {

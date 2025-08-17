@@ -88,12 +88,9 @@ export class DeckDisplay {
       }
     );
 
-    this.modalContainer = this.scene.add.container(0, 0, [
-      background,
-      modalBox,
-      ...cardObjects,
-      closeButton,
-    ]);
+    this.modalContainer = this.scene.add
+      .container(0, 0, [background, modalBox, ...cardObjects, closeButton])
+      .setDepth(100);
     this.scene.children.bringToTop(this.modalContainer);
   }
 

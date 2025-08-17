@@ -25,4 +25,5 @@ export enum ImageEnum {
   CardWolfsbane = 'CardWolfsbane',
   CardStarlord = 'CardStarlord',
   CardTheThing = 'CardTheThing',
+  CardBack01 = 'CardBack01',
 }
