@@ -7,13 +7,11 @@ import { CardContainer } from '@/components/CardContainer';
 import { LaneDisplay } from '@/components/LaneDisplay';
 import { EnergyDisplay } from '@/components/EnergyDisplay';
 import { TurnDisplay } from '@/components/TurnDisplay';
-import { EndTurnButton } from '@/components/EndTurnButton';
 import { CardDetailsPanel } from '@/components/CardDetailsPanel';
 
 import { DragAndDropManager } from '@/utils/DragAndDropManager';
 import { BotAI } from '@/utils/BotAI';
 import { GameEndManager } from '@/utils/GameEndManager';
-import { EndBattleButton } from '@/components/EndBattleButton';
 import { DeckDisplay } from '@/components/DeckDisplay';
 import { botDeck, playerDeck } from '@/data/CardPool';
 import { LogHistoryButton } from '@/components/LogHistoryButton';
@@ -21,6 +19,8 @@ import { CardEffectManager } from '@/utils/CardEffectManager';
 import { CardEffect } from '@/enums/CardEffect';
 import { SceneEnum } from '@/enums/SceneEnum';
 import { ImageEnum } from '@/enums/ImageEnum';
+import { GameButton } from '@/components/GameButton';
+import { ButtonColor } from '@/enums/ButtonColor';
 
 export default class GameScene extends Phaser.Scene {
   private playerHand: Omit<Card, 'index'>[] = [];
@@ -43,12 +43,12 @@ export default class GameScene extends Phaser.Scene {
   private laneDisplay!: LaneDisplay;
   private energyDisplay!: EnergyDisplay;
   private turnDisplay!: TurnDisplay;
-  private endTurnButton!: EndTurnButton;
+  private endTurnButton!: GameButton;
   private cardDetailsPanel!: CardDetailsPanel;
   private dragAndDropManager!: DragAndDropManager;
   private botAI!: BotAI;
   private gameEndManager!: GameEndManager;
-  private endBattleButton!: EndBattleButton;
+  private endBattleButton!: GameButton;
   private playerDeckDisplay!: DeckDisplay;
   private enemyDeckDisplay!: DeckDisplay;
   private logHistoryButton!: LogHistoryButton;
@@ -84,9 +84,7 @@ export default class GameScene extends Phaser.Scene {
     this.laneDisplay = new LaneDisplay(this);
     this.energyDisplay = new EnergyDisplay(this);
     this.turnDisplay = new TurnDisplay(this);
-    this.endTurnButton = new EndTurnButton(this);
     this.cardDetailsPanel = new CardDetailsPanel(this);
-    this.endBattleButton = new EndBattleButton(this);
     this.playerDeckDisplay = new DeckDisplay(this, 'Deck jogador');
     this.enemyDeckDisplay = new DeckDisplay(this, 'Deck adversário');
     this.playerDeckMutable = [...playerDeck];
@@ -180,18 +178,53 @@ export default class GameScene extends Phaser.Scene {
   private initializeEndTurnButton(): void {
     const screenWidth = this.scale.width;
     const screenHeight = this.scale.height;
-    this.endTurnButton.initialize(screenWidth - 20, screenHeight - 40, () => {
-      if (this.isPlayerTurn) this.endTurn();
-    });
+
+    const buttonWidth = 180;
+    const buttonHeight = 50;
+    const buttonCenterX = screenWidth - buttonWidth / 2 - 20;
+    const buttonCenterY = screenHeight - buttonHeight / 2 - 20;
+
+    this.endTurnButton = new GameButton(
+      this,
+      buttonCenterX,
+      buttonCenterY,
+      'Finalizar Turno',
+      () => {
+        if (this.isPlayerTurn) this.endTurn();
+      },
+      {
+        color: ButtonColor.Purple,
+        width: buttonWidth,
+        height: buttonHeight,
+        fontSize: '20px',
+      }
+    );
   }
 
   private initializeEndBattleButton(): void {
     const centerY = this.scale.height / 2;
-    this.endBattleButton.initialize(20, centerY, () => {
-      if (this.gameEndManager.isGameEnded()) {
-        this.scene.start(SceneEnum.Home);
+    const buttonWidth = 220;
+    const buttonHeight = 60;
+    const buttonCenterX = 20 + buttonWidth / 2;
+
+    this.endBattleButton = new GameButton(
+      this,
+      buttonCenterX,
+      centerY,
+      'Finalizar Batalha',
+      () => {
+        if (this.gameEndManager.isGameEnded()) {
+          this.scene.start(SceneEnum.Home);
+        }
+      },
+      {
+        width: buttonWidth,
+        height: buttonHeight,
+        fontSize: '24px',
+        color: ButtonColor.Black,
       }
-    });
+    );
+
     this.endBattleButton.setVisible(false);
   }
 

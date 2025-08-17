@@ -1,5 +1,7 @@
 import Phaser from 'phaser';
 import { Card, CardData } from '@/interfaces/Card';
+import { UIFactory } from './UIFactory';
+import { FontEnum } from '@/enums/FontEnum';
 
 export class CardContainer extends Phaser.GameObjects.Container {
   public cardData: CardData;
@@ -101,41 +103,38 @@ export class CardContainer extends Phaser.GameObjects.Container {
   }
 
   private createNameText(cardName: string, width: number, height: number): Phaser.GameObjects.Text {
-    const text = this.scene.add
-      .text(0, height / 2 - 10, cardName, {
-        color: '#ffffff',
-        fontSize: '14px',
-        align: 'center',
-        wordWrap: { width: width - 10, useAdvancedWrap: true },
-      })
-      .setOrigin(0.5, 1)
-      .setStroke('#000000', 3);
+    const text = UIFactory.createText(this.scene, 0, height / 2 - 10, cardName, {
+      fontSize: '14px',
+      align: 'center',
+      wordWrap: { width: width - 10, useAdvancedWrap: true },
+      stroke: '#000000',
+      strokeThickness: 3,
+    }).setOrigin(0.5, 1);
 
     this.adjustFontSizeToFit(text, width - 10, 14, 8);
     return text;
   }
 
   private createPowerText(power: number, width: number, height: number): Phaser.GameObjects.Text {
-    return this.scene.add
-      .text(width / 2 - 10, -height / 2 + 10, String(power), {
-        color: '#ffff00',
-        fontSize: '14px',
-        fontStyle: 'bold',
-        align: 'right',
-      })
-      .setOrigin(1, 0)
-      .setStroke('#000000', 3);
+    return UIFactory.createText(this.scene, width / 2 - 10, -height / 2 + 10, String(power), {
+      color: '#ffff00',
+      fontSize: '14px',
+      fontStyle: 'bold',
+      fontFamily: FontEnum.UltimatumHeavyItalic,
+      align: 'right',
+      stroke: '#000000',
+      strokeThickness: 3,
+    }).setOrigin(1, 0);
   }
 
   private createCostText(cost: number, width: number, height: number): Phaser.GameObjects.Text {
-    return this.scene.add
-      .text(-width / 2 + 10, -height / 2 + 10, String(cost), {
-        color: '#ffffff',
-        fontSize: '14px',
-        align: 'left',
-      })
-      .setOrigin(0, 0)
-      .setStroke('#000000', 3);
+    return UIFactory.createText(this.scene, -width / 2 + 10, -height / 2 + 10, String(cost), {
+      fontSize: '14px',
+      fontFamily: FontEnum.UltimatumHeavyItalic,
+      align: 'left',
+      stroke: '#000000',
+      strokeThickness: 3,
+    }).setOrigin(0, 0);
   }
 
   private adjustFontSizeToFit(

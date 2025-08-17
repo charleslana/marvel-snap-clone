@@ -220,7 +220,7 @@ export class DeckScene extends Phaser.Scene {
     this.deckGridContainer.removeAll(true);
     const selectedDeck = userDecks.find((d) => d.id === this.deckSelect.getValue());
     const deckName = selectedDeck ? selectedDeck.name : 'Nenhum';
-    this.deckTitleText.setText(`Deck: ${deckName} (${this.currentDeckData.length}/12)`);
+    this.deckTitleText.setText(`Deck: ${deckName} ${this.currentDeckData.length}/12`);
     this.populateCardGrid(this.deckGridContainer, this.currentDeckData);
     this.setupCardHover(this.deckGridContainer);
   }

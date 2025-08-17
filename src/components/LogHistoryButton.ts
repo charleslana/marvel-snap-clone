@@ -1,8 +1,11 @@
 import Phaser from 'phaser';
+import { GameButton } from './GameButton';
+import { ButtonColor } from '@/enums/ButtonColor';
+import { UIFactory } from './UIFactory';
 
 export class LogHistoryButton {
   private scene: Phaser.Scene;
-  private button?: Phaser.GameObjects.Text;
+  private button?: GameButton;
   private modalContainer?: Phaser.GameObjects.Container;
   private logs: string[] = [];
 
@@ -12,29 +15,35 @@ export class LogHistoryButton {
   }
 
   public initialize(x: number, y: number): void {
-    this.button = this.createButton(x, y, 'Histórico de batalha', () => this.showModal());
+    this.button = this.createHistoryButton(x, y);
+    // for (let i = 1; i <= 50; i++) {
+    //   this.addLog(`Este é o log de teste número ${i}.`);
+    // }
   }
 
   public addLog(message: string): void {
     this.logs.push(message);
   }
 
-  private createButton(
-    x: number,
-    y: number,
-    text: string,
-    onClick: () => void
-  ): Phaser.GameObjects.Text {
-    return this.scene.add
-      .text(x, y, text, {
+  private createHistoryButton(x: number, y: number): GameButton {
+    const buttonWidth = 220;
+    const buttonHeight = 50;
+    const buttonCenterX = x - buttonWidth / 2;
+    const buttonCenterY = y - buttonHeight / 2;
+
+    return new GameButton(
+      this.scene,
+      buttonCenterX,
+      buttonCenterY,
+      'Histórico de Batalha',
+      () => this.showModal(),
+      {
+        color: ButtonColor.Black,
+        width: buttonWidth,
+        height: buttonHeight,
         fontSize: '20px',
-        color: '#ffffff',
-        backgroundColor: '#222222',
-        padding: { x: 10, y: 5 },
-      })
-      .setOrigin(1, 1)
-      .setInteractive({ useHandCursor: true })
-      .on('pointerdown', onClick);
+      }
+    );
   }
 
   private showModal(): void {
@@ -44,8 +53,55 @@ export class LogHistoryButton {
 
     const background = this.createModalBackground(width, height);
     const modalBox = this.createModalBox(width, height);
-    const logsText = this.createLogsText(width, height);
-    const closeButton = this.createCloseButton(width, height);
+
+    const closeButton = new GameButton(
+      this.scene,
+      width / 2,
+      height - height * 0.15,
+      'Fechar',
+      () => this.closeModal(),
+      {
+        width: 150,
+        height: 50,
+        fontSize: '24px',
+        color: ButtonColor.Black,
+      }
+    );
+
+    const modalContentWidth = width * 0.8 - 40;
+    const modalTopY = height / 2 - (height * 0.8) / 2 + 20;
+    const modalBottomY = closeButton.y - closeButton.height / 2 - 20;
+    const modalContentHeight = modalBottomY - modalTopY;
+
+    const logsText = UIFactory.createText(
+      this.scene,
+      width / 2 - modalContentWidth / 2,
+      modalTopY,
+      this.formatLogs(),
+      {
+        fontSize: '16px',
+        wordWrap: { width: modalContentWidth },
+      }
+    );
+
+    const maskShape = this.scene.make.graphics();
+    maskShape.fillStyle(0xffffff);
+    maskShape.beginPath();
+    maskShape.fillRect(
+      width / 2 - modalContentWidth / 2,
+      modalTopY,
+      modalContentWidth,
+      modalContentHeight
+    );
+    const mask = maskShape.createGeometryMask();
+    logsText.setMask(mask);
+
+    this.scene.input.on('wheel', (_pointer: any, _gameObject: any, _dx: any, dy: number) => {
+      logsText.y -= dy * 0.5;
+      const topBound = modalTopY;
+      const bottomBound = modalTopY - (logsText.height - modalContentHeight);
+      logsText.y = Phaser.Math.Clamp(logsText.y, bottomBound, topBound);
+    });
 
     this.modalContainer = this.scene.add.container(0, 0, [
       background,
@@ -61,6 +117,7 @@ export class LogHistoryButton {
       this.modalContainer.destroy(true);
       this.modalContainer = undefined;
     }
+    this.scene.input.off('wheel');
   }
 
   private createModalBackground(width: number, height: number): Phaser.GameObjects.Rectangle {
@@ -82,33 +139,6 @@ export class LogHistoryButton {
     );
     box.setStrokeStyle(2, 0xffffff);
     return box;
-  }
-
-  private createLogsText(width: number, height: number): Phaser.GameObjects.Text {
-    const logsText = this.scene.add.text(
-      width / 2 - (width * 0.8) / 2 + 20,
-      height / 2 - (height * 0.8) / 2 + 20,
-      this.formatLogs(),
-      {
-        fontSize: '16px',
-        color: '#ffffff',
-        wordWrap: { width: width * 0.8 - 40 },
-      }
-    );
-    return logsText;
-  }
-
-  private createCloseButton(width: number, height: number): Phaser.GameObjects.Text {
-    return this.scene.add
-      .text(width / 2, height - height * 0.15, 'Fechar', {
-        fontSize: '18px',
-        color: '#ffffff',
-        backgroundColor: '#aa0000',
-        padding: { x: 10, y: 5 },
-      })
-      .setOrigin(0.5)
-      .setInteractive({ useHandCursor: true })
-      .on('pointerdown', () => this.closeModal());
   }
 
   private formatLogs(): string {

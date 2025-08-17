@@ -47,9 +47,30 @@ export class GameButton extends Phaser.GameObjects.Container {
     scene.add.existing(this);
   }
 
+  public setLabel(newText: string): void {
+    this.label.setText(newText);
+    this.adjustFontSizeToFit();
+  }
+
   private createShadow(scene: Phaser.Scene) {
-    const color = this.color === ButtonColor.Black ? 0x1f2530 : 0x154486;
-    const stroke = this.color === ButtonColor.Black ? 0x2d3444 : 0x0d274d;
+    let color: number;
+    let stroke: number;
+
+    switch (this.color) {
+      case ButtonColor.Black:
+        color = 0x1f2530;
+        stroke = 0x2d3444;
+        break;
+      case ButtonColor.Purple:
+        color = 0x6c3b99;
+        stroke = 0x4a296b;
+        break;
+      case ButtonColor.Blue:
+      default:
+        color = 0x154486;
+        stroke = 0x0d274d;
+        break;
+    }
 
     this.shadow = scene.add
       .rectangle(0, 5, this.buttonWidth, this.buttonHeight, color, 1)
@@ -58,8 +79,24 @@ export class GameButton extends Phaser.GameObjects.Container {
   }
 
   private createContent(scene: Phaser.Scene) {
-    const fillColor = this.color === ButtonColor.Black ? 0x32384c : 0x3592fe;
-    const strokeColor = this.color === ButtonColor.Black ? 0x292d3e : 0x1c5aaa;
+    let fillColor: number;
+    let strokeColor: number;
+
+    switch (this.color) {
+      case ButtonColor.Black:
+        fillColor = 0x32384c;
+        strokeColor = 0x292d3e;
+        break;
+      case ButtonColor.Purple:
+        fillColor = 0xa35dca;
+        strokeColor = 0x8e4bb0;
+        break;
+      case ButtonColor.Blue:
+      default:
+        fillColor = 0x3592fe;
+        strokeColor = 0x1c5aaa;
+        break;
+    }
 
     this.content = scene.add
       .rectangle(0, 0, this.buttonWidth, this.buttonHeight, fillColor, 1)
@@ -94,22 +131,70 @@ export class GameButton extends Phaser.GameObjects.Container {
   }
 
   private onPointerOver() {
-    this.content.setFillStyle(this.color === ButtonColor.Black ? 0x4a5263 : 0x4aa3ff);
+    let hoverColor: number;
+    switch (this.color) {
+      case ButtonColor.Black:
+        hoverColor = 0x4a5263;
+        break;
+      case ButtonColor.Purple:
+        hoverColor = 0xb778de;
+        break;
+      default:
+        hoverColor = 0x4aa3ff;
+        break;
+    }
+    this.content.setFillStyle(hoverColor);
     this.y -= 2;
   }
 
   private onPointerOut() {
-    this.content.setFillStyle(this.color === ButtonColor.Black ? 0x32384c : 0x3592fe);
+    let baseColor: number;
+    switch (this.color) {
+      case ButtonColor.Black:
+        baseColor = 0x32384c;
+        break;
+      case ButtonColor.Purple:
+        baseColor = 0xa35dca;
+        break;
+      default:
+        baseColor = 0x3592fe;
+        break;
+    }
+    this.content.setFillStyle(baseColor);
     this.y += 2;
   }
 
   private onPointerDown() {
-    this.content.setFillStyle(this.color === ButtonColor.Black ? 0x2a2f40 : 0x2c7dd6);
+    let downColor: number;
+    switch (this.color) {
+      case ButtonColor.Black:
+        downColor = 0x2a2f40;
+        break;
+      case ButtonColor.Purple:
+        downColor = 0x8e4bb0;
+        break;
+      default:
+        downColor = 0x2c7dd6;
+        break;
+    }
+    this.content.setFillStyle(downColor);
     this.y += 2;
   }
 
   private onPointerUp(callback: () => void) {
-    this.content.setFillStyle(this.color === ButtonColor.Black ? 0x4a5263 : 0x4aa3ff);
+    let hoverColor: number;
+    switch (this.color) {
+      case ButtonColor.Black:
+        hoverColor = 0x4a5263;
+        break;
+      case ButtonColor.Purple:
+        hoverColor = 0xb778de;
+        break;
+      default:
+        hoverColor = 0x4aa3ff;
+        break;
+    }
+    this.content.setFillStyle(hoverColor);
     this.y -= 2;
     callback();
   }

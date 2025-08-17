@@ -1,10 +1,12 @@
 import Phaser from 'phaser';
 import { Card } from '@/interfaces/Card';
 import { CardContainer } from './CardContainer';
+import { GameButton } from './GameButton';
+import { ButtonColor } from '@/enums/ButtonColor';
 
 export class DeckDisplay {
   private scene: Phaser.Scene;
-  private deckText?: Phaser.GameObjects.Text;
+  private deckButton?: GameButton;
   private label: string;
   private modalContainer?: Phaser.GameObjects.Container;
   private deckCards: Omit<Card, 'index'>[] = [];
@@ -23,11 +25,11 @@ export class DeckDisplay {
     cards?: Omit<Card, 'index'>[]
   ): void {
     if (cards) this.deckCards = cards;
-    this.deckText = this.createDeckText(x, y, initialDeck);
+    this.deckButton = this.createDeckButton(x, y, initialDeck);
   }
 
   public updateDeck(deck: number): void {
-    this.deckText?.setText(`${this.label}: ${deck}`);
+    this.deckButton?.setLabel(`${this.label}: ${deck}`);
   }
 
   public enableModalOpen(): void {
@@ -47,18 +49,22 @@ export class DeckDisplay {
   }
 
   private createPriorityBorder(): void {
-    if (this.borderRect || !this.deckText) return;
+    if (this.borderRect || !this.deckButton) return;
     this.borderRect = this.scene.add
       .rectangle(
-        this.deckText.x,
-        this.deckText.y,
-        this.deckText.width + 3,
-        this.deckText.height + 10,
+        this.deckButton.x,
+        this.deckButton.y,
+        this.deckButton.width + 6,
+        this.deckButton.height + 6,
         0x000000,
         0
       )
-      .setOrigin(this.deckText.originX, this.deckText.originY)
+      .setOrigin(0.5)
       .setStrokeStyle(3, 0x00ff00);
+
+    this.scene.children.bringToTop(this.borderRect);
+    this.deckButton.parentContainer?.bringToTop(this.deckButton);
+
     this.scene.tweens.add({
       targets: this.borderRect,
       alpha: { from: 0.5, to: 1 },
@@ -77,19 +83,27 @@ export class DeckDisplay {
     }
   }
 
-  private createDeckText(x: number, y: number, initialDeck: number): Phaser.GameObjects.Text {
-    return this.scene.add
-      .text(x, y, `${this.label}: ${initialDeck}`, {
-        fontSize: '20px',
-        color: '#ffffff',
-        backgroundColor: '#222222',
-        padding: { x: 10, y: 5 },
-      })
-      .setOrigin(0, 0.5)
-      .setInteractive({ useHandCursor: true })
-      .on('pointerdown', () => {
+  private createDeckButton(x: number, y: number, initialDeck: number): GameButton {
+    const buttonWidth = 180;
+    const buttonHeight = 50;
+    const buttonCenterX = x + buttonWidth / 2;
+    const buttonCenterY = y;
+
+    return new GameButton(
+      this.scene,
+      buttonCenterX,
+      buttonCenterY,
+      `${this.label}: ${initialDeck}`,
+      () => {
         if (this.canOpenModal) this.showModal();
-      });
+      },
+      {
+        color: ButtonColor.Purple,
+        width: buttonWidth,
+        height: buttonHeight,
+        fontSize: '20px',
+      }
+    );
   }
 
   private showModal(): void {
@@ -102,7 +116,21 @@ export class DeckDisplay {
       modalBox.y - modalBox.height / 2 + 30,
       modalBox.width - 60
     );
-    const closeButton = this.createCloseButton(width, height);
+
+    const closeButton = new GameButton(
+      this.scene,
+      width / 2,
+      height - height * 0.12,
+      'Fechar',
+      () => this.closeModal(),
+      {
+        width: 150,
+        height: 50,
+        fontSize: '24px',
+        color: ButtonColor.Black,
+      }
+    );
+
     this.modalContainer = this.scene.add.container(0, 0, [
       background,
       modalBox,
