@@ -11,6 +11,7 @@ import { Card } from '@/interfaces/Card';
 import { FontEnum } from '@/enums/FontEnum';
 import { Select } from '@/components/Select';
 import { userDecks } from '@/data/UserDecks';
+import { UIFactory } from '@/components/UIFactory';
 
 export class DeckScene extends Phaser.Scene {
   private cardDetails!: CardDetailsPanel;
@@ -22,6 +23,10 @@ export class DeckScene extends Phaser.Scene {
 
   constructor() {
     super(SceneEnum.Deck);
+  }
+
+  init(): void {
+    this.currentDeckData = [];
   }
 
   create() {
@@ -66,7 +71,9 @@ export class DeckScene extends Phaser.Scene {
 
     currentY += 50;
 
-    this.add.text(centerX, currentY, 'Selecionar Deck', { fontSize: '18px' }).setOrigin(0.5);
+    UIFactory.createText(this, centerX, currentY, 'Selecionar Deck', {
+      fontSize: '18px',
+    }).setOrigin(0.5);
     currentY += 40;
 
     const deckOptions = userDecks.map((deck) => ({
@@ -108,9 +115,8 @@ export class DeckScene extends Phaser.Scene {
     let currentY = 50;
     const sectionSpacing = 30;
 
-    this.deckTitleText = this.add.text(startX, currentY, '', {
+    this.deckTitleText = UIFactory.createText(this, startX, currentY, '', {
       fontSize: '20px',
-      fontStyle: 'normal',
       fontFamily: FontEnum.RedHatDisplay400,
     });
     currentY += 40;
@@ -122,18 +128,22 @@ export class DeckScene extends Phaser.Scene {
 
     currentY += 260 + sectionSpacing;
 
-    this.add.text(startX, currentY, 'Filtros', {
+    UIFactory.createText(this, startX, currentY, 'Filtros', {
       fontSize: '20px',
       fontStyle: 'bold',
-      fontFamily: FontEnum.RedHatDisplay500,
     });
     currentY += 90;
 
-    this.add.text(startX, currentY, `Cartas Disponíveis: ${this.allCardsData.length}`, {
-      fontSize: '20px',
-      fontStyle: 'normal',
-      fontFamily: FontEnum.RedHatDisplay400,
-    });
+    UIFactory.createText(
+      this,
+      startX,
+      currentY,
+      `Cartas Disponíveis: ${this.allCardsData.length}`,
+      {
+        fontSize: '20px',
+        fontFamily: FontEnum.RedHatDisplay400,
+      }
+    );
     currentY += 40;
 
     const scrollAreaHeight = height - currentY - 20;

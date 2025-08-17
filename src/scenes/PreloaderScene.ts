@@ -19,9 +19,6 @@ export class PreloaderScene extends Phaser.Scene {
 
   preload() {
     this.load.setPath('assets');
-    for (let i = 0; i < 1; i++) {
-      this.load.image(`${ImageEnum.Example}_${i}`, 'images/background.jpg');
-    }
     this.loadCards();
   }
 

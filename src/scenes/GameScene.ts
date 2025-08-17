@@ -5,8 +5,6 @@ import { Slot } from '@/interfaces/Slot';
 
 import { CardContainer } from '@/components/CardContainer';
 import { LaneDisplay } from '@/components/LaneDisplay';
-import { EnergyDisplay } from '@/components/EnergyDisplay';
-import { TurnDisplay } from '@/components/TurnDisplay';
 import { CardDetailsPanel } from '@/components/CardDetailsPanel';
 
 import { DragAndDropManager } from '@/utils/DragAndDropManager';
@@ -41,8 +39,8 @@ export default class GameScene extends Phaser.Scene {
   private showBotHand = true;
 
   private laneDisplay!: LaneDisplay;
-  private energyDisplay!: EnergyDisplay;
-  private turnDisplay!: TurnDisplay;
+  private energyDisplay!: GameButton;
+  private turnDisplay!: GameButton;
   private endTurnButton!: GameButton;
   private cardDetailsPanel!: CardDetailsPanel;
   private dragAndDropManager!: DragAndDropManager;
@@ -82,8 +80,6 @@ export default class GameScene extends Phaser.Scene {
 
   public create(): void {
     this.laneDisplay = new LaneDisplay(this);
-    this.energyDisplay = new EnergyDisplay(this);
-    this.turnDisplay = new TurnDisplay(this);
     this.cardDetailsPanel = new CardDetailsPanel(this);
     this.playerDeckDisplay = new DeckDisplay(this, 'Deck jogador');
     this.enemyDeckDisplay = new DeckDisplay(this, 'Deck adversário');
@@ -165,14 +161,46 @@ export default class GameScene extends Phaser.Scene {
   private initializeEnergyDisplay(): void {
     const energyX = 20;
     const centerY = this.scale.height / 2;
-    this.energyDisplay.initialize(energyX, centerY, this.playerEnergy);
+
+    const buttonWidth = 150;
+    const buttonHeight = 50;
+    const buttonCenterX = energyX + buttonWidth / 2;
+
+    this.energyDisplay = new GameButton(
+      this,
+      buttonCenterX,
+      centerY,
+      `Energia: ${this.playerEnergy}`,
+      () => {},
+      {
+        width: buttonWidth,
+        height: buttonHeight,
+        fontSize: '20px',
+      }
+    );
   }
 
   private initializeTurnDisplay(): void {
     const screenWidth = this.scale.width;
     const centerY = this.scale.height / 2;
-    this.turnDisplay.initialize(screenWidth - 20, centerY, this.currentTurn);
-    this.turnDisplay.updateTurn(`${this.currentTurn}/${this.maxTurn - 1}`);
+
+    const buttonWidth = 150;
+    const buttonHeight = 50;
+    const buttonCenterX = screenWidth - buttonWidth / 2 - 20;
+
+    this.turnDisplay = new GameButton(
+      this,
+      buttonCenterX,
+      centerY,
+      `Turno: ${this.currentTurn}/${this.maxTurn - 1}`,
+      () => {},
+      {
+        color: ButtonColor.Black,
+        width: buttonWidth,
+        height: buttonHeight,
+        fontSize: '20px',
+      }
+    );
   }
 
   private initializeEndTurnButton(): void {
@@ -339,7 +367,7 @@ export default class GameScene extends Phaser.Scene {
   }
 
   private updateEnergyText(): void {
-    this.energyDisplay.updateEnergy(this.playerEnergy);
+    this.energyDisplay.setLabel(`Energia: ${this.playerEnergy}`);
     this.dragAndDropManager.updatePlayerEnergy(this.playerEnergy);
     this.updatePlayableCardsBorder();
   }
@@ -697,8 +725,8 @@ export default class GameScene extends Phaser.Scene {
 
   private advanceTurn(): void {
     this.currentTurn++;
-    this.turnDisplay.updateTurn(`${this.currentTurn}/${this.maxTurn - 1}`);
-    this.turnDisplay.animateTurnChange();
+    this.turnDisplay.setLabel(`Turno: ${this.currentTurn}/${this.maxTurn - 1}`);
+    this.animateTurnChange();
   }
 
   private refreshEnergies(): void {
@@ -880,5 +908,16 @@ export default class GameScene extends Phaser.Scene {
         console.log(`Lane ${lane.index + 1} está protegida pela Armor!`);
       }
     }
+  }
+
+  private animateTurnChange(): void {
+    this.tweens.add({
+      targets: this.turnDisplay,
+      scale: 1.2,
+      alpha: 0.7,
+      duration: 200,
+      yoyo: true,
+      ease: 'Power2',
+    });
   }
 }
