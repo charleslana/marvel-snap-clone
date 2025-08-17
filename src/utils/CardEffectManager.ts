@@ -46,8 +46,9 @@ export class CardEffectManager {
           case CardEffect.MedusaCenterBuff: {
             const bonus = typeof e.value === 'number' ? e.value : 0;
             if (laneIndex === 1 && bonus > 0) {
-              slot.power = (slot.power ?? 0) + bonus;
-              console.log(`Medusa ganhou +${bonus} de poder na lane central.`);
+              if (slot.permanentBonus === undefined) slot.permanentBonus = 0;
+              slot.permanentBonus += bonus;
+              console.log(`Medusa ganhou um bônus permanente de +${bonus} na lane central.`);
             }
             break;
           }
@@ -63,9 +64,10 @@ export class CardEffectManager {
 
             const bonus = typeof e.value === 'number' ? e.value : 0;
             if (opponentPlayedHere && bonus > 0) {
-              slot.power = (slot.power ?? 0) + bonus;
+              if (slot.permanentBonus === undefined) slot.permanentBonus = 0;
+              slot.permanentBonus += bonus;
               console.log(
-                `Senhor das Estrelas ganhou +${bonus} porque o ${opponentName} também jogou aqui!`
+                `Senhor das Estrelas ganhou um bônus permanente de +${bonus} porque o ${opponentName} também jogou aqui!`
               );
             }
             break;
@@ -74,16 +76,14 @@ export class CardEffectManager {
           case CardEffect.WolfsbaneBuff: {
             const friendlySlots = isPlayerCard ? lane.playerSlots : lane.botSlots;
             const sideIdentifier = isPlayerCard ? 'Jogador' : 'Bot';
-
             const otherCardsCount = friendlySlots.filter((s) => s.occupied && s !== slot).length;
-
             const bonusPerCard = typeof e.value === 'number' ? e.value : 0;
-
             const totalBonus = otherCardsCount * bonusPerCard;
             if (totalBonus > 0) {
-              slot.power = (slot.power ?? 0) + totalBonus;
+              if (slot.permanentBonus === undefined) slot.permanentBonus = 0;
+              slot.permanentBonus += totalBonus;
               console.log(
-                `Loba Venenosa (${sideIdentifier}) ganhou +${totalBonus} de poder por encontrar ${otherCardsCount} outra(s) carta(s) aliada(s).`
+                `Lupina (${sideIdentifier}) ganhou +${totalBonus} de poder por encontrar ${otherCardsCount} outra(s) carta(s) aliada(s).`
               );
             }
             break;
@@ -139,20 +139,29 @@ export class CardEffectManager {
             });
             break;
           }
+
+          case CardEffect.HawkeyeNextTurnBuff: {
+            if (slot.cardData) {
+              slot.cardData.hawkeyeReadyTurn = turnPlayed + 1;
+              slot.cardData.hawkeyeBonus = e.value as number;
+              console.log(
+                `Gavião Arqueiro em ${laneIndex + 1} está pronto para receber bônus no turno ${turnPlayed + 1}.`
+              );
+            }
+            break;
+          }
         }
       }
     }
     return actions;
   }
 
-  public recalcOngoingEffects(): void {
+  public updateAllCardPowers(): void {
+    console.log('Atualizando o poder de todas as cartas no tabuleiro...');
     for (const lane of this.lanes) {
       const allSlots = [...lane.playerSlots, ...lane.botSlots];
       for (const slot of allSlots) {
-        if (
-          slot.occupied &&
-          slot.cardData?.effect?.some((e) => e.type === CardEffectType.Ongoing)
-        ) {
+        if (slot.occupied && slot.cardData) {
           slot.power = slot.cardData.power + (slot.permanentBonus ?? 0);
         }
       }
@@ -161,7 +170,6 @@ export class CardEffectManager {
     for (let laneIndex = 0; laneIndex < this.lanes.length; laneIndex++) {
       const lane = this.lanes[laneIndex];
       const allSlots = [...lane.playerSlots, ...lane.botSlots];
-
       for (const slot of allSlots) {
         if (
           slot.occupied &&
@@ -173,6 +181,37 @@ export class CardEffectManager {
               this.applyOngoingEffect(e.effect, slot, laneIndex, isPlayerCard);
             }
           }
+        }
+      }
+    }
+  }
+
+  public checkAllHawkeyeBuffs(
+    revealQueue: readonly { card: CardData; laneIndex: number; isPlayer: boolean }[],
+    currentTurn: number
+  ): void {
+    for (const playedItem of revealQueue) {
+      const lane = this.lanes[playedItem.laneIndex];
+      const friendlySlots = playedItem.isPlayer ? lane.playerSlots : lane.botSlots;
+
+      for (const hawkeyeSlot of friendlySlots) {
+        if (
+          hawkeyeSlot.occupied &&
+          hawkeyeSlot.cardData &&
+          hawkeyeSlot.cardData.hawkeyeReadyTurn === currentTurn
+        ) {
+          const bonus = hawkeyeSlot.cardData.hawkeyeBonus || 0;
+          if (bonus > 0) {
+            if (hawkeyeSlot.permanentBonus === undefined) {
+              hawkeyeSlot.permanentBonus = 0;
+            }
+            hawkeyeSlot.permanentBonus += bonus;
+            console.log(
+              `Gavião Arqueiro ativado: ${hawkeyeSlot.cardData.name} em ${playedItem.laneIndex + 1} recebeu um bônus permanente de +${bonus}!`
+            );
+          }
+          delete hawkeyeSlot.cardData.hawkeyeReadyTurn;
+          delete hawkeyeSlot.cardData.hawkeyeBonus;
         }
       }
     }
@@ -283,9 +322,13 @@ export class CardEffectManager {
                 const isPlayedCardPlayer = lane.playerSlots.some((s) => s.cardData === playedCard);
 
                 if (isAngelaPlayer === isPlayedCardPlayer) {
-                  slot.power = (slot.power ?? 0) + 1;
+                  if (slot.permanentBonus === undefined) {
+                    slot.permanentBonus = 0;
+                  }
+                  const bonus = typeof e.value === 'number' ? e.value : 0;
+                  slot.permanentBonus += bonus;
                   console.log(
-                    `Angela ganhou +1 de poder porque ${playedCard.name} foi jogada na sua lane.`
+                    `Angela ganhou +${bonus} de poder porque ${playedCard.name} foi jogada na sua lane.`
                   );
                 }
                 break;
@@ -296,12 +339,8 @@ export class CardEffectManager {
     }
   }
 
-  private applyEndOfTurnEffect(effect: CardEffect, slot: Slot, lane: Lane): void {
+  private applyEndOfTurnEffect(effect: CardEffect, _slot: Slot, _lane: Lane): void {
     switch (effect) {
-      case CardEffect.HawkeyeNextTurnBuff:
-        (slot as any).hawkeyeBuffNextTurn = true;
-        console.log(`Hawkeye em ${lane.index} está pronto para o buff no próximo turno.`);
-        break;
     }
   }
 }

@@ -20,4 +20,6 @@ export interface CardData extends Card {
     cannotBeMoved?: boolean;
     cannotHavePowerReduced?: boolean;
   };
+  hawkeyeReadyTurn?: number;
+  hawkeyeBonus?: number;
 }

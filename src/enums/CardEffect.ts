@@ -18,4 +18,5 @@ export enum CardEffect {
   SentinelAddToHand = 16,
   WolfsbaneBuff = 17,
   NightcrawlerMove = 18,
+  QuicksilverStartInHand = 19,
 }

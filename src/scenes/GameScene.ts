@@ -83,7 +83,7 @@ export default class GameScene extends Phaser.Scene {
     this.lanes = [];
     this.playerHandContainers = [];
     this.botHandContainers = [];
-    this.showBotHand = false;
+    this.showBotHand = true;
   }
 
   public create(): void {
@@ -557,6 +557,7 @@ export default class GameScene extends Phaser.Scene {
 
     this.time.delayedCall(1000, () => {
       this.executeBotTurn();
+      this.effectManager.checkAllHawkeyeBuffs(this.revealQueue, this.currentTurn);
       this.processRevealQueue();
 
       this.advanceTurn();
@@ -613,40 +614,6 @@ export default class GameScene extends Phaser.Scene {
         turnPlayed: this.currentTurn,
       });
     }
-  }
-
-  private createNameText(card: Omit<Card, 'index'>): Phaser.GameObjects.Text {
-    const nameText = this.add
-      .text(0, 45, card.name, {
-        color: '#ffffff',
-        fontSize: '14px',
-        align: 'center',
-      })
-      .setOrigin(0.5, 1);
-
-    this.adjustTextFontSize(nameText, 70);
-    return nameText;
-  }
-
-  private createPowerText(card: Omit<Card, 'index'>): Phaser.GameObjects.Text {
-    return this.add
-      .text(30, -45, String(card.power), {
-        color: '#ffff00',
-        fontSize: '14px',
-        fontStyle: 'bold',
-        align: 'right',
-      })
-      .setOrigin(1, 0);
-  }
-
-  private createCostText(card: Omit<Card, 'index'>): Phaser.GameObjects.Text {
-    return this.add
-      .text(-30, -45, String(card.cost), {
-        color: '#ffffff',
-        fontSize: '14px',
-        align: 'left',
-      })
-      .setOrigin(0, 0);
   }
 
   private removePlacedCard(container: CardContainer): void {
@@ -721,15 +688,34 @@ export default class GameScene extends Phaser.Scene {
   }
 
   private drawInitialHand(deck: Omit<Card, 'index'>[], count: number): Omit<Card, 'index'>[] {
-    for (let i = deck.length - 1; i > 0; i--) {
-      const j = Phaser.Math.Between(0, i);
-      [deck[i], deck[j]] = [deck[j], deck[i]];
-    }
     const hand: Omit<Card, 'index'>[] = [];
-    for (let i = 0; i < count; i++) {
-      if (deck.length === 0) break;
-      hand.push(deck.shift()!);
+    const deckCopy = [...deck];
+
+    const quicksilverIndex = deckCopy.findIndex((card) =>
+      card.effect?.some((e) => e.effect === CardEffect.QuicksilverStartInHand)
+    );
+
+    if (quicksilverIndex > -1) {
+      const [quicksilverCard] = deckCopy.splice(quicksilverIndex, 1);
+      hand.push(quicksilverCard);
+      console.log(`${quicksilverCard.name} foi garantido na mão inicial.`);
     }
+
+    for (let i = deckCopy.length - 1; i > 0; i--) {
+      const j = Phaser.Math.Between(0, i);
+      [deckCopy[i], deckCopy[j]] = [deckCopy[j], deckCopy[i]];
+    }
+
+    const cardsToDraw = count - hand.length;
+    for (let i = 0; i < cardsToDraw; i++) {
+      if (deckCopy.length > 0) {
+        hand.push(deckCopy.shift()!);
+      }
+    }
+
+    deck.length = 0;
+    Array.prototype.push.apply(deck, deckCopy);
+
     return hand;
   }
 
@@ -819,7 +805,7 @@ export default class GameScene extends Phaser.Scene {
     this.playerNameText.setColor('#ffffff');
     this.opponentNameText.setColor('#ffffff');
 
-    this.effectManager.recalcOngoingEffects();
+    this.effectManager.updateAllCardPowers();
     this.updatePlacedCardsUI();
     this.updateLanePowers();
 
@@ -842,7 +828,7 @@ export default class GameScene extends Phaser.Scene {
 
   private prepareNextRound(): void {
     this.effectManager.applyEndOfTurnEffects();
-    this.effectManager.recalcOngoingEffects();
+    this.effectManager.updateAllCardPowers();
     this.updateLaneProperties();
     this.updatePlacedCardsUI();
     this.updateLanePowers();
@@ -935,7 +921,7 @@ export default class GameScene extends Phaser.Scene {
     this.renderBotHand();
 
     console.log('Recalculando todos os efeitos Ongoing após as revelações.');
-    this.effectManager.recalcOngoingEffects();
+    this.effectManager.updateAllCardPowers();
     this.updateLaneProperties();
     this.updatePlacedCardsUI();
     this.updateLanePowers();

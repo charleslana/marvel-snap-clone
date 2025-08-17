@@ -26,7 +26,7 @@ export const playerDeck: Omit<Card, 'index'>[] = [
     power: 3,
     description: 'Quando você jogar uma carta aqui, +1 de poder.',
     image: ImageEnum.CardAngela,
-    effect: [{ type: CardEffectType.OnCardPlayed, effect: CardEffect.AngelaBuff }],
+    effect: [{ type: CardEffectType.OnCardPlayed, effect: CardEffect.AngelaBuff, value: 1 }],
   },
   {
     name: 'Armor',
@@ -93,7 +93,7 @@ export const playerDeck: Omit<Card, 'index'>[] = [
     effect: [{ type: CardEffectType.OnReveal, effect: CardEffect.SpectrumBuffOngoing, value: 2 }],
   },
   {
-    name: 'Onslaught',
+    name: 'Massacre',
     cost: 6,
     power: 8,
     description: 'Constante: Duplique seus outros efeitos constantes aqui.',
@@ -125,7 +125,7 @@ export const botDeck: Omit<Card, 'index'>[] = [
     power: 1,
     description: 'Ao revelar: se você jogar uma carta aqui no próximo turno, +3 de poder.',
     image: ImageEnum.CardHawkEye,
-    effect: [{ type: CardEffectType.EndOfTurn, effect: CardEffect.HawkeyeNextTurnBuff }],
+    effect: [{ type: CardEffectType.OnReveal, effect: CardEffect.HawkeyeNextTurnBuff, value: 3 }],
   },
   {
     name: 'Hulk',
@@ -165,7 +165,7 @@ export const botDeck: Omit<Card, 'index'>[] = [
     power: 2,
     description: 'Começa na sua mão inicial.',
     image: ImageEnum.CardQuickSilver,
-    effect: [{ type: CardEffectType.None, effect: CardEffect.None }],
+    effect: [{ type: CardEffectType.None, effect: CardEffect.QuicksilverStartInHand }],
   },
   {
     name: 'Sentinela',
@@ -176,7 +176,7 @@ export const botDeck: Omit<Card, 'index'>[] = [
     effect: [{ type: CardEffectType.OnReveal, effect: CardEffect.SentinelAddToHand }],
   },
   {
-    name: 'Wolfsbane',
+    name: 'Lupina',
     cost: 2,
     power: 3,
     description: 'Ao revelar: +2 de poder para cada outra carta que voce tiver aqui.',
