@@ -1,5 +1,7 @@
 import Phaser from 'phaser';
 import { CardData } from '@/interfaces/Card';
+import { UIFactory } from './UIFactory';
+import { FontEnum } from '@/enums/FontEnum';
 
 export class CardDetailsPanel {
   private scene: Phaser.Scene;
@@ -69,48 +71,44 @@ export class CardDetailsPanel {
   }
 
   private createNameText(): Phaser.GameObjects.Text {
-    return this.scene.add
-      .text(0, this.height / 2 - 30, 'Nome da Carta', {
-        fontSize: '20px',
-        color: '#ffffff',
-        align: 'center',
-        wordWrap: { width: this.width - 40 },
-      })
-      .setOrigin(0.5, 0.5)
-      .setStroke('#000000', 3);
+    return UIFactory.createText(this.scene, 0, this.height / 2 - 30, 'Nome da Carta', {
+      fontSize: '20px',
+      align: 'center',
+      wordWrap: { width: this.width - 40 },
+      stroke: '#000000',
+      strokeThickness: 3,
+    }).setOrigin(0.5, 0.5);
   }
 
   private createPowerText(): Phaser.GameObjects.Text {
-    return this.scene.add
-      .text(this.width / 2 - 20, -this.height / 2 + 20, '0', {
-        fontSize: '18px',
-        color: '#ffff00',
-        fontStyle: 'bold',
-      })
-      .setOrigin(1, 0.5)
-      .setStroke('#000000', 3);
+    return UIFactory.createText(this.scene, this.width / 2 - 20, -this.height / 2 + 20, '0', {
+      fontSize: '18px',
+      color: '#ffff00',
+      fontStyle: 'bold',
+      fontFamily: FontEnum.UltimatumHeavyItalic,
+      stroke: '#000000',
+      strokeThickness: 3,
+    }).setOrigin(1, 0.5);
   }
 
   private createCostText(): Phaser.GameObjects.Text {
-    return this.scene.add
-      .text(-this.width / 2 + 20, -this.height / 2 + 20, '0', {
-        fontSize: '18px',
-        color: '#ffffff',
-        fontStyle: 'bold',
-      })
-      .setOrigin(0, 0.5)
-      .setStroke('#000000', 3);
+    return UIFactory.createText(this.scene, -this.width / 2 + 20, -this.height / 2 + 20, '0', {
+      fontSize: '18px',
+      fontStyle: 'bold',
+      fontFamily: FontEnum.UltimatumHeavyItalic,
+      stroke: '#000000',
+      strokeThickness: 3,
+    }).setOrigin(0, 0.5);
   }
 
   private createDescriptionText(): Phaser.GameObjects.Text {
-    return this.scene.add
-      .text(0, 0, 'Descrição detalhada da carta vai aqui.', {
-        fontSize: '16px',
-        color: '#cccccc',
-        align: 'center',
-        wordWrap: { width: this.width - 40 },
-      })
-      .setOrigin(0.5)
-      .setStroke('#000000', 3);
+    return UIFactory.createText(this.scene, 0, 0, 'Descrição detalhada da carta vai aqui.', {
+      fontSize: '16px',
+      color: '#cccccc',
+      align: 'center',
+      wordWrap: { width: this.width - 40 },
+      stroke: '#000000',
+      strokeThickness: 3,
+    }).setOrigin(0.5);
   }
 }

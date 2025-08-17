@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
 import { Lane } from '@/interfaces/Lane';
 import { Slot } from '@/interfaces/Slot';
+import { UIFactory } from './UIFactory';
+import { FontEnum } from '@/enums/FontEnum';
 
 export class LaneDisplay {
   private scene: Phaser.Scene;
@@ -60,24 +62,21 @@ export class LaneDisplay {
   }
 
   private createWorldText(index: number): Phaser.GameObjects.Text {
-    return this.scene.add
-      .text(0, 0, `Mundo ${index + 1}`, {
-        fontSize: '16px',
-        color: '#ffffff',
-      })
-      .setOrigin(0.5, 0.5);
+    return UIFactory.createText(this.scene, 0, 0, `Mundo ${index + 1}`, {
+      fontSize: '16px',
+    }).setOrigin(0.5, 0.5);
   }
 
   private createPowerText(y: number, isPlayer: boolean = false): Phaser.GameObjects.Text {
     const originY = isPlayer ? 1 : 0;
-    return this.scene.add
-      .text(0, y, '0', {
-        fontSize: '14px',
-        color: '#888888',
-        fontStyle: 'bold',
-      })
-      .setOrigin(0.5, originY)
-      .setStroke('#000000', 3);
+    return UIFactory.createText(this.scene, 0, y, '0', {
+      fontSize: '14px',
+      color: '#888888',
+      fontStyle: 'bold',
+      fontFamily: FontEnum.UltimatumHeavyItalic,
+      stroke: '#000000',
+      strokeThickness: 3,
+    }).setOrigin(0.5, originY);
   }
 
   private createSlots(x: number, y: number, isPlayer: boolean): Slot[] {
