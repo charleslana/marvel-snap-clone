@@ -347,10 +347,6 @@ export class CardEffectManager {
         targetSlot.cardData!.immunities.cannotHavePowerReduced = true;
 
         console.log(`${targetSlot.cardData!.name} está com suas imunidades ativas.`);
-        actions.push({
-          type: 'LOG_MESSAGE',
-          payload: { message: `${targetSlot.cardData!.name} está com suas imunidades ativas.` },
-        });
         break;
       }
     }
