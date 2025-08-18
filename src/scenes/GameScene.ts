@@ -83,7 +83,7 @@ export default class GameScene extends Phaser.Scene {
     this.lanes = [];
     this.playerHandContainers = [];
     this.botHandContainers = [];
-    this.showBotHand = true;
+    this.showBotHand = false;
   }
 
   public create(): void {
