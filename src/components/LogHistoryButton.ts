@@ -16,9 +16,6 @@ export class LogHistoryButton {
 
   public initialize(x: number, y: number): void {
     this.button = this.createHistoryButton(x, y);
-    // for (let i = 1; i <= 50; i++) {
-    //   this.addLog(`Este é o log de teste número ${i}.`);
-    // }
   }
 
   public addLog(message: string): void {
