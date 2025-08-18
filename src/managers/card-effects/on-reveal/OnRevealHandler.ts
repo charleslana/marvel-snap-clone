@@ -1,6 +1,5 @@
 import { CardData } from '@/interfaces/Card';
 import { Slot } from '@/interfaces/Slot';
-import { EffectAction } from '@/interfaces/EffectAction';
 import { MedusaHandler } from './MedusaHandler';
 import { StarLordHandler } from './StarLordHandler';
 import { WolfsbaneHandler } from './WolfsbaneHandler';
@@ -26,52 +25,64 @@ export class OnRevealHandler {
       turnPlayed: number;
       isPlayer: boolean;
     }[]
-  ): EffectAction[] {
-    if (!card.effect) return [];
+  ): void {
+    if (!card.effects) {
+      return;
+    }
 
-    const actions: EffectAction[] = [];
-
-    const hasOnReveal = card.effect?.some((e) => e.type === CardEffectType.OnReveal);
-    if (!hasOnReveal) return actions;
+    const hasOnReveal = card.effects?.some(
+      (effect) => effect.cardEffectType === CardEffectType.OnReveal
+    );
+    if (!hasOnReveal) {
+      return;
+    }
 
     const cosmoBlock = CosmoGuard.handleBlock(lanes, laneIndex, card);
-    if (cosmoBlock) return cosmoBlock;
+    if (cosmoBlock) {
+      return;
+    }
 
-    for (const e of card.effect) {
-      if (e.type !== CardEffectType.OnReveal) continue;
+    for (const effect of card.effects) {
+      if (effect.cardEffectType !== CardEffectType.OnReveal) {
+        continue;
+      }
 
-      switch (e.effect) {
+      switch (effect.cardEffect) {
         case CardEffect.MedusaCenterBuff:
-          actions.push(...MedusaHandler.handle(slot, laneIndex, e.value as number));
+          if (effect.value === undefined) {
+            return;
+          }
+          MedusaHandler.handle(slot, laneIndex, effect.value);
           break;
         case CardEffect.StarLordOpponentPlayedBuff:
-          actions.push(
-            ...StarLordHandler.handle(
-              slot,
-              laneIndex,
-              e.value as number,
-              isPlayer,
-              turnPlayed,
-              revealQueue
-            )
-          );
+          if (effect.value === undefined) {
+            return;
+          }
+          StarLordHandler.handle(slot, laneIndex, effect.value, isPlayer, turnPlayed, revealQueue);
           break;
         case CardEffect.WolfsbaneBuff:
-          actions.push(
-            ...WolfsbaneHandler.handle(slot, e.value as number, isPlayer, lanes[laneIndex])
-          );
+          if (effect.value === undefined) {
+            return;
+          }
+          WolfsbaneHandler.handle(slot, effect.value, isPlayer, lanes[laneIndex]);
           break;
         case CardEffect.SentinelAddToHand:
-          actions.push(...SentinelHandler.handle(isPlayer));
+          // TODO colocar a sentinel na mão pela função handle
+          SentinelHandler.handle(isPlayer);
           break;
         case CardEffect.SpectrumBuffOngoing:
-          actions.push(...SpectrumHandler.handle(lanes, e.value as number, isPlayer));
+          if (effect.value === undefined) {
+            return;
+          }
+          SpectrumHandler.handle(lanes, effect.value, isPlayer);
           break;
         case CardEffect.HawkeyeNextTurnBuff:
-          actions.push(...HawkeyeHandler.handle(slot, laneIndex, turnPlayed, e.value as number));
+          if (effect.value === undefined) {
+            return;
+          }
+          HawkeyeHandler.handle(slot, laneIndex, turnPlayed, effect.value);
           break;
       }
     }
-    return actions;
   }
 }

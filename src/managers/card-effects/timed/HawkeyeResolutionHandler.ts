@@ -1,6 +1,5 @@
 import { Lane } from '@/interfaces/Lane';
 import { CardData } from '@/interfaces/Card';
-import { EffectAction } from '@/interfaces/EffectAction';
 import { Slot } from '@/interfaces/Slot';
 import { SlotHelper } from '../helpers/SlotHelper';
 import { BonusHelper } from '../helpers/BonusHelper';
@@ -11,9 +10,7 @@ export class HawkeyeResolutionHandler {
     lanes: Lane[],
     revealQueue: { card: CardData; laneIndex: number; isPlayer: boolean }[],
     currentTurn: number
-  ): EffectAction[] {
-    const actions: EffectAction[] = [];
-
+  ): void {
     for (const playedItem of revealQueue) {
       const lane = lanes[playedItem.laneIndex];
       const friendlySlots = SlotHelper.getFriendlySlots(lane, playedItem.isPlayer);
@@ -28,10 +25,8 @@ export class HawkeyeResolutionHandler {
 
           if (bonus > 0) {
             BonusHelper.addPermanentBonus(hawkeyeSlot as Slot, bonus);
-            actions.push(
-              LogHelper.createLog(
-                `Gavião Arqueiro ativado: ${hawkeyeSlot.cardData.name} em ${playedItem.laneIndex + 1} recebeu um bônus de +${bonus}!`
-              )
+            LogHelper.emitLog(
+              `Gavião Arqueiro ativado: ${hawkeyeSlot.cardData.name} em ${playedItem.laneIndex + 1} recebeu um bônus de +${bonus}!`
             );
           }
 
@@ -40,7 +35,5 @@ export class HawkeyeResolutionHandler {
         }
       }
     }
-
-    return actions;
   }
 }

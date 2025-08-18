@@ -1,26 +1,31 @@
 import { Lane } from '@/interfaces/Lane';
 import { CardData } from '@/interfaces/Card';
-import { EffectAction } from '@/interfaces/EffectAction';
 import { LogHelper } from '../helpers/LogHelper';
 import { CardEffect } from '@/enums/CardEffect';
 
 export class CosmoGuard {
-  static handleBlock(lanes: Lane[], laneIndex: number, card: CardData): EffectAction[] | null {
+  static handleBlock(lanes: Lane[], laneIndex: number, card: CardData): boolean {
     const lane = lanes[laneIndex];
 
     const cosmoCard = [...lane.playerSlots, ...lane.opponentSlots].find(
-      (s) =>
-        s.occupied && s.cardData?.effect?.some((e) => e.effect === CardEffect.CosmoBlockOnReveal)
+      (slot) =>
+        slot.occupied &&
+        slot.cardData?.effects?.some(
+          (effect) => effect.cardEffect === CardEffect.CosmoBlockOnReveal
+        )
     )?.cardData;
 
-    if (!cosmoCard || !cosmoCard.isRevealed) return null;
+    if (!cosmoCard || !cosmoCard.isRevealed) {
+      return false;
+    }
 
-    if (card.effect?.some((e) => e.effect === CardEffect.CosmoBlockOnReveal)) return null;
+    if (card.effects?.some((effect) => effect.cardEffect === CardEffect.CosmoBlockOnReveal)) {
+      return false;
+    }
 
-    return [
-      LogHelper.createLog(
-        `Cosmo bloqueou o efeito ao revelar de ${card.name} na lane ${laneIndex + 1}!`
-      ),
-    ];
+    LogHelper.emitLog(
+      `Cosmo bloqueou o efeito ao revelar de ${card.name} na lane ${laneIndex + 1}!`
+    );
+    return true;
   }
 }

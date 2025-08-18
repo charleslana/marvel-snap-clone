@@ -1,22 +1,22 @@
 import { botDeck } from '@/data/CardPool';
-import { AddToHandAction } from '@/interfaces/EffectAction';
 import { LogHelper } from '../helpers/LogHelper';
+import { GameEventManager } from '@/managers/GameEventManager';
+import { EffectAction } from '@/interfaces/EffectAction';
+import { GameEvent } from '@/enums/GameEvent';
 
 export class SentinelHandler {
-  static handle(isPlayer: boolean): AddToHandAction[] {
-    const sentinelCard = botDeck.find((card) => card.id === 21);
+  static handle(isPlayer: boolean): void {
+    const sentinelCard = botDeck.find((card) => card.id === 21 && card.name === 'Sentinela');
     if (!sentinelCard) {
-      LogHelper.createLog('Carta Sentinela não encontrada!');
-      return [];
+      LogHelper.emitLog('Carta Sentinela não encontrada!');
+      return;
     }
-    LogHelper.createLog(
-      `Ação criada: Adicionar Sentinela à mão de ${isPlayer ? 'Jogador' : 'Adversário'}.`
+
+    const action: EffectAction = { type: 'ADD_TO_HAND', payload: { card: sentinelCard, isPlayer } };
+    GameEventManager.instance.emit(GameEvent.AddCardToHand, action);
+
+    LogHelper.emitLog(
+      `Ação criada: Adicionado Sentinela à mão de ${isPlayer ? 'Jogador' : 'Adversário'}.`
     );
-    return [
-      {
-        type: 'ADD_TO_HAND',
-        payload: { card: sentinelCard, isPlayer },
-      },
-    ];
   }
 }

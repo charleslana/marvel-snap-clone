@@ -22,6 +22,8 @@ import { ButtonColor } from '@/enums/ButtonColor';
 import { UIFactory } from '@/components/UIFactory';
 import { RetreatButton } from '@/components/RetreatButton';
 import { EffectAction } from '@/interfaces/EffectAction';
+import { GameEventManager } from '@/managers/GameEventManager';
+import { GameEvent } from '@/enums/GameEvent';
 
 export default class GameScene extends Phaser.Scene {
   private playerHand: Card[] = [];
@@ -135,6 +137,14 @@ export default class GameScene extends Phaser.Scene {
 
     this.botAI = new BotAIManager(this, this.lanes, this.botHand, this.botEnergy);
     this.gameEndManager = new GameEndManager(this, this.lanes, this.logHistoryButton);
+
+    // Events
+    GameEventManager.instance.on(GameEvent.LogRequest, (action: EffectAction) => {
+      this.processLog(action);
+    });
+    GameEventManager.instance.on(GameEvent.AddCardToHand, (action: EffectAction) => {
+      this.processHand(action);
+    });
   }
 
   private createBackground() {
@@ -495,14 +505,14 @@ export default class GameScene extends Phaser.Scene {
     const onslaughtCount = neighborSlots.filter(
       (s) =>
         s.occupied &&
-        s.cardData?.effect?.some((e) => e.effect === CardEffect.OnslaughtDoubleOngoing)
+        s.cardData?.effects?.some((e) => e.cardEffect === CardEffect.OnslaughtDoubleOngoing)
     ).length;
     const effectMultiplier = Math.pow(2, onslaughtCount);
 
     for (const slot of neighborSlots) {
-      if (slot.occupied && slot.cardData?.effect) {
-        for (const effect of slot.cardData.effect) {
-          if (effectsToLookFor.includes(effect.effect)) {
+      if (slot.occupied && slot.cardData?.effects) {
+        for (const effect of slot.cardData.effects) {
+          if (effectsToLookFor.includes(effect.cardEffect)) {
             const value = typeof effect.value === 'number' ? effect.value : 0;
 
             const finalBonus = value * effectMultiplier;
@@ -528,13 +538,14 @@ export default class GameScene extends Phaser.Scene {
   ): number {
     const ironManCards = slots.filter(
       (s) =>
-        s.occupied && s.cardData?.effect?.some((e) => e.effect === CardEffect.IronManDoublePower)
+        s.occupied &&
+        s.cardData?.effects?.some((e) => e.cardEffect === CardEffect.IronManDoublePower)
     );
 
     const onslaughtCards = slots.filter(
       (s) =>
         s.occupied &&
-        s.cardData?.effect?.some((e) => e.effect === CardEffect.OnslaughtDoubleOngoing)
+        s.cardData?.effects?.some((e) => e.cardEffect === CardEffect.OnslaughtDoubleOngoing)
     );
 
     if (ironManCards.length === 0) {
@@ -560,14 +571,11 @@ export default class GameScene extends Phaser.Scene {
 
     this.time.delayedCall(1000, () => {
       this.executeBotTurn();
-      const hawkeyeActions = this.effectManager.checkAllHawkeyeBuffs(
-        this.revealQueue,
-        this.currentTurn
-      );
-      this.processActions(hawkeyeActions);
-      this.processRevealQueue();
       this.recordInitialCardPositions();
-      this.commitNightcrawlerMoves();
+      this.effectManager.checkAllHawkeyeBuffs(this.revealQueue, this.currentTurn);
+      this.effectManager.handleStartOfTurnEffects();
+
+      this.processRevealQueue();
 
       this.advanceTurn();
       this.refreshEnergies();
@@ -658,7 +666,7 @@ export default class GameScene extends Phaser.Scene {
       cost: cardData.cost,
       power: cardData.power,
       description: cardData.description,
-      effect: cardData.effect,
+      effects: cardData.effects,
       image: cardData.image,
     };
 
@@ -702,7 +710,7 @@ export default class GameScene extends Phaser.Scene {
     const deckCopy = [...deck];
 
     const quicksilverIndex = deckCopy.findIndex((card) =>
-      card.effect?.some((e) => e.effect === CardEffect.QuicksilverStartInHand)
+      card.effects?.some((e) => e.cardEffect === CardEffect.QuicksilverStartInHand)
     );
 
     if (quicksilverIndex > -1) {
@@ -908,7 +916,7 @@ export default class GameScene extends Phaser.Scene {
       if (item.slot.cardData) {
         item.slot.cardData.isRevealed = true;
       }
-      const onRevealActions = this.effectManager.applyOnRevealEffect(
+      this.effectManager.applyOnRevealEffect(
         item.card,
         item.laneIndex,
         item.slot,
@@ -916,19 +924,10 @@ export default class GameScene extends Phaser.Scene {
         item.turnPlayed,
         this.revealQueue
       );
-      this.processActions(onRevealActions);
 
-      for (const action of onRevealActions) {
-        if (action.type === 'ADD_TO_HAND') {
-          this.addCardToHand(action.payload.card, action.payload.isPlayer);
-        }
-      }
+      // Log removido e adicionado no event
+      this.effectManager.triggerOnCardPlayedEffects(item.card, item.laneIndex);
 
-      const onPlayedActions = this.effectManager.triggerOnCardPlayedEffects(
-        item.card,
-        item.laneIndex
-      );
-      this.processActions(onPlayedActions);
       this.updatePlacedCardsUI();
       this.updateLanePowers();
     }
@@ -938,12 +937,7 @@ export default class GameScene extends Phaser.Scene {
     this.renderBotHand();
 
     console.log('Recalculando todos os efeitos Ongoing após as revelações.');
-    const ongoingActions = this.effectManager.updateAllCardPowers();
-    this.processActions(ongoingActions);
-    this.updateLaneProperties();
-    this.updatePlacedCardsUI();
-    this.updateLanePowers();
-    this.updateMovableCards();
+    this.updateAllGamePowers();
   }
 
   private addCardToHand(card: Card, isPlayer: boolean): void {
@@ -952,11 +946,13 @@ export default class GameScene extends Phaser.Scene {
     if (targetHand.length < this.maxTurn) {
       targetHand.push(card);
       console.log(`${card.name} adicionado à mão de ${isPlayer ? 'Jogador' : 'Bot'}.`);
-    } else {
-      console.log(
-        `Mão de ${isPlayer ? 'Jogador' : 'Bot'} está cheia. ${card.name} não foi adicionado.`
-      );
+      this.updatePlacedCardsUI();
+      this.updateLanePowers();
+      return;
     }
+    console.log(
+      `Mão de ${isPlayer ? 'Jogador' : 'Bot'} está cheia. ${card.name} não foi adicionado.`
+    );
   }
 
   private updatePriorityHighlights(): void {
@@ -976,7 +972,8 @@ export default class GameScene extends Phaser.Scene {
 
       const isArmorPresent = [...lane.playerSlots, ...lane.opponentSlots].some(
         (s) =>
-          s.occupied && s.cardData?.effect?.some((e) => e.effect === CardEffect.ArmorPreventDestroy)
+          s.occupied &&
+          s.cardData?.effects?.some((e) => e.cardEffect === CardEffect.ArmorPreventDestroy)
       );
       if (isArmorPresent) {
         lane.properties.cardsCannotBeDestroyed = true;
@@ -1038,9 +1035,10 @@ export default class GameScene extends Phaser.Scene {
 
   private updateMovableCards(): void {
     this.placedCardContainers.forEach((container) => {
+      // TODO tipagem no container e alterar pra emit lá no handle do crawler
       const { cardData } = container as any;
-      const isNightcrawler = cardData.effect?.some(
-        (e: any) => e.effect === CardEffect.NightcrawlerMove
+      const isNightcrawler = cardData.effects?.some(
+        (e: any) => e.cardEffect === CardEffect.NightcrawlerMove
       );
 
       if (isNightcrawler && cardData.isRevealed && !cardData.hasMoved) {
@@ -1056,38 +1054,12 @@ export default class GameScene extends Phaser.Scene {
   }
 
   private updateAllGamePowers(): void {
-    const ongoingActions = this.effectManager.updateAllCardPowers();
-    this.processActions(ongoingActions);
+    this.effectManager.updateAllCardPowers();
+
     this.updateLaneProperties();
     this.updatePlacedCardsUI();
     this.updateLanePowers();
     this.updateMovableCards();
-  }
-
-  private commitNightcrawlerMoves(): void {
-    for (const lane of this.lanes) {
-      const allSlots = [...lane.playerSlots, ...lane.opponentSlots];
-      for (const slot of allSlots) {
-        const { cardData } = slot;
-
-        if (
-          cardData &&
-          cardData.effect?.some((e) => e.effect === CardEffect.NightcrawlerMove) &&
-          !cardData.hasMoved
-        ) {
-          const currentLaneIndex = this.lanes.indexOf(lane);
-          if (currentLaneIndex !== cardData.laneIndexAtStartOfTurn) {
-            cardData.hasMoved = true;
-            console.log(`${cardData.name} gastou seu movimento neste turno ao mudar de lane.`);
-            this.logHistoryButton.addLog(
-              `${cardData.name} moveu-se da lane ${currentLaneIndex + 1} para a lane ${cardData.laneIndexAtStartOfTurn! + 1}.`
-            );
-          } else {
-            console.log(`${cardData.name} terminou o turno na mesma lane, movimento não gasto.`);
-          }
-        }
-      }
-    }
   }
 
   private recordInitialCardPositions(): void {
@@ -1105,17 +1077,19 @@ export default class GameScene extends Phaser.Scene {
     });
   }
 
-  private processActions(actions: EffectAction[]): void {
-    for (const action of actions) {
-      switch (action.type) {
-        case 'ADD_TO_HAND':
-          this.logHistoryButton.addLog(`Carta ${action.payload.card.name} adicionada à mão.`);
-          break;
+  private processLog(action: EffectAction): void {
+    switch (action.type) {
+      case 'LOG_MESSAGE':
+        this.logHistoryButton.addLog(action.payload.message);
+        break;
+    }
+  }
 
-        case 'LOG_MESSAGE':
-          this.logHistoryButton.addLog(action.payload.message);
-          break;
-      }
+  private processHand(action: EffectAction): void {
+    switch (action.type) {
+      case 'ADD_TO_HAND':
+        this.addCardToHand(action.payload.card, action.payload.isPlayer);
+        break;
     }
   }
 }

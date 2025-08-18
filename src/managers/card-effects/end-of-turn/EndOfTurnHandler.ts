@@ -6,10 +6,10 @@ export class EndOfTurnHandler {
   static handle(lanes: Lane[]): void {
     lanes.forEach((lane) => {
       SlotHelper.getAllSlots(lane).forEach((slot) => {
-        if (!slot.occupied || !slot.cardData?.effect) return;
+        if (!slot.occupied || !slot.cardData?.effects) return;
 
-        slot.cardData.effect.forEach((e) => {
-          if (e.type === CardEffectType.EndOfTurn) {
+        slot.cardData.effects.forEach((e) => {
+          if (e.cardEffectType === CardEffectType.EndOfTurn) {
             // implementar conforme novos efeitos aparecerem
           }
         });

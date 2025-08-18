@@ -106,7 +106,7 @@ export class DragAndDropManager {
 
     const { cardData } = container;
     const isMovable =
-      cardData.effect?.some((e) => e.effect === CardEffect.NightcrawlerMove) &&
+      cardData.effects?.some((e) => e.cardEffect === CardEffect.NightcrawlerMove) &&
       !cardData.hasMoved &&
       (container as any).slot;
 

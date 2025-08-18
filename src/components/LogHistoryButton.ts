@@ -80,6 +80,7 @@ export class LogHistoryButton {
         wordWrap: { width: modalContentWidth },
       }
     );
+    logsText.setLineSpacing(8);
 
     const maskShape = this.scene.make.graphics();
     maskShape.fillStyle(0xffffff);

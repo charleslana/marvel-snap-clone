@@ -1,5 +1,4 @@
 import { Slot } from '@/interfaces/Slot';
-import { EffectAction } from '@/interfaces/EffectAction';
 import { LogHelper } from '../helpers/LogHelper';
 
 export class PunisherHandler {
@@ -8,12 +7,14 @@ export class PunisherHandler {
     opponentCount: number,
     bonusPerCard: number,
     effectMultiplier: number
-  ): EffectAction[] {
-    if (bonusPerCard <= 0) return [];
+  ): void {
+    if (bonusPerCard <= 0) {
+      return;
+    }
     slot.power = (slot.power ?? 0) + opponentCount * bonusPerCard * effectMultiplier;
 
-    return effectMultiplier > 1
-      ? [LogHelper.createLog('Massacre dobrou o efeito do Justiceiro!')]
-      : [];
+    if (effectMultiplier > 1) {
+      LogHelper.emitLog('Massacre dobrou o efeito do Justiceiro!');
+    }
   }
 }

@@ -9,7 +9,7 @@ export interface Card {
   power: number;
   description: string;
   image?: ImageEnum;
-  effect?: { type: CardEffectType; effect: CardEffect; value?: number }[];
+  effects?: { cardEffectType: CardEffectType; cardEffect: CardEffect; value?: number }[];
 }
 
 export interface CardData extends Card {
