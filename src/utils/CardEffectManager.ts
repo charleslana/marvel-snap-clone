@@ -35,7 +35,13 @@ export class CardEffectManager {
     if (cosmoCard && cosmoCard.isRevealed) {
       if (card.name === 'Cosmo') {
       } else {
-        console.log(`Cosmo bloqueou o efeito OnReveal de ${card.name} na lane ${laneIndex + 1}!`);
+        console.log(`Cosmo bloqueou o efeito ao revelar de ${card.name} na lane ${laneIndex + 1}!`);
+        actions.push({
+          type: 'LOG_MESSAGE',
+          payload: {
+            message: `Cosmo bloqueou o efeito ao revelar de ${card.name} na lane ${laneIndex + 1}!`,
+          },
+        });
         return actions;
       }
     }
@@ -48,7 +54,11 @@ export class CardEffectManager {
             if (laneIndex === 1 && bonus > 0) {
               if (slot.permanentBonus === undefined) slot.permanentBonus = 0;
               slot.permanentBonus += bonus;
-              console.log(`Medusa ganhou um bônus permanente de +${bonus} na lane central.`);
+              console.log(`Medusa ganhou +${bonus} de poder na lane central.`);
+              actions.push({
+                type: 'LOG_MESSAGE',
+                payload: { message: `Medusa ganhou +${bonus} de poder na lane central.` },
+              });
             }
             break;
           }
@@ -67,8 +77,14 @@ export class CardEffectManager {
               if (slot.permanentBonus === undefined) slot.permanentBonus = 0;
               slot.permanentBonus += bonus;
               console.log(
-                `Senhor das Estrelas ganhou um bônus permanente de +${bonus} porque o ${opponentName} também jogou aqui!`
+                `Senhor das Estrelas ganhou um bônus de +${bonus} porque o ${opponentName} também jogou aqui!`
               );
+              actions.push({
+                type: 'LOG_MESSAGE',
+                payload: {
+                  message: `Senhor das Estrelas ganhou um bônus de +${bonus} porque o ${opponentName} também jogou aqui!`,
+                },
+              });
             }
             break;
           }
@@ -85,6 +101,12 @@ export class CardEffectManager {
               console.log(
                 `Lupina (${sideIdentifier}) ganhou +${totalBonus} de poder por encontrar ${otherCardsCount} outra(s) carta(s) aliada(s).`
               );
+              actions.push({
+                type: 'LOG_MESSAGE',
+                payload: {
+                  message: `Lupina ganhou +${totalBonus} de poder por ${otherCardsCount} outra(s) carta(s) aliada(s).`,
+                },
+              });
             }
             break;
           }
@@ -120,6 +142,10 @@ export class CardEffectManager {
 
             const sideIdentifier = isPlayerCard ? 'Jogador' : 'Bot';
             console.log(`Espectro (${sideIdentifier}) ativou seu efeito!`);
+            actions.push({
+              type: 'LOG_MESSAGE',
+              payload: { message: `Espectro (${sideIdentifier}) ativou seu efeito!` },
+            });
 
             this.lanes.forEach((targetLane) => {
               const friendlySlots = isPlayerCard ? targetLane.playerSlots : targetLane.botSlots;
@@ -147,6 +173,12 @@ export class CardEffectManager {
               console.log(
                 `Gavião Arqueiro em ${laneIndex + 1} está pronto para receber bônus no turno ${turnPlayed + 1}.`
               );
+              actions.push({
+                type: 'LOG_MESSAGE',
+                payload: {
+                  message: `Gavião Arqueiro em ${laneIndex + 1} está pronto para receber bônus no turno ${turnPlayed + 1}.`,
+                },
+              });
             }
             break;
           }
@@ -156,7 +188,8 @@ export class CardEffectManager {
     return actions;
   }
 
-  public updateAllCardPowers(): void {
+  public updateAllCardPowers(): EffectAction[] {
+    const actions: EffectAction[] = [];
     console.log('Atualizando o poder de todas as cartas no tabuleiro...');
     for (const lane of this.lanes) {
       const allSlots = [...lane.playerSlots, ...lane.botSlots];
@@ -178,18 +211,26 @@ export class CardEffectManager {
           const isPlayerCard = lane.playerSlots.includes(slot);
           for (const e of slot.cardData.effect) {
             if (e.type === CardEffectType.Ongoing) {
-              this.applyOngoingEffect(e.effect, slot, laneIndex, isPlayerCard);
+              const effectActions = this.applyOngoingEffect(
+                e.effect,
+                slot,
+                laneIndex,
+                isPlayerCard
+              );
+              actions.push(...effectActions);
             }
           }
         }
       }
     }
+    return actions;
   }
 
   public checkAllHawkeyeBuffs(
     revealQueue: readonly { card: CardData; laneIndex: number; isPlayer: boolean }[],
     currentTurn: number
-  ): void {
+  ): EffectAction[] {
+    const actions: EffectAction[] = [];
     for (const playedItem of revealQueue) {
       const lane = this.lanes[playedItem.laneIndex];
       const friendlySlots = playedItem.isPlayer ? lane.playerSlots : lane.botSlots;
@@ -207,14 +248,21 @@ export class CardEffectManager {
             }
             hawkeyeSlot.permanentBonus += bonus;
             console.log(
-              `Gavião Arqueiro ativado: ${hawkeyeSlot.cardData.name} em ${playedItem.laneIndex + 1} recebeu um bônus permanente de +${bonus}!`
+              `Gavião Arqueiro ativado: ${hawkeyeSlot.cardData.name} em ${playedItem.laneIndex + 1} recebeu um bônus de +${bonus}!`
             );
+            actions.push({
+              type: 'LOG_MESSAGE',
+              payload: {
+                message: `Gavião Arqueiro ativado: ${hawkeyeSlot.cardData.name} em ${playedItem.laneIndex + 1} recebeu um bônus de +${bonus}!`,
+              },
+            });
           }
           delete hawkeyeSlot.cardData.hawkeyeReadyTurn;
           delete hawkeyeSlot.cardData.hawkeyeBonus;
         }
       }
     }
+    return actions;
   }
 
   private applyOngoingEffect(
@@ -222,7 +270,8 @@ export class CardEffectManager {
     targetSlot: Slot,
     laneIndex: number,
     isPlayer: boolean
-  ): void {
+  ): EffectAction[] {
+    const actions: EffectAction[] = [];
     const lane = this.lanes[laneIndex];
     const friendlySlots = isPlayer ? lane.playerSlots : lane.botSlots;
     const enemySlots = isPlayer ? lane.botSlots : lane.playerSlots;
@@ -245,7 +294,13 @@ export class CardEffectManager {
 
         if (friendlySlots.filter((s) => s.occupied).length >= 4) {
           targetSlot.power = (targetSlot.power ?? 0) + bonus * effectMultiplier;
-          if (effectMultiplier > 1) console.log(`Onslaught dobrou o efeito do Homem-Formiga!`);
+          if (effectMultiplier > 1) {
+            console.log(`Massacre dobrou o efeito do Homem-Formiga!`);
+            actions.push({
+              type: 'LOG_MESSAGE',
+              payload: { message: `Massacre dobrou o efeito do Homem-Formiga!` },
+            });
+          }
         }
         break;
       }
@@ -259,7 +314,13 @@ export class CardEffectManager {
             : 0;
         const enemyCount = enemySlots.filter((s) => s.occupied).length;
         targetSlot.power = (targetSlot.power ?? 0) + enemyCount * bonusPerCard * effectMultiplier;
-        if (effectMultiplier > 1) console.log(`Onslaught dobrou o efeito do Justiceiro!`);
+        if (effectMultiplier > 1) {
+          console.log(`Massacre dobrou o efeito do Justiceiro!`);
+          actions.push({
+            type: 'LOG_MESSAGE',
+            payload: { message: `Massacre dobrou o efeito do Justiceiro!` },
+          });
+        }
         break;
       }
 
@@ -286,9 +347,14 @@ export class CardEffectManager {
         targetSlot.cardData!.immunities.cannotHavePowerReduced = true;
 
         console.log(`${targetSlot.cardData!.name} está com suas imunidades ativas.`);
+        actions.push({
+          type: 'LOG_MESSAGE',
+          payload: { message: `${targetSlot.cardData!.name} está com suas imunidades ativas.` },
+        });
         break;
       }
     }
+    return actions;
   }
 
   public applyEndOfTurnEffects(): void {
@@ -306,7 +372,8 @@ export class CardEffectManager {
     }
   }
 
-  public triggerOnCardPlayedEffects(playedCard: CardData, laneIndex: number): void {
+  public triggerOnCardPlayedEffects(playedCard: CardData, laneIndex: number): EffectAction[] {
+    const actions: EffectAction[] = [];
     const lane = this.lanes[laneIndex];
     const allSlotsInLane = [...lane.playerSlots, ...lane.botSlots];
     for (const slot of allSlotsInLane) {
@@ -330,6 +397,12 @@ export class CardEffectManager {
                   console.log(
                     `Angela ganhou +${bonus} de poder porque ${playedCard.name} foi jogada na sua lane.`
                   );
+                  actions.push({
+                    type: 'LOG_MESSAGE',
+                    payload: {
+                      message: `Angela ganhou +${bonus} de poder porque ${playedCard.name} foi jogada em sua lane.`,
+                    },
+                  });
                 }
                 break;
             }
@@ -337,6 +410,7 @@ export class CardEffectManager {
         }
       }
     }
+    return actions;
   }
 
   private applyEndOfTurnEffect(effect: CardEffect, _slot: Slot, _lane: Lane): void {

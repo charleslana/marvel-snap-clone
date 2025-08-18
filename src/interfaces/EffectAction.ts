@@ -17,5 +17,21 @@ export type MoveCardAction = {
   };
 };
 
-// Você pode adicionar outros tipos de ação aqui no futuro (ex: 'DESTROY_CARD', 'MOVE_CARD')
-export type EffectAction = AddToHandAction | MoveCardAction;
+export type PowerBuffAction = {
+  type: 'POWER_BUFF';
+  payload: {
+    cardName: string;
+    targetCardName: string;
+    bonus: number;
+    reason: string;
+  };
+};
+
+export type LogMessageAction = {
+  type: 'LOG_MESSAGE';
+  payload: {
+    message: string;
+  };
+};
+
+export type EffectAction = AddToHandAction | MoveCardAction | PowerBuffAction | LogMessageAction;

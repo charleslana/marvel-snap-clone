@@ -21,6 +21,7 @@ import { GameButton } from '@/components/GameButton';
 import { ButtonColor } from '@/enums/ButtonColor';
 import { UIFactory } from '@/components/UIFactory';
 import { RetreatButton } from '@/components/RetreatButton';
+import { EffectAction } from '@/interfaces/EffectAction';
 
 export default class GameScene extends Phaser.Scene {
   private playerHand: Omit<Card, 'index'>[] = [];
@@ -36,7 +37,6 @@ export default class GameScene extends Phaser.Scene {
   private playerEnergy = 0;
   private botEnergy = 0;
   private maxTurn = 7;
-  // private isNextTurn: 0 | 1 = 0;
   private isNextTurn: 0 | 1 = Phaser.Math.Between(0, 1) as 0 | 1;
   private showBotHand = false;
   private playerNameText!: Phaser.GameObjects.Text;
@@ -558,7 +558,11 @@ export default class GameScene extends Phaser.Scene {
 
     this.time.delayedCall(1000, () => {
       this.executeBotTurn();
-      this.effectManager.checkAllHawkeyeBuffs(this.revealQueue, this.currentTurn);
+      const hawkeyeActions = this.effectManager.checkAllHawkeyeBuffs(
+        this.revealQueue,
+        this.currentTurn
+      );
+      this.processActions(hawkeyeActions);
       this.processRevealQueue();
       this.recordInitialCardPositions();
       this.commitNightcrawlerMoves();
@@ -810,7 +814,6 @@ export default class GameScene extends Phaser.Scene {
     this.playerNameText.setColor('#ffffff');
     this.opponentNameText.setColor('#ffffff');
 
-    this.effectManager.updateAllCardPowers();
     this.updatePlacedCardsUI();
     this.updateLanePowers();
 
@@ -835,7 +838,6 @@ export default class GameScene extends Phaser.Scene {
     this.effectManager.applyEndOfTurnEffects();
     this.updateAllGamePowers();
 
-    this.effectManager.updateAllCardPowers();
     this.updateLaneProperties();
     this.updatePlacedCardsUI();
     this.updateLanePowers();
@@ -903,7 +905,7 @@ export default class GameScene extends Phaser.Scene {
       if (item.slot.cardData) {
         item.slot.cardData.isRevealed = true;
       }
-      const actions = this.effectManager.applyOnRevealEffect(
+      const onRevealActions = this.effectManager.applyOnRevealEffect(
         item.card,
         item.laneIndex,
         item.slot,
@@ -911,14 +913,19 @@ export default class GameScene extends Phaser.Scene {
         item.turnPlayed,
         this.revealQueue
       );
+      this.processActions(onRevealActions);
 
-      for (const action of actions) {
+      for (const action of onRevealActions) {
         if (action.type === 'ADD_TO_HAND') {
           this.addCardToHand(action.payload.card, action.payload.isPlayer);
         }
       }
 
-      this.effectManager.triggerOnCardPlayedEffects(item.card, item.laneIndex);
+      const onPlayedActions = this.effectManager.triggerOnCardPlayedEffects(
+        item.card,
+        item.laneIndex
+      );
+      this.processActions(onPlayedActions);
       this.updatePlacedCardsUI();
       this.updateLanePowers();
     }
@@ -928,7 +935,8 @@ export default class GameScene extends Phaser.Scene {
     this.renderBotHand();
 
     console.log('Recalculando todos os efeitos Ongoing após as revelações.');
-    this.effectManager.updateAllCardPowers();
+    const ongoingActions = this.effectManager.updateAllCardPowers();
+    this.processActions(ongoingActions);
     this.updateLaneProperties();
     this.updatePlacedCardsUI();
     this.updateLanePowers();
@@ -1045,7 +1053,8 @@ export default class GameScene extends Phaser.Scene {
   }
 
   private updateAllGamePowers(): void {
-    this.effectManager.updateAllCardPowers();
+    const ongoingActions = this.effectManager.updateAllCardPowers();
+    this.processActions(ongoingActions);
     this.updateLaneProperties();
     this.updatePlacedCardsUI();
     this.updateLanePowers();
@@ -1067,6 +1076,9 @@ export default class GameScene extends Phaser.Scene {
           if (currentLaneIndex !== cardData.laneIndexAtStartOfTurn) {
             cardData.hasMoved = true;
             console.log(`${cardData.name} gastou seu movimento neste turno ao mudar de lane.`);
+            this.logHistoryButton.addLog(
+              `${cardData.name} moveu-se da lane ${currentLaneIndex + 1} para a lane ${cardData.laneIndexAtStartOfTurn! + 1}.`
+            );
           } else {
             console.log(`${cardData.name} terminou o turno na mesma lane, movimento não gasto.`);
           }
@@ -1088,5 +1100,19 @@ export default class GameScene extends Phaser.Scene {
         }
       }
     });
+  }
+
+  private processActions(actions: EffectAction[]): void {
+    for (const action of actions) {
+      switch (action.type) {
+        case 'ADD_TO_HAND':
+          this.logHistoryButton.addLog(`Carta ${action.payload.card.name} adicionada à mão.`);
+          break;
+
+        case 'LOG_MESSAGE':
+          this.logHistoryButton.addLog(action.payload.message);
+          break;
+      }
+    }
   }
 }
