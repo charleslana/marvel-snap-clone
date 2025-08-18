@@ -3,18 +3,13 @@ import { Card } from '@/interfaces/Card';
 import { Lane } from '@/interfaces/Lane';
 import { Slot } from '@/interfaces/Slot';
 
-export class BotAI {
+export class BotAIManager {
   private scene: Phaser.Scene;
   private lanes: Lane[];
-  private botHand: Omit<Card, 'index'>[];
+  private botHand: Card[];
   private botEnergy: number;
 
-  constructor(
-    scene: Phaser.Scene,
-    lanes: Lane[],
-    botHand: Omit<Card, 'index'>[],
-    botEnergy: number
-  ) {
+  constructor(scene: Phaser.Scene, lanes: Lane[], botHand: Card[], botEnergy: number) {
     this.scene = scene;
     this.lanes = lanes;
     this.botHand = botHand;
@@ -22,7 +17,7 @@ export class BotAI {
   }
 
   public executeTurn(
-    onCardPlayed: (slot: Slot, card: Omit<Card, 'index'>) => void,
+    onCardPlayed: (slot: Slot, card: Card) => void,
     onHandUpdated: () => void,
     onLanePowersUpdated: () => void
   ): void {
@@ -50,11 +45,11 @@ export class BotAI {
     this.botEnergy = newEnergy;
   }
 
-  public updateBotHand(newHand: Omit<Card, 'index'>[]): void {
+  public updateBotHand(newHand: Card[]): void {
     this.botHand = newHand;
   }
 
-  private getPlayableCards(): Omit<Card, 'index'>[] {
+  private getPlayableCards(): Card[] {
     return this.botHand.filter((c) => c.cost <= this.botEnergy).sort((a, b) => b.power - a.power);
   }
 
@@ -73,18 +68,18 @@ export class BotAI {
   }
 
   private calculateLanePower(lane: Lane): { botPower: number; playerPower: number } {
-    const botPower = lane.botSlots.reduce((sum, s) => sum + (s.power ?? 0), 0);
+    const botPower = lane.opponentSlots.reduce((sum, s) => sum + (s.power ?? 0), 0);
     const playerPower = lane.playerSlots.reduce((sum, s) => sum + (s.power ?? 0), 0);
     return { botPower, playerPower };
   }
 
   private tryPlayCardOnPrioritizedLane(
-    card: Omit<Card, 'index'>,
+    card: Card,
     lanesByPriority: Array<{ lane: Lane; botPower: number; playerPower: number }>,
-    onCardPlayed: (slot: Slot, card: Omit<Card, 'index'>) => void
+    onCardPlayed: (slot: Slot, card: Card) => void
   ): boolean {
     for (const laneItem of lanesByPriority) {
-      const slot = laneItem.lane.botSlots.find((s) => !s.occupied);
+      const slot = laneItem.lane.opponentSlots.find((s) => !s.occupied);
       if (!slot) continue;
 
       const willOverpower =
@@ -102,8 +97,8 @@ export class BotAI {
 
   private playCardOnSlot(
     slot: Slot,
-    card: Omit<Card, 'index'>,
-    onCardPlayed: (slot: Slot, card: Omit<Card, 'index'>) => void
+    card: Card,
+    onCardPlayed: (slot: Slot, card: Card) => void
   ): void {
     onCardPlayed(slot, card);
 
@@ -117,11 +112,11 @@ export class BotAI {
   }
 
   private playCardOnAnyAvailableSlot(
-    card: Omit<Card, 'index'>,
-    onCardPlayed: (slot: Slot, card: Omit<Card, 'index'>) => void
+    card: Card,
+    onCardPlayed: (slot: Slot, card: Card) => void
   ): void {
     for (const lane of this.lanes) {
-      const slot = lane.botSlots.find((s) => !s.occupied);
+      const slot = lane.opponentSlots.find((s) => !s.occupied);
       if (slot && card.cost <= this.botEnergy) {
         this.playCardOnSlot(slot, card, onCardPlayed);
         break;

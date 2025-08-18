@@ -3,8 +3,9 @@ import { CardEffectType } from '@/enums/CardEffectType';
 import { ImageEnum } from '@/enums/ImageEnum';
 import { Card } from '@/interfaces/Card';
 
-export const playerDeck: Omit<Card, 'index'>[] = [
+export const playerDeck: Card[] = [
   {
+    id: 1,
     name: 'Homem-Formiga',
     cost: 1,
     power: 1,
@@ -13,6 +14,7 @@ export const playerDeck: Omit<Card, 'index'>[] = [
     effect: [{ type: CardEffectType.Ongoing, effect: CardEffect.AntManBuff, value: 3 }],
   },
   {
+    id: 2,
     name: 'Noturno',
     cost: 1,
     power: 2,
@@ -21,6 +23,7 @@ export const playerDeck: Omit<Card, 'index'>[] = [
     effect: [{ type: CardEffectType.None, effect: CardEffect.NightcrawlerMove }],
   },
   {
+    id: 3,
     name: 'Angela',
     cost: 2,
     power: 3,
@@ -29,6 +32,7 @@ export const playerDeck: Omit<Card, 'index'>[] = [
     effect: [{ type: CardEffectType.OnCardPlayed, effect: CardEffect.AngelaBuff, value: 1 }],
   },
   {
+    id: 4,
     name: 'Armor',
     cost: 2,
     power: 3,
@@ -37,6 +41,7 @@ export const playerDeck: Omit<Card, 'index'>[] = [
     effect: [{ type: CardEffectType.Ongoing, effect: CardEffect.ArmorPreventDestroy }],
   },
   {
+    id: 5,
     name: 'Colosso',
     cost: 2,
     power: 3,
@@ -45,6 +50,7 @@ export const playerDeck: Omit<Card, 'index'>[] = [
     effect: [{ type: CardEffectType.Ongoing, effect: CardEffect.ColossusImmune }],
   },
   {
+    id: 6,
     name: 'Senhor Fantástico',
     cost: 3,
     power: 1,
@@ -53,6 +59,7 @@ export const playerDeck: Omit<Card, 'index'>[] = [
     effect: [{ type: CardEffectType.Ongoing, effect: CardEffect.MisterFantasticBuff, value: 3 }],
   },
   {
+    id: 7,
     name: 'Cosmo',
     cost: 3,
     power: 3,
@@ -61,6 +68,7 @@ export const playerDeck: Omit<Card, 'index'>[] = [
     effect: [{ type: CardEffectType.Ongoing, effect: CardEffect.CosmoBlockOnReveal }],
   },
   {
+    id: 8,
     name: 'Namor',
     cost: 4,
     power: 6,
@@ -69,6 +77,7 @@ export const playerDeck: Omit<Card, 'index'>[] = [
     effect: [{ type: CardEffectType.Ongoing, effect: CardEffect.NamorBuff, value: 5 }],
   },
   {
+    id: 9,
     name: 'Homem de Ferro',
     cost: 5,
     power: 0,
@@ -77,6 +86,7 @@ export const playerDeck: Omit<Card, 'index'>[] = [
     effect: [{ type: CardEffectType.Ongoing, effect: CardEffect.IronManDoublePower }],
   },
   {
+    id: 10,
     name: 'Klaw',
     cost: 5,
     power: 4,
@@ -85,6 +95,7 @@ export const playerDeck: Omit<Card, 'index'>[] = [
     effect: [{ type: CardEffectType.Ongoing, effect: CardEffect.KlawRightBuff, value: 7 }],
   },
   {
+    id: 11,
     name: 'Espectro',
     cost: 6,
     power: 7,
@@ -93,6 +104,7 @@ export const playerDeck: Omit<Card, 'index'>[] = [
     effect: [{ type: CardEffectType.OnReveal, effect: CardEffect.SpectrumBuffOngoing, value: 2 }],
   },
   {
+    id: 12,
     name: 'Massacre',
     cost: 6,
     power: 8,
@@ -102,8 +114,9 @@ export const playerDeck: Omit<Card, 'index'>[] = [
   },
 ];
 
-export const botDeck: Omit<Card, 'index'>[] = [
+export const botDeck: Card[] = [
   {
+    id: 13,
     name: 'Abominável',
     cost: 5,
     power: 9,
@@ -112,6 +125,7 @@ export const botDeck: Omit<Card, 'index'>[] = [
     effect: [{ type: CardEffectType.None, effect: CardEffect.None }],
   },
   {
+    id: 14,
     name: 'Ciclope',
     cost: 3,
     power: 4,
@@ -120,6 +134,7 @@ export const botDeck: Omit<Card, 'index'>[] = [
     effect: [{ type: CardEffectType.None, effect: CardEffect.None }],
   },
   {
+    id: 15,
     name: 'Gavião Arqueiro',
     cost: 1,
     power: 1,
@@ -128,6 +143,7 @@ export const botDeck: Omit<Card, 'index'>[] = [
     effect: [{ type: CardEffectType.OnReveal, effect: CardEffect.HawkeyeNextTurnBuff, value: 3 }],
   },
   {
+    id: 16,
     name: 'Hulk',
     cost: 6,
     power: 12,
@@ -136,6 +152,7 @@ export const botDeck: Omit<Card, 'index'>[] = [
     effect: [{ type: CardEffectType.None, effect: CardEffect.None }],
   },
   {
+    id: 17,
     name: 'Medusa',
     cost: 2,
     power: 2,
@@ -144,6 +161,7 @@ export const botDeck: Omit<Card, 'index'>[] = [
     effect: [{ type: CardEffectType.OnReveal, effect: CardEffect.MedusaCenterBuff, value: 3 }],
   },
   {
+    id: 18,
     name: 'Misty Knight',
     cost: 1,
     power: 2,
@@ -152,6 +170,7 @@ export const botDeck: Omit<Card, 'index'>[] = [
     effect: [{ type: CardEffectType.None, effect: CardEffect.None }],
   },
   {
+    id: 19,
     name: 'Justiceiro',
     cost: 3,
     power: 2,
@@ -160,6 +179,7 @@ export const botDeck: Omit<Card, 'index'>[] = [
     effect: [{ type: CardEffectType.Ongoing, effect: CardEffect.PunisherEnemyBuff, value: 1 }],
   },
   {
+    id: 20,
     name: 'Mercúrio',
     cost: 1,
     power: 2,
@@ -168,6 +188,7 @@ export const botDeck: Omit<Card, 'index'>[] = [
     effect: [{ type: CardEffectType.None, effect: CardEffect.QuicksilverStartInHand }],
   },
   {
+    id: 21,
     name: 'Sentinela',
     cost: 2,
     power: 3,
@@ -176,6 +197,7 @@ export const botDeck: Omit<Card, 'index'>[] = [
     effect: [{ type: CardEffectType.OnReveal, effect: CardEffect.SentinelAddToHand }],
   },
   {
+    id: 22,
     name: 'Lupina',
     cost: 2,
     power: 3,
@@ -184,6 +206,7 @@ export const botDeck: Omit<Card, 'index'>[] = [
     effect: [{ type: CardEffectType.OnReveal, effect: CardEffect.WolfsbaneBuff, value: 2 }],
   },
   {
+    id: 23,
     name: 'Senhor das Estrelas',
     cost: 2,
     power: 2,
@@ -194,6 +217,7 @@ export const botDeck: Omit<Card, 'index'>[] = [
     ],
   },
   {
+    id: 24,
     name: 'Coisa',
     cost: 4,
     power: 7,

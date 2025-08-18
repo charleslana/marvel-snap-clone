@@ -25,7 +25,7 @@ export class CardContainer extends Phaser.GameObjects.Container {
     width: number,
     height: number,
     color: number,
-    card: Omit<Card, 'index'>,
+    card: Card,
     index: number
   ) {
     super(scene, x, y);

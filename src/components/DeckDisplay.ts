@@ -9,7 +9,7 @@ export class DeckDisplay {
   private deckButton?: GameButton;
   private label: string;
   private modalContainer?: Phaser.GameObjects.Container;
-  private deckCards: Omit<Card, 'index'>[] = [];
+  private deckCards: Card[] = [];
   private canOpenModal = false;
   private borderRect?: Phaser.GameObjects.Rectangle;
 
@@ -18,12 +18,7 @@ export class DeckDisplay {
     this.label = label;
   }
 
-  public initialize(
-    x: number,
-    y: number,
-    initialDeck: number,
-    cards?: Omit<Card, 'index'>[]
-  ): void {
+  public initialize(x: number, y: number, initialDeck: number, cards?: Card[]): void {
     if (cards) this.deckCards = cards;
     this.deckButton = this.createDeckButton(x, y, initialDeck);
   }

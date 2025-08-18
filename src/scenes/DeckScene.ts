@@ -16,7 +16,7 @@ import { UIFactory } from '@/components/UIFactory';
 export class DeckScene extends Phaser.Scene {
   private cardDetails!: CardDetailsPanel;
   private allCardsData = [...playerDeck, ...botDeck, ...playerDeck, ...botDeck];
-  private currentDeckData: Omit<Card, 'index'>[] = [];
+  private currentDeckData: Card[] = [];
   private deckGridContainer!: Phaser.GameObjects.Container;
   private deckTitleText!: Phaser.GameObjects.Text;
   private deckSelect!: Select;
@@ -161,7 +161,7 @@ export class DeckScene extends Phaser.Scene {
 
   private populateCardGrid(
     container: Phaser.GameObjects.Container | ScrollableContainer,
-    cardsData: Omit<Card, 'index'>[]
+    cardsData: Card[]
   ) {
     const gridWidth = container.width;
 

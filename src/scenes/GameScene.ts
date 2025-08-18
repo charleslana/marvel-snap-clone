@@ -7,13 +7,13 @@ import { CardContainer } from '@/components/CardContainer';
 import { LaneDisplay } from '@/components/LaneDisplay';
 import { CardDetailsPanel } from '@/components/CardDetailsPanel';
 
-import { DragAndDropManager } from '@/utils/DragAndDropManager';
-import { BotAI } from '@/utils/BotAI';
-import { GameEndManager } from '@/utils/GameEndManager';
+import { DragAndDropManager } from '@/managers/DragAndDropManager';
+import { BotAIManager } from '@/managers/BotAIManager';
+import { GameEndManager } from '@/managers/GameEndManager';
 import { DeckDisplay } from '@/components/DeckDisplay';
 import { botDeck, playerDeck } from '@/data/CardPool';
 import { LogHistoryButton } from '@/components/LogHistoryButton';
-import { CardEffectManager } from '@/utils/CardEffectManager';
+import { CardEffectManager } from '@/managers/card-effects/CardEffectManager';
 import { CardEffect } from '@/enums/CardEffect';
 import { SceneEnum } from '@/enums/SceneEnum';
 import { ImageEnum } from '@/enums/ImageEnum';
@@ -24,10 +24,10 @@ import { RetreatButton } from '@/components/RetreatButton';
 import { EffectAction } from '@/interfaces/EffectAction';
 
 export default class GameScene extends Phaser.Scene {
-  private playerHand: Omit<Card, 'index'>[] = [];
-  private botHand: Omit<Card, 'index'>[] = [];
-  private playerDeckMutable: Omit<Card, 'index'>[] = [];
-  private botDeckMutable: Omit<Card, 'index'>[] = [];
+  private playerHand: Card[] = [];
+  private botHand: Card[] = [];
+  private playerDeckMutable: Card[] = [];
+  private botDeckMutable: Card[] = [];
 
   private isPlayerTurn = true;
   private lanes: Lane[] = [];
@@ -50,7 +50,7 @@ export default class GameScene extends Phaser.Scene {
   private endTurnButton!: GameButton;
   private cardDetailsPanel!: CardDetailsPanel;
   private dragAndDropManager!: DragAndDropManager;
-  private botAI!: BotAI;
+  private botAI!: BotAIManager;
   private gameEndManager!: GameEndManager;
   private endBattleButton!: GameButton;
   private playerDeckDisplay!: DeckDisplay;
@@ -83,7 +83,7 @@ export default class GameScene extends Phaser.Scene {
     this.lanes = [];
     this.playerHandContainers = [];
     this.botHandContainers = [];
-    this.showBotHand = false;
+    this.showBotHand = true;
   }
 
   public create(): void {
@@ -133,7 +133,7 @@ export default class GameScene extends Phaser.Scene {
     this.renderPlayerHand();
     this.renderBotHand();
 
-    this.botAI = new BotAI(this, this.lanes, this.botHand, this.botEnergy);
+    this.botAI = new BotAIManager(this, this.lanes, this.botHand, this.botEnergy);
     this.gameEndManager = new GameEndManager(this, this.lanes, this.logHistoryButton);
   }
 
@@ -445,7 +445,7 @@ export default class GameScene extends Phaser.Scene {
 
   private calculateLanePower(lane: Lane): { enemyPower: number; playerPower: number } {
     const playerPower = this.calculateSideTotalPower(lane.playerSlots, lane.index);
-    const enemyPower = this.calculateSideTotalPower(lane.botSlots, lane.index);
+    const enemyPower = this.calculateSideTotalPower(lane.opponentSlots, lane.index);
     return { enemyPower, playerPower };
   }
 
@@ -487,7 +487,9 @@ export default class GameScene extends Phaser.Scene {
     if (!neighborLane) return 0;
 
     let bonusFromThisLane = 0;
-    const neighborSlots = isCheckingPlayerSide ? neighborLane.playerSlots : neighborLane.botSlots;
+    const neighborSlots = isCheckingPlayerSide
+      ? neighborLane.playerSlots
+      : neighborLane.opponentSlots;
     const sideIdentifier = isCheckingPlayerSide ? 'Jogador' : 'Bot';
 
     const onslaughtCount = neighborSlots.filter(
@@ -583,7 +585,7 @@ export default class GameScene extends Phaser.Scene {
     });
   }
 
-  private playBotCardOnSlot(slot: Slot, card: Omit<Card, 'index'>): void {
+  private playBotCardOnSlot(slot: Slot, card: Card): void {
     const cardData: CardData = { ...card, index: -1 };
     const cardContainer = new CardContainer(
       this,
@@ -611,7 +613,7 @@ export default class GameScene extends Phaser.Scene {
     if (indexInHand >= 0) this.botHand.splice(indexInHand, 1);
     this.botEnergy -= cardData.cost;
 
-    const botLaneIndex = this.lanes.findIndex((lane) => lane.botSlots.includes(slot));
+    const botLaneIndex = this.lanes.findIndex((lane) => lane.opponentSlots.includes(slot));
     if (botLaneIndex !== -1) {
       this.revealQueue.push({
         card: cardData,
@@ -650,7 +652,8 @@ export default class GameScene extends Phaser.Scene {
     delete slot.cardData;
 
     const originalIndex = (container as any).cardData.index as number | undefined;
-    const cardToReturn: Omit<Card, 'index'> = {
+    const cardToReturn: Card = {
+      id: cardData.id,
       name: cardData.name,
       cost: cardData.cost,
       power: cardData.power,
@@ -694,8 +697,8 @@ export default class GameScene extends Phaser.Scene {
     );
   }
 
-  private drawInitialHand(deck: Omit<Card, 'index'>[], count: number): Omit<Card, 'index'>[] {
-    const hand: Omit<Card, 'index'>[] = [];
+  private drawInitialHand(deck: Card[], count: number): Card[] {
+    const hand: Card[] = [];
     const deckCopy = [...deck];
 
     const quicksilverIndex = deckCopy.findIndex((card) =>
@@ -726,7 +729,7 @@ export default class GameScene extends Phaser.Scene {
     return hand;
   }
 
-  private drawCardForPlayer(hand: Omit<Card, 'index'>[], deck: Omit<Card, 'index'>[]): void {
+  private drawCardForPlayer(hand: Card[], deck: Card[]): void {
     if (hand.length >= 7) return;
     if (deck.length === 0) return;
     const card = deck.shift()!;
@@ -943,7 +946,7 @@ export default class GameScene extends Phaser.Scene {
     this.updateMovableCards();
   }
 
-  private addCardToHand(card: Omit<Card, 'index'>, isPlayer: boolean): void {
+  private addCardToHand(card: Card, isPlayer: boolean): void {
     const targetHand = isPlayer ? this.playerHand : this.botHand;
 
     if (targetHand.length < this.maxTurn) {
@@ -971,7 +974,7 @@ export default class GameScene extends Phaser.Scene {
       if (!lane.properties) lane.properties = {};
       lane.properties.cardsCannotBeDestroyed = false;
 
-      const isArmorPresent = [...lane.playerSlots, ...lane.botSlots].some(
+      const isArmorPresent = [...lane.playerSlots, ...lane.opponentSlots].some(
         (s) =>
           s.occupied && s.cardData?.effect?.some((e) => e.effect === CardEffect.ArmorPreventDestroy)
       );
@@ -1063,7 +1066,7 @@ export default class GameScene extends Phaser.Scene {
 
   private commitNightcrawlerMoves(): void {
     for (const lane of this.lanes) {
-      const allSlots = [...lane.playerSlots, ...lane.botSlots];
+      const allSlots = [...lane.playerSlots, ...lane.opponentSlots];
       for (const slot of allSlots) {
         const { cardData } = slot;
 
@@ -1092,7 +1095,7 @@ export default class GameScene extends Phaser.Scene {
       const { cardData, slot } = container as any;
       if (cardData && slot) {
         const laneIndex = this.lanes.findIndex(
-          (l) => l.playerSlots.includes(slot) || l.botSlots.includes(slot)
+          (l) => l.playerSlots.includes(slot) || l.opponentSlots.includes(slot)
         );
         if (cardData.laneIndexAtStartOfTurn === undefined) {
           cardData.laneIndexAtStartOfTurn = laneIndex;

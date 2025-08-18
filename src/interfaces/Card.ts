@@ -3,13 +3,13 @@ import { CardEffectType } from '@/enums/CardEffectType';
 import { ImageEnum } from '@/enums/ImageEnum';
 
 export interface Card {
+  id: number;
   name: string;
   cost: number;
   power: number;
-  index: number;
   description: string;
   image?: ImageEnum;
-  effect?: { type: CardEffectType; effect: CardEffect; value?: number | number[] }[];
+  effect?: { type: CardEffectType; effect: CardEffect; value?: number }[];
 }
 
 export interface CardData extends Card {

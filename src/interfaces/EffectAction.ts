@@ -4,7 +4,7 @@ import { Slot } from './Slot';
 export type AddToHandAction = {
   type: 'ADD_TO_HAND';
   payload: {
-    card: Omit<Card, 'index'>;
+    card: Card;
     isPlayer: boolean;
   };
 };

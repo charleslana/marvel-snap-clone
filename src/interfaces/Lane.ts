@@ -6,7 +6,7 @@ export interface Lane {
   x: number;
   y: number;
   playerSlots: Slot[];
-  botSlots: Slot[];
+  opponentSlots: Slot[];
   worldText?: Phaser.GameObjects.Text;
   playerPowerText?: Phaser.GameObjects.Text;
   enemyPowerText?: Phaser.GameObjects.Text;

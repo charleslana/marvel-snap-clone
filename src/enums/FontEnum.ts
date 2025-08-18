@@ -1,7 +1,7 @@
 export enum FontEnum {
-  RedHatDisplay400 = 'RedHatDisplay400',
-  RedHatDisplay500 = 'RedHatDisplay500',
-  RedHatDisplay700 = 'RedHatDisplay700',
-  UltimatumBoldItalic = 'UltimatumBoldItalic',
-  UltimatumHeavyItalic = 'UltimatumHeavyItalic',
+  RedHatDisplay400 = 'redHatDisplay400',
+  RedHatDisplay500 = 'redHatDisplay500',
+  RedHatDisplay700 = 'redHatDisplay700',
+  UltimatumBoldItalic = 'ultimatumBoldItalic',
+  UltimatumHeavyItalic = 'ultimatumHeavyItalic',
 }

@@ -1,9 +1,9 @@
 export enum SceneEnum {
-  Boot = 'Boot',
-  Preloader = 'Preloader',
-  Login = 'Login',
-  Register = 'Register',
-  Home = 'Home',
-  Deck = 'Deck',
-  Game = 'Game',
+  Boot = 'boot',
+  Preloader = 'preloader',
+  Login = 'login',
+  Register = 'register',
+  Home = 'home',
+  Deck = 'deck',
+  Game = 'game',
 }

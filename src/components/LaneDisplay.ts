@@ -33,7 +33,7 @@ export class LaneDisplay {
       x,
       y,
       playerSlots,
-      botSlots,
+      opponentSlots: botSlots,
       worldText,
       enemyPowerText,
       playerPowerText,
