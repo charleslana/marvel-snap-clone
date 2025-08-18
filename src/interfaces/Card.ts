@@ -22,4 +22,6 @@ export interface CardData extends Card {
   };
   hawkeyeReadyTurn?: number;
   hawkeyeBonus?: number;
+  hasMoved?: boolean;
+  laneIndexAtStartOfTurn?: number;
 }

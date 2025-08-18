@@ -3,6 +3,7 @@ import { CardData } from '@/interfaces/Card';
 import { Lane } from '@/interfaces/Lane';
 import { Slot } from '@/interfaces/Slot';
 import { CardContainer } from '@/components/CardContainer';
+import { CardEffect } from '@/enums/CardEffect';
 
 export class DragAndDropManager {
   private scene: Phaser.Scene;
@@ -10,6 +11,7 @@ export class DragAndDropManager {
   private playerEnergy: number;
   private isPlayerTurn: boolean;
   private enabled: boolean = true;
+  private draggedFromSlot: Slot | null = null;
 
   private onCardPlaced: (slot: Slot, cardData: CardData) => void;
   private onCardRemovedFromHand: (index: number) => void;
@@ -100,6 +102,23 @@ export class DragAndDropManager {
   private handleDragStart(container: CardContainer): void {
     if (!this.enabled) return;
 
+    container.setDepth(2);
+
+    const { cardData } = container;
+    const isMovable =
+      cardData.effect?.some((e) => e.effect === CardEffect.NightcrawlerMove) &&
+      !cardData.hasMoved &&
+      (container as any).slot;
+
+    if (isMovable) {
+      this.draggedFromSlot = (container as any).slot;
+      container.startX = container.x;
+      container.startY = container.y;
+      this.scene.children.bringToTop(container);
+      this.toggleSlotOverlays(true, this.draggedFromSlot);
+      return;
+    }
+
     container.startX = container.x;
     container.startY = container.y;
     container.setScale(0.8);
@@ -115,6 +134,25 @@ export class DragAndDropManager {
 
   private handleDragEnd(container: CardContainer): void {
     if (!this.enabled) return;
+
+    container.setDepth(0);
+
+    if (this.draggedFromSlot) {
+      const toSlot = this.findValidMoveSlot(container);
+      if (toSlot && toSlot !== this.draggedFromSlot) {
+        this.scene.events.emit('moveCardRequest', {
+          cardContainer: container,
+          fromSlot: this.draggedFromSlot,
+          toSlot: toSlot,
+        });
+      } else {
+        container.x = container.startX;
+        container.y = container.startY;
+      }
+      this.draggedFromSlot = null;
+      this.toggleSlotOverlays(false);
+      return;
+    }
 
     const { cardData } = container;
     const { cost } = cardData;
@@ -152,11 +190,25 @@ export class DragAndDropManager {
     return false;
   }
 
-  private toggleSlotOverlays(visible: boolean): void {
+  private toggleSlotOverlays(visible: boolean, ignoreSlot: Slot | null = null): void {
     for (const lane of this.lanes) {
       for (const slot of lane.playerSlots) {
-        slot.overlay?.setVisible(visible);
+        if (slot !== ignoreSlot) {
+          slot.overlay?.setVisible(visible && !slot.occupied);
+        }
       }
     }
+  }
+
+  private findValidMoveSlot(container: CardContainer): Slot | null {
+    const { x, y } = container;
+    for (const lane of this.lanes) {
+      for (const slot of lane.playerSlots) {
+        if (!slot.occupied && Phaser.Math.Distance.Between(x, y, slot.x, slot.y) < 60) {
+          return slot;
+        }
+      }
+    }
+    return null;
   }
 }

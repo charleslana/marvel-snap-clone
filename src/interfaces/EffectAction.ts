@@ -1,4 +1,5 @@
 import { Card } from './Card';
+import { Slot } from './Slot';
 
 export type AddToHandAction = {
   type: 'ADD_TO_HAND';
@@ -8,5 +9,13 @@ export type AddToHandAction = {
   };
 };
 
+export type MoveCardAction = {
+  type: 'MOVE_CARD';
+  payload: {
+    fromSlot: Slot;
+    toSlot: Slot;
+  };
+};
+
 // Você pode adicionar outros tipos de ação aqui no futuro (ex: 'DESTROY_CARD', 'MOVE_CARD')
-export type EffectAction = AddToHandAction;
+export type EffectAction = AddToHandAction | MoveCardAction;

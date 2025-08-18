@@ -111,6 +111,7 @@ export default class GameScene extends Phaser.Scene {
     this.initializeCardDetailsPanel();
     this.initializeLogHistoryButton();
     this.initializeRetreatButton();
+    this.events.on('moveCardRequest', this.handleMoveCard, this);
 
     this.dragAndDropManager = new DragAndDropManager(
       this,
@@ -559,6 +560,8 @@ export default class GameScene extends Phaser.Scene {
       this.executeBotTurn();
       this.effectManager.checkAllHawkeyeBuffs(this.revealQueue, this.currentTurn);
       this.processRevealQueue();
+      this.recordInitialCardPositions();
+      this.commitNightcrawlerMoves();
 
       this.advanceTurn();
       this.refreshEnergies();
@@ -735,6 +738,8 @@ export default class GameScene extends Phaser.Scene {
   private disablePlayerCardInteraction(): void {
     this.playerHandContainers.forEach((container) => container.showPlayableBorder(false));
     this.dragAndDropManager.disableDrag();
+
+    this.placedCardContainers.forEach((container) => container.showMovableBorder(false));
   }
 
   private getLeadingPlayer(): 0 | 1 {
@@ -828,6 +833,8 @@ export default class GameScene extends Phaser.Scene {
 
   private prepareNextRound(): void {
     this.effectManager.applyEndOfTurnEffects();
+    this.updateAllGamePowers();
+
     this.effectManager.updateAllCardPowers();
     this.updateLaneProperties();
     this.updatePlacedCardsUI();
@@ -925,6 +932,7 @@ export default class GameScene extends Phaser.Scene {
     this.updateLaneProperties();
     this.updatePlacedCardsUI();
     this.updateLanePowers();
+    this.updateMovableCards();
   }
 
   private addCardToHand(card: Omit<Card, 'index'>, isPlayer: boolean): void {
@@ -974,6 +982,111 @@ export default class GameScene extends Phaser.Scene {
       duration: 200,
       yoyo: true,
       ease: 'Power2',
+    });
+  }
+
+  private handleMoveCard(data: {
+    cardContainer: CardContainer;
+    fromSlot: Slot;
+    toSlot: Slot;
+  }): void {
+    const { cardContainer, fromSlot, toSlot } = data;
+    const { cardData } = cardContainer;
+
+    if (cardData.hasMoved) return;
+
+    const fromLaneIndex = this.lanes.findIndex((l) => l.playerSlots.includes(fromSlot));
+    const toLaneIndex = this.lanes.findIndex((l) => l.playerSlots.includes(toSlot));
+
+    if (fromLaneIndex === toLaneIndex) {
+      cardContainer.x = cardContainer.startX;
+      cardContainer.y = cardContainer.startY;
+      console.log(`${cardData.name} tentou se mover para a mesma lane. Movimento cancelado.`);
+      return;
+    }
+
+    console.log(
+      `${cardData.name} movido da lane ${fromLaneIndex + 1} para a lane ${toLaneIndex + 1}.`
+    );
+
+    fromSlot.occupied = false;
+    delete fromSlot.cardData;
+    delete fromSlot.power;
+    delete fromSlot.permanentBonus;
+
+    toSlot.occupied = true;
+    toSlot.cardData = cardData;
+    toSlot.power = fromSlot.power;
+    toSlot.permanentBonus = fromSlot.permanentBonus;
+    (cardContainer as any).slot = toSlot;
+
+    cardContainer.x = toSlot.x;
+    cardContainer.y = toSlot.y;
+    this.updateAllGamePowers();
+  }
+
+  private updateMovableCards(): void {
+    this.placedCardContainers.forEach((container) => {
+      const { cardData } = container as any;
+      const isNightcrawler = cardData.effect?.some(
+        (e: any) => e.effect === CardEffect.NightcrawlerMove
+      );
+
+      if (isNightcrawler && cardData.isRevealed && !cardData.hasMoved) {
+        (container as any).showMovableBorder(true);
+        this.input.setDraggable(container, true);
+      } else {
+        (container as any).showMovableBorder(false);
+        if ((container as any).slot) {
+          this.input.setDraggable(container, false);
+        }
+      }
+    });
+  }
+
+  private updateAllGamePowers(): void {
+    this.effectManager.updateAllCardPowers();
+    this.updateLaneProperties();
+    this.updatePlacedCardsUI();
+    this.updateLanePowers();
+    this.updateMovableCards();
+  }
+
+  private commitNightcrawlerMoves(): void {
+    for (const lane of this.lanes) {
+      const allSlots = [...lane.playerSlots, ...lane.botSlots];
+      for (const slot of allSlots) {
+        const { cardData } = slot;
+
+        if (
+          cardData &&
+          cardData.effect?.some((e) => e.effect === CardEffect.NightcrawlerMove) &&
+          !cardData.hasMoved
+        ) {
+          const currentLaneIndex = this.lanes.indexOf(lane);
+          if (currentLaneIndex !== cardData.laneIndexAtStartOfTurn) {
+            cardData.hasMoved = true;
+            console.log(`${cardData.name} gastou seu movimento neste turno ao mudar de lane.`);
+          } else {
+            console.log(`${cardData.name} terminou o turno na mesma lane, movimento não gasto.`);
+          }
+        }
+      }
+    }
+  }
+
+  private recordInitialCardPositions(): void {
+    this.placedCardContainers.forEach((container) => {
+      const { cardData, slot } = container as any;
+      if (cardData && slot) {
+        const laneIndex = this.lanes.findIndex(
+          (l) => l.playerSlots.includes(slot) || l.botSlots.includes(slot)
+        );
+        if (cardData.laneIndexAtStartOfTurn === undefined) {
+          cardData.laneIndexAtStartOfTurn = laneIndex;
+          console.log(`${cardData.name} iniciou o turno na lane ${laneIndex}.`);
+        }
+      }
     });
   }
 }

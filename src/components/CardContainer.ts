@@ -16,6 +16,7 @@ export class CardContainer extends Phaser.GameObjects.Container {
   private cardImage?: Phaser.GameObjects.Image;
   private backgroundRect!: Phaser.GameObjects.Rectangle;
   private cardBackImage!: Phaser.GameObjects.Image;
+  private movableBorderRect?: Phaser.GameObjects.Rectangle;
 
   constructor(
     scene: Phaser.Scene,
@@ -186,5 +187,33 @@ export class CardContainer extends Phaser.GameObjects.Container {
     this.scene.tweens.killTweensOf(this.borderRect);
     this.borderRect.destroy();
     this.borderRect = undefined;
+  }
+
+  public showMovableBorder(show: boolean): void {
+    if (show) {
+      if (this.movableBorderRect) return;
+
+      this.movableBorderRect = this.scene.add
+        .rectangle(0, 0, this.width + 6, this.height + 6)
+        .setStrokeStyle(3, 0x00ff00)
+        .setOrigin(0.5);
+
+      this.addAt(this.movableBorderRect, 0);
+
+      this.scene.tweens.add({
+        targets: this.movableBorderRect,
+        alpha: { from: 0.5, to: 1 },
+        duration: 800,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+      });
+    } else {
+      if (this.movableBorderRect) {
+        this.scene.tweens.killTweensOf(this.movableBorderRect);
+        this.movableBorderRect.destroy();
+        this.movableBorderRect = undefined;
+      }
+    }
   }
 }
