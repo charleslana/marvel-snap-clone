@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { FontEnum } from '@/enums/FontEnum';
 
-export interface TextOptions extends Phaser.Types.GameObjects.Text.TextStyle {}
+interface TextOptions extends Phaser.Types.GameObjects.Text.TextStyle {}
 
 export class UIFactory {
   public static createText(
@@ -20,5 +20,17 @@ export class UIFactory {
     const finalStyle = { ...defaultStyle, ...options };
 
     return scene.add.text(x, y, text, finalStyle);
+  }
+
+  public static createRectangle(
+    scene: Phaser.Scene,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    fillColor: number,
+    fillAlpha: number = 1
+  ): Phaser.GameObjects.Rectangle {
+    return scene.add.rectangle(x, y, width, height, fillColor, fillAlpha);
   }
 }
