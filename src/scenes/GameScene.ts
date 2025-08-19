@@ -448,7 +448,7 @@ export default class GameScene extends Phaser.Scene {
   private updateLanePowers(): void {
     for (const lane of this.lanes) {
       const { enemyPower, playerPower } = this.calculateLanePower(lane);
-      lane.enemyPowerText?.setText(enemyPower.toString());
+      lane.opponentPowerText?.setText(enemyPower.toString());
       lane.playerPowerText?.setText(playerPower.toString());
     }
   }

@@ -5,7 +5,6 @@ import { UIFactory } from './UIFactory';
 
 export class LogHistoryButton {
   private scene: Phaser.Scene;
-  private button?: GameButton;
   private modalContainer?: Phaser.GameObjects.Container;
   private logs: string[] = [];
 
@@ -15,7 +14,7 @@ export class LogHistoryButton {
   }
 
   public initialize(x: number, y: number): void {
-    this.button = this.createHistoryButton(x, y);
+    this.createHistoryButton(x, y);
   }
 
   public addLog(message: string): void {
@@ -48,8 +47,20 @@ export class LogHistoryButton {
 
     const { width, height } = this.scene.cameras.main;
 
-    const background = this.createModalBackground(width, height);
-    const modalBox = this.createModalBox(width, height);
+    const background = UIFactory.createRectangle(this.scene, 0, 0, width, height, 0x000000, 0.6)
+      .setOrigin(0)
+      .setInteractive()
+      .on('pointerdown', () => this.closeModal());
+
+    const modalBox = UIFactory.createRectangle(
+      this.scene,
+      width / 2,
+      height / 2,
+      width * 0.8,
+      height * 0.8,
+      0x222222,
+      1
+    ).setStrokeStyle(2, 0xffffff);
 
     const closeButton = new GameButton(
       this.scene,
@@ -113,27 +124,6 @@ export class LogHistoryButton {
       this.modalContainer = undefined;
     }
     this.scene.input.off('wheel');
-  }
-
-  private createModalBackground(width: number, height: number): Phaser.GameObjects.Rectangle {
-    return this.scene.add
-      .rectangle(0, 0, width, height, 0x000000, 0.6)
-      .setOrigin(0, 0)
-      .setInteractive()
-      .on('pointerdown', () => this.closeModal());
-  }
-
-  private createModalBox(width: number, height: number): Phaser.GameObjects.Rectangle {
-    const box = this.scene.add.rectangle(
-      width / 2,
-      height / 2,
-      width * 0.8,
-      height * 0.8,
-      0x222222,
-      1
-    );
-    box.setStrokeStyle(2, 0xffffff);
-    return box;
   }
 
   private formatLogs(): string {

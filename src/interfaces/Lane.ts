@@ -9,7 +9,7 @@ export interface Lane {
   opponentSlots: Slot[];
   worldText?: Phaser.GameObjects.Text;
   playerPowerText?: Phaser.GameObjects.Text;
-  enemyPowerText?: Phaser.GameObjects.Text;
+  opponentPowerText?: Phaser.GameObjects.Text;
   worldContainer?: Phaser.GameObjects.Container;
   properties?: {
     cardsCannotBeDestroyed?: boolean;

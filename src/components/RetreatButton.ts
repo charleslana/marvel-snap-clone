@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { GameButton } from './GameButton';
 import { ButtonColor } from '@/enums/ButtonColor';
 import { UIFactory } from './UIFactory';
+import { LogHelper } from '@/managers/card-effects/helpers/LogHelper';
 
 export class RetreatButton {
   private scene: Phaser.Scene;
@@ -32,8 +33,15 @@ export class RetreatButton {
 
     this.modalContainer = this.scene.add.container(0, 0).setDepth(100);
 
-    const overlay = this.scene.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.7);
-    overlay.setInteractive();
+    const overlay = UIFactory.createRectangle(
+      this.scene,
+      width / 2,
+      height / 2,
+      width,
+      height,
+      0x000000,
+      0.7
+    ).setInteractive();
 
     const messageText = UIFactory.createText(
       this.scene,
@@ -56,6 +64,7 @@ export class RetreatButton {
       () => {
         this.closeModal();
         this.onConfirm();
+        LogHelper.emitLog('Jogador desistiu da batalha.');
       },
       {
         color: ButtonColor.Blue,

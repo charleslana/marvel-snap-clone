@@ -15,13 +15,13 @@ export class LaneDisplay {
     const worldRect = this.createWorldRect();
     const worldText = this.createWorldText(index);
 
-    const enemyPowerText = this.createPowerText(-worldRect.height / 2 + 15);
+    const opponentPowerText = this.createPowerText(-worldRect.height / 2 + 15);
     const playerPowerText = this.createPowerText(worldRect.height / 2 - 15, true);
 
     const worldContainer = this.scene.add.container(x, y, [
       worldRect,
       worldText,
-      enemyPowerText,
+      opponentPowerText,
       playerPowerText,
     ]);
 
@@ -35,7 +35,7 @@ export class LaneDisplay {
       playerSlots,
       opponentSlots: botSlots,
       worldText,
-      enemyPowerText,
+      opponentPowerText,
       playerPowerText,
       worldContainer,
     };
@@ -47,13 +47,13 @@ export class LaneDisplay {
 
     if (playerPower > enemyPower) {
       lane.playerPowerText?.setColor(highlightColor);
-      lane.enemyPowerText?.setColor(defaultColor);
+      lane.opponentPowerText?.setColor(defaultColor);
     } else if (enemyPower > playerPower) {
       lane.playerPowerText?.setColor(defaultColor);
-      lane.enemyPowerText?.setColor(highlightColor);
+      lane.opponentPowerText?.setColor(highlightColor);
     } else {
       lane.playerPowerText?.setColor(defaultColor);
-      lane.enemyPowerText?.setColor(defaultColor);
+      lane.opponentPowerText?.setColor(defaultColor);
     }
   }
 
