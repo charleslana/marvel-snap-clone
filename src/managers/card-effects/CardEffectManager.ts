@@ -3,10 +3,10 @@ import { CardData } from '@/interfaces/Card';
 import { OnRevealHandler } from './on-reveal/OnRevealHandler';
 import { OngoingHandler } from './ongoing/OngoingHandler';
 import { EndOfTurnHandler } from './end-of-turn/EndOfTurnHandler';
-import { AngelaHandler } from './on-card-played/AngelaHandler';
-import { HawkeyeResolutionHandler } from './timed/HawkeyeResolutionHandler';
 import { MoveHandler } from './move/MoveHandler';
 import { CardContainer } from '@/components/CardContainer';
+import { OnCardPlayedHandler } from './on-card-played/OnCardPlayedHandler';
+import { OnResolutionHandler } from './resolution/OnResolutionHandler';
 
 export class CardEffectManager {
   constructor(private lanes: Lane[]) {}
@@ -36,14 +36,14 @@ export class CardEffectManager {
   }
 
   public triggerOnCardPlayedEffects(playedCard: CardData, laneIndex: number): void {
-    AngelaHandler.handle(this.lanes[laneIndex], playedCard);
+    OnCardPlayedHandler.handle(this.lanes[laneIndex], playedCard);
   }
 
-  public checkAllHawkeyeBuffs(
+  public checkResolutionEffects(
     revealQueue: readonly { card: CardData; laneIndex: number; isPlayer: boolean }[],
     currentTurn: number
   ): void {
-    HawkeyeResolutionHandler.resolve(this.lanes, revealQueue as any, currentTurn);
+    OnResolutionHandler.handle(this.lanes, revealQueue, currentTurn);
   }
 
   public handleMoveEffects(): void {

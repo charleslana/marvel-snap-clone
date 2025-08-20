@@ -7,6 +7,7 @@ import { CardContainer } from '@/components/CardContainer';
 
 const moveHandlers: Partial<Record<CardEffect, (lanes: Lane[]) => void>> = {
   [CardEffect.NightcrawlerMove]: NightcrawlerHandler.checkMoves,
+  // futuramente
 };
 
 const moveUpdateHandlers: Partial<Record<CardEffect, (container: CardContainer) => void>> = {

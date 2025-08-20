@@ -572,7 +572,8 @@ export default class GameScene extends Phaser.Scene {
     this.time.delayedCall(1000, () => {
       this.executeBotTurn();
       this.recordInitialCardPositions();
-      this.effectManager.checkAllHawkeyeBuffs(this.revealQueue, this.currentTurn);
+
+      this.effectManager.checkResolutionEffects(this.revealQueue, this.currentTurn);
       this.effectManager.handleMoveEffects();
 
       this.processRevealQueue();
@@ -710,7 +711,7 @@ export default class GameScene extends Phaser.Scene {
     const deckCopy = [...deck];
 
     const quicksilverIndex = deckCopy.findIndex((card) =>
-      card.effects?.some((e) => e.cardEffect === CardEffect.QuicksilverStartInHand)
+      card.effects?.some((effect) => effect.cardEffect === CardEffect.QuicksilverStartInHand)
     );
 
     if (quicksilverIndex > -1) {

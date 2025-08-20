@@ -5,4 +5,5 @@ export enum CardEffectType {
   EndOfTurn,
   OnCardPlayed,
   Move,
+  Resolution,
 }
