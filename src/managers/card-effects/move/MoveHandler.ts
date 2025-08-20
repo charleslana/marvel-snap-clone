@@ -16,13 +16,9 @@ const moveUpdateHandlers: Partial<Record<CardEffect, (container: CardContainer) 
 
     if (cardData.isRevealed && !cardData.hasMoved) {
       container.enableMovableBorder();
-      container.scene.input.setDraggable(container, true);
-    } else {
-      container.disableMovableBorder();
-      if (container.slot) {
-        container.scene.input.setDraggable(container, false);
-      }
+      return;
     }
+    container.disableMovableBorder();
   },
   // futuramente só adicionar outros updates aqui
 };

@@ -95,11 +95,13 @@ export class CardContainer extends Phaser.GameObjects.Container {
 
       this.addAt(this.movableBorderRect, 0);
       this.addBorderTween(this.movableBorderRect);
+      this.scene.input.setDraggable(this, true);
     }
   }
 
   public disableMovableBorder(): void {
     this.destroyBorder(this.movableBorderRect, 'movableBorderRect');
+    this.scene.input.setDraggable(this, false);
   }
 
   public setRevealed(isVisible: boolean): void {
