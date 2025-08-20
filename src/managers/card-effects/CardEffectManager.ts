@@ -5,7 +5,8 @@ import { OngoingHandler } from './ongoing/OngoingHandler';
 import { EndOfTurnHandler } from './end-of-turn/EndOfTurnHandler';
 import { AngelaHandler } from './on-card-played/AngelaHandler';
 import { HawkeyeResolutionHandler } from './timed/HawkeyeResolutionHandler';
-import { NightcrawlerHandler } from './start-turn/NightcrawlerHandler';
+import { MoveHandler } from './move/MoveHandler';
+import { CardContainer } from '@/components/CardContainer';
 
 export class CardEffectManager {
   constructor(private lanes: Lane[]) {}
@@ -45,7 +46,11 @@ export class CardEffectManager {
     HawkeyeResolutionHandler.resolve(this.lanes, revealQueue as any, currentTurn);
   }
 
-  public handleStartOfTurnEffects(): void {
-    NightcrawlerHandler.checkMoves(this.lanes);
+  public handleMoveEffects(): void {
+    MoveHandler.handle(this.lanes);
+  }
+
+  public updateMoves(containers: CardContainer[]): void {
+    MoveHandler.update(containers);
   }
 }

@@ -573,7 +573,7 @@ export default class GameScene extends Phaser.Scene {
       this.executeBotTurn();
       this.recordInitialCardPositions();
       this.effectManager.checkAllHawkeyeBuffs(this.revealQueue, this.currentTurn);
-      this.effectManager.handleStartOfTurnEffects();
+      this.effectManager.handleMoveEffects();
 
       this.processRevealQueue();
 
@@ -746,15 +746,16 @@ export default class GameScene extends Phaser.Scene {
 
   private updatePlayableCardsBorder(): void {
     this.playerHandContainers.forEach((container) => {
-      container.showPlayableBorder(container.cardData.cost <= this.playerEnergy);
+      container.cardData.cost <= this.playerEnergy
+        ? container.enablePlayableBorder()
+        : container.disablePlayableBorder();
     });
   }
 
   private disablePlayerCardInteraction(): void {
-    this.playerHandContainers.forEach((container) => container.showPlayableBorder(false));
+    this.playerHandContainers.forEach((container) => container.disablePlayableBorder());
     this.dragAndDropManager.disableDrag();
-
-    this.placedCardContainers.forEach((container) => container.showMovableBorder(false));
+    this.placedCardContainers.forEach((container) => container.disableMovableBorder());
   }
 
   private getLeadingPlayer(): 0 | 1 {
@@ -1033,33 +1034,14 @@ export default class GameScene extends Phaser.Scene {
     this.updateAllGamePowers();
   }
 
-  private updateMovableCards(): void {
-    this.placedCardContainers.forEach((container) => {
-      // TODO tipagem no container e alterar pra emit lá no handle do crawler
-      const { cardData } = container as any;
-      const isNightcrawler = cardData.effects?.some(
-        (e: any) => e.cardEffect === CardEffect.NightcrawlerMove
-      );
-
-      if (isNightcrawler && cardData.isRevealed && !cardData.hasMoved) {
-        (container as any).showMovableBorder(true);
-        this.input.setDraggable(container, true);
-      } else {
-        (container as any).showMovableBorder(false);
-        if ((container as any).slot) {
-          this.input.setDraggable(container, false);
-        }
-      }
-    });
-  }
-
   private updateAllGamePowers(): void {
     this.effectManager.updateAllCardPowers();
 
     this.updateLaneProperties();
     this.updatePlacedCardsUI();
     this.updateLanePowers();
-    this.updateMovableCards();
+
+    this.effectManager.updateMoves(this.placedCardContainers);
   }
 
   private recordInitialCardPositions(): void {

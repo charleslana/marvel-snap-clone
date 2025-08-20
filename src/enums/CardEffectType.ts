@@ -4,4 +4,5 @@ export enum CardEffectType {
   Ongoing,
   EndOfTurn,
   OnCardPlayed,
+  Move,
 }

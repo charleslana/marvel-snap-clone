@@ -3,11 +3,13 @@ import { Card, CardData } from '@/interfaces/Card';
 import { UIFactory } from './UIFactory';
 import { FontEnum } from '@/enums/FontEnum';
 import { ImageEnum } from '@/enums/ImageEnum';
+import { Slot } from '@/interfaces/Slot';
 
 export class CardContainer extends Phaser.GameObjects.Container {
   public cardData: CardData;
   public startX: number;
   public startY: number;
+  public slot?: Slot;
 
   private nameText: Phaser.GameObjects.Text;
   private costText: Phaser.GameObjects.Text;
@@ -76,8 +78,28 @@ export class CardContainer extends Phaser.GameObjects.Container {
     }
   }
 
-  public showPlayableBorder(show: boolean): void {
-    show ? this.createPlayableBorder() : this.destroyPlayableBorder();
+  public enablePlayableBorder(): void {
+    this.createPlayableBorder();
+  }
+
+  public disablePlayableBorder(): void {
+    this.destroyPlayableBorder();
+  }
+
+  public enableMovableBorder(): void {
+    if (!this.movableBorderRect) {
+      this.movableBorderRect = this.scene.add
+        .rectangle(0, 0, this.width + 6, this.height + 6)
+        .setStrokeStyle(3, 0x00ff00)
+        .setOrigin(0.5);
+
+      this.addAt(this.movableBorderRect, 0);
+      this.addBorderTween(this.movableBorderRect);
+    }
+  }
+
+  public disableMovableBorder(): void {
+    this.destroyBorder(this.movableBorderRect, 'movableBorderRect');
   }
 
   public setRevealed(isVisible: boolean): void {
@@ -107,7 +129,7 @@ export class CardContainer extends Phaser.GameObjects.Container {
     height: number,
     color: number
   ): Phaser.GameObjects.Rectangle {
-    return this.scene.add.rectangle(0, 0, width, height, color);
+    return UIFactory.createRectangle(this.scene, 0, 0, width, height, color);
   }
 
   private createNameText(cardName: string, width: number, height: number): Phaser.GameObjects.Text {
@@ -169,9 +191,16 @@ export class CardContainer extends Phaser.GameObjects.Container {
       .setOrigin(0.5);
 
     this.addAt(this.borderRect, 0);
+    this.addBorderTween(this.borderRect);
+  }
 
+  private destroyPlayableBorder(): void {
+    this.destroyBorder(this.borderRect, 'borderRect');
+  }
+
+  private addBorderTween(target: Phaser.GameObjects.Rectangle): void {
     this.scene.tweens.add({
-      targets: this.borderRect,
+      targets: target,
       alpha: { from: 0.5, to: 1 },
       duration: 800,
       yoyo: true,
@@ -180,40 +209,14 @@ export class CardContainer extends Phaser.GameObjects.Container {
     });
   }
 
-  private destroyPlayableBorder(): void {
-    if (!this.borderRect) {
-      return;
-    }
-    this.scene.tweens.killTweensOf(this.borderRect);
-    this.borderRect.destroy();
-    this.borderRect = undefined;
-  }
+  private destroyBorder(
+    target: Phaser.GameObjects.Rectangle | undefined,
+    key: 'borderRect' | 'movableBorderRect'
+  ): void {
+    if (!target) return;
 
-  public showMovableBorder(show: boolean): void {
-    if (show) {
-      if (this.movableBorderRect) return;
-
-      this.movableBorderRect = this.scene.add
-        .rectangle(0, 0, this.width + 6, this.height + 6)
-        .setStrokeStyle(3, 0x00ff00)
-        .setOrigin(0.5);
-
-      this.addAt(this.movableBorderRect, 0);
-
-      this.scene.tweens.add({
-        targets: this.movableBorderRect,
-        alpha: { from: 0.5, to: 1 },
-        duration: 800,
-        yoyo: true,
-        repeat: -1,
-        ease: 'Sine.easeInOut',
-      });
-    } else {
-      if (this.movableBorderRect) {
-        this.scene.tweens.killTweensOf(this.movableBorderRect);
-        this.movableBorderRect.destroy();
-        this.movableBorderRect = undefined;
-      }
-    }
+    this.scene.tweens.killTweensOf(target);
+    target.destroy();
+    this[key] = undefined;
   }
 }

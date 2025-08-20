@@ -22,7 +22,7 @@ export const playerDeck: Card[] = [
     power: 2,
     description: 'Você pode mover isto uma vez.',
     image: ImageEnum.CardNightcrawler,
-    effects: [{ cardEffectType: CardEffectType.None, cardEffect: CardEffect.NightcrawlerMove }],
+    effects: [{ cardEffectType: CardEffectType.Move, cardEffect: CardEffect.NightcrawlerMove }],
   },
   {
     id: 3,
