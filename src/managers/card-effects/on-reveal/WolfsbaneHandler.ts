@@ -14,7 +14,7 @@ export class WolfsbaneHandler {
     }
 
     BonusHelper.addPermanentBonus(slot, totalBonus);
-    const side = isPlayer ? 'Jogador' : 'Adversário';
+    const side = isPlayer ? 'Jogador' : 'Oponente';
     LogHelper.emitLog(
       `Lupina (${side}) ganhou +${totalBonus} de poder por ${otherCardsCount} outra(s) carta(s) aliada(s).`
     );

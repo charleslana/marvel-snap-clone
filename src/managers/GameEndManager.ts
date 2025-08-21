@@ -1,5 +1,4 @@
 import Phaser from 'phaser';
-import { Lane } from '@/interfaces/Lane';
 import { LogHistoryButton } from '@/components/LogHistoryButton';
 import { UIFactory } from '@/components/UIFactory';
 import { GameButton } from '@/components/GameButton';
@@ -7,20 +6,23 @@ import { ButtonColor } from '@/enums/ButtonColor';
 
 export class GameEndManager {
   private scene: Phaser.Scene;
-  private lanes: Lane[];
   private gameEnded: boolean = false;
   private logHistoryButton: LogHistoryButton;
 
-  constructor(scene: Phaser.Scene, lanes: Lane[], logHistoryButton: LogHistoryButton) {
+  constructor(scene: Phaser.Scene, logHistoryButton: LogHistoryButton) {
     this.scene = scene;
-    this.lanes = lanes;
     this.logHistoryButton = logHistoryButton;
   }
 
-  public checkGameEnd(finalLanePowers: { playerPower: number; botPower: number }[]): void {
-    const { playerWins, botWins, playerPowerDiff, botPowerDiff } =
+  public checkGameEnd(finalLanePowers: { playerPower: number; opponentPower: number }[]): void {
+    const { playerWins, opponentWins, playerPowerDiff, opponentPowerDiff } =
       this.calculateGameResult(finalLanePowers);
-    const message = this.determineWinnerMessage(playerWins, botWins, playerPowerDiff, botPowerDiff);
+    const message = this.determineWinnerMessage(
+      playerWins,
+      opponentWins,
+      playerPowerDiff,
+      opponentPowerDiff
+    );
 
     this.logHistoryButton.addLog(message);
     this.gameEnded = true;
@@ -31,42 +33,42 @@ export class GameEndManager {
     return this.gameEnded;
   }
 
-  private calculateGameResult(finalLanePowers: { playerPower: number; botPower: number }[]): {
+  private calculateGameResult(finalLanePowers: { playerPower: number; opponentPower: number }[]): {
     playerWins: number;
-    botWins: number;
+    opponentWins: number;
     playerPowerDiff: number;
-    botPowerDiff: number;
+    opponentPowerDiff: number;
   } {
     let playerWins = 0;
-    let botWins = 0;
+    let opponentWins = 0;
     let playerPowerDiff = 0;
-    let botPowerDiff = 0;
+    let opponentPowerDiff = 0;
 
     for (const result of finalLanePowers) {
-      const { playerPower, botPower } = result;
+      const { playerPower, opponentPower } = result;
 
-      if (playerPower > botPower) {
+      if (playerPower > opponentPower) {
         playerWins++;
-        playerPowerDiff += playerPower - botPower;
-      } else if (botPower > playerPower) {
-        botWins++;
-        botPowerDiff += botPower - playerPower;
+        playerPowerDiff += playerPower - opponentPower;
+      } else if (opponentPower > playerPower) {
+        opponentWins++;
+        opponentPowerDiff += opponentPower - playerPower;
       }
     }
 
-    return { playerWins, botWins, playerPowerDiff, botPowerDiff };
+    return { playerWins, opponentWins, playerPowerDiff, opponentPowerDiff };
   }
 
   private determineWinnerMessage(
     playerWins: number,
-    botWins: number,
+    opponentWins: number,
     playerPowerDiff: number,
-    botPowerDiff: number
+    opponentPowerDiff: number
   ): string {
-    if (playerWins > botWins) return 'Você venceu!';
-    if (botWins > playerWins) return 'Bot venceu!';
-    if (playerPowerDiff > botPowerDiff) return 'Você venceu por diferença de poder!';
-    if (botPowerDiff > playerPowerDiff) return 'Bot venceu por diferença de poder!';
+    if (playerWins > opponentWins) return 'Você venceu!';
+    if (opponentWins > playerWins) return 'Oponente venceu!';
+    if (playerPowerDiff > opponentPowerDiff) return 'Você venceu por diferença de poder!';
+    if (opponentPowerDiff > playerPowerDiff) return 'Oponente venceu por diferença de poder!';
     return 'Empate!';
   }
 
@@ -75,8 +77,16 @@ export class GameEndManager {
 
     const modalContainer = this.scene.add.container(0, 0);
 
-    const overlay = this.scene.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0);
-    // overlay.setInteractive();
+    const overlay = UIFactory.createRectangle(
+      this.scene,
+      width / 2,
+      height / 2,
+      width,
+      height,
+      0x000000,
+      0
+    );
+
     overlay.on('pointerdown', () => {
       modalContainer.destroy();
     });

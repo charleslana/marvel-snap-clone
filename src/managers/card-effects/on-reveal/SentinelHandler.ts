@@ -16,7 +16,7 @@ export class SentinelHandler {
     GameEventManager.instance.emit(GameEvent.AddCardToHand, action);
 
     LogHelper.emitLog(
-      `Ação criada: Adicionado Sentinela à mão de ${isPlayer ? 'Jogador' : 'Adversário'}.`
+      `Ação criada: Adicionado Sentinela à mão de ${isPlayer ? 'Jogador' : 'Oponente'}.`
     );
   }
 }

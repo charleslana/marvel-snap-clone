@@ -24,6 +24,7 @@ import { RetreatButton } from '@/components/RetreatButton';
 import { EffectAction } from '@/interfaces/EffectAction';
 import { GameEventManager } from '@/managers/GameEventManager';
 import { GameEvent } from '@/enums/GameEvent';
+import { LaneManager } from '@/managers/LaneManager';
 
 export default class GameScene extends Phaser.Scene {
   private playerHand: Card[] = [];
@@ -44,7 +45,7 @@ export default class GameScene extends Phaser.Scene {
   private playerNameText!: Phaser.GameObjects.Text;
   private opponentNameText!: Phaser.GameObjects.Text;
   private playerName = 'Você';
-  private opponentName = 'Adversário';
+  private opponentName = 'Oponente';
 
   private laneDisplay!: LaneDisplay;
   private energyDisplay!: GameButton;
@@ -70,6 +71,9 @@ export default class GameScene extends Phaser.Scene {
   private effectManager!: CardEffectManager;
   private placedCardContainers: CardContainer[] = [];
 
+  // managers
+  private laneManager!: LaneManager;
+
   constructor() {
     super(SceneEnum.Game);
   }
@@ -89,12 +93,10 @@ export default class GameScene extends Phaser.Scene {
   }
 
   public create(): void {
-    this.lights.enable();
-    this.lights.setAmbientColor(0x808080);
     this.laneDisplay = new LaneDisplay(this);
     this.cardDetailsPanel = new CardDetailsPanel(this);
     this.playerDeckDisplay = new DeckDisplay(this, 'Deck jogador');
-    this.enemyDeckDisplay = new DeckDisplay(this, 'Deck adversário');
+    this.enemyDeckDisplay = new DeckDisplay(this, 'Deck oponente');
     this.playerDeckMutable = [...playerDeck];
     this.botDeckMutable = [...botDeck];
     this.playerHand = this.drawInitialHand(this.playerDeckMutable, 4);
@@ -115,6 +117,17 @@ export default class GameScene extends Phaser.Scene {
     this.initializeRetreatButton();
     this.events.on('moveCardRequest', this.handleMoveCard, this);
 
+    // Events
+    GameEventManager.instance.on(GameEvent.LogRequest, (action: EffectAction) => {
+      this.processLog(action);
+    });
+    GameEventManager.instance.on(GameEvent.AddCardToHand, (action: EffectAction) => {
+      this.processHand(action);
+    });
+
+    // managers
+    this.laneManager = new LaneManager(this.lanes, this.laneDisplay);
+
     this.dragAndDropManager = new DragAndDropManager(
       this,
       this.lanes,
@@ -123,7 +136,7 @@ export default class GameScene extends Phaser.Scene {
       this.placeCardOnSlot.bind(this),
       this.removeCardFromPlayerHand.bind(this),
       this.updateEnergyText.bind(this),
-      this.updateLanePowers.bind(this),
+      this.laneManager.updateLanePowers.bind(this.laneManager),
       this.animateCardReturn.bind(this),
       this.renderPlayerHand.bind(this)
     );
@@ -136,15 +149,7 @@ export default class GameScene extends Phaser.Scene {
     this.renderBotHand();
 
     this.botAI = new BotAIManager(this, this.lanes, this.botHand, this.botEnergy);
-    this.gameEndManager = new GameEndManager(this, this.lanes, this.logHistoryButton);
-
-    // Events
-    GameEventManager.instance.on(GameEvent.LogRequest, (action: EffectAction) => {
-      this.processLog(action);
-    });
-    GameEventManager.instance.on(GameEvent.AddCardToHand, (action: EffectAction) => {
-      this.processHand(action);
-    });
+    this.gameEndManager = new GameEndManager(this, this.logHistoryButton);
   }
 
   private createBackground() {
@@ -325,9 +330,9 @@ export default class GameScene extends Phaser.Scene {
 
   private handleRetreat(): void {
     const retreatResult = [
-      { playerPower: 0, botPower: 1 },
-      { playerPower: 0, botPower: 1 },
-      { playerPower: 0, botPower: 1 },
+      { playerPower: 0, opponentPower: 1 },
+      { playerPower: 0, opponentPower: 1 },
+      { playerPower: 0, opponentPower: 1 },
     ];
     this.gameEndManager.checkGameEnd(retreatResult);
 
@@ -387,21 +392,6 @@ export default class GameScene extends Phaser.Scene {
     });
   }
 
-  private adjustTextFontSize(
-    textObj: Phaser.GameObjects.Text,
-    maxWidth: number,
-    maxFontSize = 14,
-    minFontSize = 8
-  ): void {
-    textObj.setWordWrapWidth(maxWidth, true);
-    let fontSize = maxFontSize;
-    while (fontSize >= minFontSize) {
-      textObj.setFontSize(fontSize);
-      if (textObj.width <= maxWidth) break;
-      fontSize--;
-    }
-  }
-
   private placeCardOnSlot(slot: Slot, cardData: CardData): void {
     const cardContainer = new CardContainer(this, slot.x, slot.y, 80, 110, 0x0088ff, cardData, -1);
     cardContainer.setInteractivity('hover');
@@ -445,126 +435,6 @@ export default class GameScene extends Phaser.Scene {
     this.updatePlayableCardsBorder();
   }
 
-  private updateLanePowers(): void {
-    for (const lane of this.lanes) {
-      const { enemyPower, playerPower } = this.calculateLanePower(lane);
-      lane.opponentPowerText?.setText(enemyPower.toString());
-      lane.playerPowerText?.setText(playerPower.toString());
-    }
-  }
-
-  private calculateLanePower(lane: Lane): { enemyPower: number; playerPower: number } {
-    const playerPower = this.calculateSideTotalPower(lane.playerSlots, lane.index);
-    const enemyPower = this.calculateSideTotalPower(lane.opponentSlots, lane.index);
-    return { enemyPower, playerPower };
-  }
-
-  private calculateSideTotalPower(slots: Slot[], laneIndex: number): number {
-    let totalPower = slots.reduce((sum, slot) => sum + (slot.power ?? 0), 0);
-    totalPower += this.getAdjacentLaneBonus(slots, laneIndex);
-    totalPower = this.applyMultiplicativeEffects(totalPower, slots, laneIndex);
-
-    return totalPower;
-  }
-
-  private getAdjacentLaneBonus(currentLaneSlots: Slot[], currentLaneIndex: number): number {
-    let totalBonus = 0;
-    const isPlayerSide = this.lanes[currentLaneIndex].playerSlots === currentLaneSlots;
-
-    totalBonus += this.checkNeighboringLaneForBonus(
-      this.lanes[currentLaneIndex - 1],
-      isPlayerSide,
-      [CardEffect.MisterFantasticBuff, CardEffect.KlawRightBuff],
-      currentLaneIndex
-    );
-
-    totalBonus += this.checkNeighboringLaneForBonus(
-      this.lanes[currentLaneIndex + 1],
-      isPlayerSide,
-      [CardEffect.MisterFantasticBuff],
-      currentLaneIndex
-    );
-
-    return totalBonus;
-  }
-
-  private checkNeighboringLaneForBonus(
-    neighborLane: Lane | undefined,
-    isCheckingPlayerSide: boolean,
-    effectsToLookFor: CardEffect[],
-    receivingLaneIndex: number
-  ): number {
-    if (!neighborLane) return 0;
-
-    let bonusFromThisLane = 0;
-    const neighborSlots = isCheckingPlayerSide
-      ? neighborLane.playerSlots
-      : neighborLane.opponentSlots;
-    const sideIdentifier = isCheckingPlayerSide ? 'Jogador' : 'Bot';
-
-    const onslaughtCount = neighborSlots.filter(
-      (s) =>
-        s.occupied &&
-        s.cardData?.effects?.some((e) => e.cardEffect === CardEffect.OnslaughtDoubleOngoing)
-    ).length;
-    const effectMultiplier = Math.pow(2, onslaughtCount);
-
-    for (const slot of neighborSlots) {
-      if (slot.occupied && slot.cardData?.effects) {
-        for (const effect of slot.cardData.effects) {
-          if (effectsToLookFor.includes(effect.cardEffect)) {
-            const value = typeof effect.value === 'number' ? effect.value : 0;
-
-            const finalBonus = value * effectMultiplier;
-            bonusFromThisLane += finalBonus;
-
-            console.log(
-              `Lane ${receivingLaneIndex + 1} (${sideIdentifier}) recebeu +${finalBonus} de ${slot.cardData.name} da lane ${neighborLane.index + 1}.`
-            );
-            if (effectMultiplier > 1) {
-              console.log(`(Efeito dobrado por Onslaught na lane ${neighborLane.index + 1}!)`);
-            }
-          }
-        }
-      }
-    }
-    return bonusFromThisLane;
-  }
-
-  private applyMultiplicativeEffects(
-    currentPower: number,
-    slots: Slot[],
-    laneIndex: number
-  ): number {
-    const ironManCards = slots.filter(
-      (s) =>
-        s.occupied &&
-        s.cardData?.effects?.some((e) => e.cardEffect === CardEffect.IronManDoublePower)
-    );
-
-    const onslaughtCards = slots.filter(
-      (s) =>
-        s.occupied &&
-        s.cardData?.effects?.some((e) => e.cardEffect === CardEffect.OnslaughtDoubleOngoing)
-    );
-
-    if (ironManCards.length === 0) {
-      return currentPower;
-    }
-
-    const ironManEffectApplications = Math.pow(2, onslaughtCards.length);
-    const finalMultiplier = Math.pow(2, ironManCards.length * ironManEffectApplications);
-
-    if (finalMultiplier > 1) {
-      console.log(
-        `Poder da lane ${laneIndex + 1} multiplicado por ${finalMultiplier}x devido a Homem de Ferro e Onslaught!`
-      );
-      return currentPower * finalMultiplier;
-    }
-
-    return currentPower;
-  }
-
   private endTurn(): void {
     this.isPlayerTurn = false;
     this.endTurnButton.setVisible(false);
@@ -572,18 +442,18 @@ export default class GameScene extends Phaser.Scene {
     this.time.delayedCall(1000, () => {
       this.executeBotTurn();
       this.recordInitialCardPositions();
+      this.processRevealQueue();
 
-      this.effectManager.checkResolutionEffects(this.revealQueue, this.currentTurn);
       this.effectManager.handleMoveEffects();
 
-      this.processRevealQueue();
+      this.effectManager.checkResolutionEffects(this.revealQueue, this.currentTurn);
 
       this.advanceTurn();
       this.refreshEnergies();
       this.enablePlayerTurnUI();
       this.syncDragState();
-      this.updateLaneColors();
-      this.isNextTurn = this.getLeadingPlayer();
+      this.laneManager.updateLaneColors();
+      this.isNextTurn = this.laneManager.getLeadingPlayer();
       this.updatePriorityHighlights();
 
       if (this.currentTurn >= this.maxTurn) {
@@ -682,7 +552,7 @@ export default class GameScene extends Phaser.Scene {
     }
 
     container.destroy();
-    this.updateLanePowers();
+    this.laneManager.updateLanePowers();
     this.renderPlayerHand();
     this.endTurnButton.setVisible(true);
     this.cardDetailsPanel.hideCardDetails();
@@ -759,37 +629,13 @@ export default class GameScene extends Phaser.Scene {
     this.placedCardContainers.forEach((container) => container.disableMovableBorder());
   }
 
-  private getLeadingPlayer(): 0 | 1 {
-    let playerWins = 0;
-    let botWins = 0;
-    let playerDiff = 0;
-    let botDiff = 0;
-
-    for (const lane of this.lanes) {
-      const { playerPower, enemyPower } = this.calculateLanePower(lane);
-      if (playerPower > enemyPower) {
-        playerWins++;
-        playerDiff += playerPower - enemyPower;
-      } else if (enemyPower > playerPower) {
-        botWins++;
-        botDiff += enemyPower - playerPower;
-      }
-    }
-
-    if (playerWins > botWins) return 0;
-    if (botWins > playerWins) return 1;
-    if (playerDiff > botDiff) return 0;
-    if (botDiff > playerDiff) return 1;
-    return Phaser.Math.Between(0, 1) as 0 | 1;
-  }
-
   private executeBotTurn(): void {
     this.botAI.updateBotEnergy(this.botEnergy);
     this.botAI.updateBotHand(this.botHand);
     this.botAI.executeTurn(
       this.playBotCardOnSlot.bind(this),
       this.renderBotHand.bind(this),
-      this.updateLanePowers.bind(this)
+      this.laneManager.updateLanePowers.bind(this.laneManager)
     );
   }
 
@@ -815,24 +661,17 @@ export default class GameScene extends Phaser.Scene {
     this.dragAndDropManager.updatePlayerTurnStatus(this.isPlayerTurn);
   }
 
-  private updateLaneColors(): void {
-    for (const lane of this.lanes) {
-      const { enemyPower, playerPower } = this.calculateLanePower(lane);
-      this.laneDisplay.updateLanePowerColors(lane, playerPower, enemyPower);
-    }
-  }
-
   private handleGameEnd(): void {
     this.retreatButton.setVisible(false);
     this.playerNameText.setColor('#ffffff');
     this.opponentNameText.setColor('#ffffff');
 
     this.updatePlacedCardsUI();
-    this.updateLanePowers();
+    this.laneManager.updateLanePowers();
 
     const finalLanePowers = this.lanes.map((lane) => {
-      const { playerPower, enemyPower } = this.calculateLanePower(lane);
-      return { playerPower, botPower: enemyPower };
+      const { playerPower, opponentPower } = this.laneManager.calculateLanePower(lane);
+      return { playerPower, opponentPower };
     });
 
     this.gameEndManager.checkGameEnd(finalLanePowers);
@@ -851,9 +690,9 @@ export default class GameScene extends Phaser.Scene {
     this.effectManager.applyEndOfTurnEffects();
     this.updateAllGamePowers();
 
-    this.updateLaneProperties();
+    this.laneManager.updateLaneProperties();
     this.updatePlacedCardsUI();
-    this.updateLanePowers();
+    this.laneManager.updateLanePowers();
 
     this.isPlayerTurn = true;
     this.drawCardForPlayer(this.playerHand, this.playerDeckMutable);
@@ -895,7 +734,7 @@ export default class GameScene extends Phaser.Scene {
   }
 
   private processRevealQueue(): void {
-    const playerRevealsFirst = this.getLeadingPlayer() === 0;
+    const playerRevealsFirst = this.laneManager.getLeadingPlayer() === 0;
     this.revealQueue.sort((a, b) => {
       if (a.isPlayer === b.isPlayer) return 0;
       return a.isPlayer === playerRevealsFirst ? -1 : 1;
@@ -905,11 +744,11 @@ export default class GameScene extends Phaser.Scene {
 
     console.log(
       'Ordem de Revelação:',
-      this.revealQueue.map((item) => `${item.card.name} (${item.isPlayer ? 'Jogador' : 'Bot'})`)
+      this.revealQueue.map((item) => `${item.card.name} (${item.isPlayer ? 'Você' : 'Oponente'})`)
     );
 
     for (const item of this.revealQueue) {
-      const playerName = item.isPlayer ? 'Jogador' : 'Bot';
+      const playerName = item.isPlayer ? 'Você' : 'Oponente';
       this.logHistoryButton.addLog(
         `${playerName} jogou a carta ${item.card.name} na lane ${item.laneIndex + 1}`
       );
@@ -931,7 +770,7 @@ export default class GameScene extends Phaser.Scene {
       this.effectManager.triggerOnCardPlayedEffects(item.card, item.laneIndex);
 
       this.updatePlacedCardsUI();
-      this.updateLanePowers();
+      this.laneManager.updateLanePowers();
     }
     this.revealQueue = [];
 
@@ -949,7 +788,7 @@ export default class GameScene extends Phaser.Scene {
       targetHand.push(card);
       console.log(`${card.name} adicionado à mão de ${isPlayer ? 'Jogador' : 'Bot'}.`);
       this.updatePlacedCardsUI();
-      this.updateLanePowers();
+      this.laneManager.updateLanePowers();
       return;
     }
     console.log(
@@ -965,23 +804,6 @@ export default class GameScene extends Phaser.Scene {
     const targetText = playerHasPriority ? this.playerNameText : this.opponentNameText;
 
     targetText.setColor('#00ff00');
-  }
-
-  private updateLaneProperties(): void {
-    for (const lane of this.lanes) {
-      if (!lane.properties) lane.properties = {};
-      lane.properties.cardsCannotBeDestroyed = false;
-
-      const isArmorPresent = [...lane.playerSlots, ...lane.opponentSlots].some(
-        (s) =>
-          s.occupied &&
-          s.cardData?.effects?.some((e) => e.cardEffect === CardEffect.ArmorPreventDestroy)
-      );
-      if (isArmorPresent) {
-        lane.properties.cardsCannotBeDestroyed = true;
-        console.log(`Lane ${lane.index + 1} está protegida pela Armor!`);
-      }
-    }
   }
 
   private animateTurnChange(): void {
@@ -1038,9 +860,9 @@ export default class GameScene extends Phaser.Scene {
   private updateAllGamePowers(): void {
     this.effectManager.updateAllCardPowers();
 
-    this.updateLaneProperties();
+    this.laneManager.updateLaneProperties();
     this.updatePlacedCardsUI();
-    this.updateLanePowers();
+    this.laneManager.updateLanePowers();
 
     this.effectManager.updateMoves(this.placedCardContainers);
   }

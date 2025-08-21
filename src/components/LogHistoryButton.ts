@@ -81,21 +81,21 @@ export class LogHistoryButton {
     const modalBottomY = closeButton.y - closeButton.height / 2 - 20;
     const modalContentHeight = modalBottomY - modalTopY;
 
-    const logsText = UIFactory.createText(
-      this.scene,
-      width / 2 - modalContentWidth / 2,
-      modalTopY,
-      this.formatLogs(),
-      {
-        fontSize: '16px',
-        wordWrap: { width: modalContentWidth },
-      }
-    );
-    logsText.setLineSpacing(8);
+    const logsContainer = this.scene.add.container(width / 2 - modalContentWidth / 2, modalTopY);
+
+    let offsetY = 0;
+    this.logs
+      .slice()
+      .reverse()
+      .forEach((log) => {
+        const logItem = this.createLogItem(log, modalContentWidth);
+        logItem.y = offsetY;
+        logsContainer.add(logItem);
+        offsetY += logItem.height + 10;
+      });
 
     const maskShape = this.scene.make.graphics();
     maskShape.fillStyle(0xffffff);
-    maskShape.beginPath();
     maskShape.fillRect(
       width / 2 - modalContentWidth / 2,
       modalTopY,
@@ -103,19 +103,51 @@ export class LogHistoryButton {
       modalContentHeight
     );
     const mask = maskShape.createGeometryMask();
-    logsText.setMask(mask);
+    logsContainer.setMask(mask);
 
     this.scene.input.on('wheel', (_pointer: any, _gameObject: any, _dx: any, dy: number) => {
-      logsText.y -= dy * 0.5;
+      logsContainer.y -= dy * 0.5;
       const topBound = modalTopY;
-      const bottomBound = modalTopY - (logsText.height - modalContentHeight);
-      logsText.y = Phaser.Math.Clamp(logsText.y, bottomBound, topBound);
+      const bottomBound = modalTopY - (offsetY - modalContentHeight);
+      logsContainer.y = Phaser.Math.Clamp(logsContainer.y, bottomBound, topBound);
     });
 
     this.modalContainer = this.scene.add
-      .container(0, 0, [background, modalBox, logsText, closeButton])
+      .container(0, 0, [background, modalBox, logsContainer, closeButton])
       .setDepth(100);
-    this.scene.children.bringToTop(this.modalContainer);
+  }
+
+  private createLogItem(message: string, width: number): Phaser.GameObjects.Container {
+    const timestamp = new Date().toLocaleTimeString('pt-BR', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+
+    let color = '#cccccc';
+
+    if (message.startsWith('Você')) {
+      color = '#4da6ff';
+    } else if (message.startsWith('Oponente')) {
+      color = '#ff4d4d';
+    } else if (message.includes('Turno')) {
+      color = '#7CFC00';
+    } else {
+      color = '#ffd633';
+    }
+
+    const background = UIFactory.createRectangle(this.scene, 0, 0, width, 40, 0x111111, 1)
+      .setOrigin(0, 0)
+      .setStrokeStyle(1, 0x444444);
+
+    const text = this.scene.add.text(10, 10, `[${timestamp}] ${message}`, {
+      fontSize: '16px',
+      color,
+      wordWrap: { width: width - 20 },
+    });
+
+    background.height = text.height + 20;
+
+    return this.scene.add.container(0, 0, [background, text]).setSize(width, background.height);
   }
 
   private closeModal(): void {
@@ -124,13 +156,5 @@ export class LogHistoryButton {
       this.modalContainer = undefined;
     }
     this.scene.input.off('wheel');
-  }
-
-  private formatLogs(): string {
-    return this.logs
-      .slice()
-      .reverse()
-      .map((line) => `• ${line}`)
-      .join('\n');
   }
 }

@@ -8,7 +8,7 @@ export class SpectrumHandler {
     if (bonus <= 0) {
       return;
     }
-    const side = isPlayer ? 'Jogador' : 'Adversário';
+    const side = isPlayer ? 'Jogador' : 'Oponente';
     LogHelper.emitLog(`Espectro (${side}) ativou seu efeito!`);
 
     lanes.forEach((lane) => {

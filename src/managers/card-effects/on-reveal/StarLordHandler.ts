@@ -23,7 +23,7 @@ export class StarLordHandler {
     }
 
     BonusHelper.addPermanentBonus(slot, bonus);
-    const opponentName = isPlayerCard ? 'Adversário' : 'Jogador';
+    const opponentName = isPlayerCard ? 'Oponente' : 'Jogador';
     LogHelper.emitLog(
       `Senhor das Estrelas ganhou um bônus de +${bonus} porque o ${opponentName} também jogou aqui!`
     );
