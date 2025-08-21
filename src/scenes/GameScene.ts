@@ -90,6 +90,12 @@ export default class GameScene extends Phaser.Scene {
     this.playerHandContainers = [];
     this.botHandContainers = [];
     this.showBotHand = true;
+
+    // remove events
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      GameEventManager.instance.off(GameEvent.LogRequest);
+      GameEventManager.instance.off(GameEvent.AddCardToHand);
+    });
   }
 
   public create(): void {
