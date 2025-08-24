@@ -1,5 +1,5 @@
 import { Deck } from '@/interfaces/Deck';
-import { playerDeck, botDeck } from './CardPool';
+import { playerDeck, opponentDeck } from './CardPool';
 
 export const userDecks: Deck[] = [
   {
@@ -10,6 +10,6 @@ export const userDecks: Deck[] = [
   {
     id: 'deck2',
     name: 'Deck de Teste Rápido',
-    cards: botDeck.slice(0, 12),
+    cards: opponentDeck.slice(0, 12),
   },
 ];

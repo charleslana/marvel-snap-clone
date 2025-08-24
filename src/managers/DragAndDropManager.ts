@@ -1,9 +1,10 @@
 import Phaser from 'phaser';
-import { CardData } from '@/interfaces/Card';
 import { Lane } from '@/interfaces/Lane';
 import { Slot } from '@/interfaces/Slot';
 import { CardContainer } from '@/components/CardContainer';
 import { CardEffect } from '@/enums/CardEffect';
+import { GameEventManager } from './GameEventManager';
+import { GameEvent } from '@/enums/GameEvent';
 
 export class DragAndDropManager {
   private scene: Phaser.Scene;
@@ -13,35 +14,29 @@ export class DragAndDropManager {
   private enabled: boolean = true;
   private draggedFromSlot: Slot | null = null;
 
-  private onCardPlaced: (slot: Slot, cardData: CardData) => void;
   private onCardRemovedFromHand: (index: number) => void;
   private onEnergyUpdated: () => void;
   private onLanePowersUpdated: () => void;
   private onAnimateCardReturn: (container: CardContainer, onComplete?: () => void) => void;
-  private onRenderPlayerHand: () => void;
 
   constructor(
     scene: Phaser.Scene,
     lanes: Lane[],
     playerEnergy: number,
     isPlayerTurn: boolean,
-    onCardPlaced: (slot: Slot, cardData: CardData) => void,
     onCardRemovedFromHand: (index: number) => void,
     onEnergyUpdated: () => void,
     onLanePowersUpdated: () => void,
-    onAnimateCardReturn: (container: CardContainer, onComplete?: () => void) => void,
-    onRenderPlayerHand: () => void
+    onAnimateCardReturn: (container: CardContainer, onComplete?: () => void) => void
   ) {
     this.scene = scene;
     this.lanes = lanes;
     this.playerEnergy = playerEnergy;
     this.isPlayerTurn = isPlayerTurn;
-    this.onCardPlaced = onCardPlaced;
     this.onCardRemovedFromHand = onCardRemovedFromHand;
     this.onEnergyUpdated = onEnergyUpdated;
     this.onLanePowersUpdated = onLanePowersUpdated;
     this.onAnimateCardReturn = onAnimateCardReturn;
-    this.onRenderPlayerHand = onRenderPlayerHand;
 
     this.setupDragEvents();
   }
@@ -165,7 +160,7 @@ export class DragAndDropManager {
     if (!cardPlaced) {
       this.onAnimateCardReturn(container);
     } else {
-      this.onRenderPlayerHand();
+      GameEventManager.instance.emit(GameEvent.RenderPlayerHand, this.playerEnergy);
     }
 
     this.toggleSlotOverlays(false);
@@ -176,7 +171,7 @@ export class DragAndDropManager {
     for (const lane of this.lanes) {
       for (const slot of lane.playerSlots) {
         if (!slot.occupied && Phaser.Math.Distance.Between(x, y, slot.x, slot.y) < 60) {
-          this.onCardPlaced(slot, cardData);
+          GameEventManager.instance.emit(GameEvent.PlaceCardOnSlot, { slot, cardData });
           this.onCardRemovedFromHand(cardData.index);
 
           this.playerEnergy -= cardData.cost;

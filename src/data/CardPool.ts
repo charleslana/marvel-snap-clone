@@ -142,7 +142,7 @@ export const playerDeck: Card[] = [
   },
 ];
 
-export const botDeck: Card[] = [
+export const opponentDeck: Card[] = [
   {
     id: 13,
     name: 'Abominável',

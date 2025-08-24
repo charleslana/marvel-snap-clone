@@ -5,7 +5,7 @@ import { GameButton } from '@/components/GameButton';
 import { ButtonColor } from '@/enums/ButtonColor';
 import { CardContainer } from '@/components/CardContainer';
 import { CardDetailsPanel } from '@/components/CardDetailsPanel';
-import { botDeck, playerDeck } from '@/data/CardPool';
+import { opponentDeck, playerDeck } from '@/data/CardPool';
 import { ScrollableContainer } from '@/components/ScrollableContainer';
 import { Card } from '@/interfaces/Card';
 import { FontEnum } from '@/enums/FontEnum';
@@ -15,7 +15,7 @@ import { UIFactory } from '@/components/UIFactory';
 
 export class DeckScene extends Phaser.Scene {
   private cardDetails!: CardDetailsPanel;
-  private allCardsData = [...playerDeck, ...botDeck, ...playerDeck, ...botDeck];
+  private allCardsData = [...playerDeck, ...opponentDeck, ...playerDeck, ...opponentDeck];
   private currentDeckData: Card[] = [];
   private deckGridContainer!: Phaser.GameObjects.Container;
   private deckTitleText!: Phaser.GameObjects.Text;

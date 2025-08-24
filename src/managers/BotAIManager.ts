@@ -2,6 +2,8 @@ import Phaser from 'phaser';
 import { Card } from '@/interfaces/Card';
 import { Lane } from '@/interfaces/Lane';
 import { Slot } from '@/interfaces/Slot';
+import { GameEventManager } from './GameEventManager';
+import { GameEvent } from '@/enums/GameEvent';
 
 export class BotAIManager {
   private scene: Phaser.Scene;
@@ -18,8 +20,8 @@ export class BotAIManager {
 
   public executeTurn(
     onCardPlayed: (slot: Slot, card: Card) => void,
-    onHandUpdated: () => void,
-    onLanePowersUpdated: () => void
+    onLanePowersUpdated: () => void,
+    showOpponentHand: boolean
   ): void {
     const playableCards = this.getPlayableCards();
 
@@ -37,7 +39,7 @@ export class BotAIManager {
       if (this.botEnergy <= 0) break;
     }
 
-    onHandUpdated();
+    GameEventManager.instance.emit(GameEvent.RenderOpponentHand, showOpponentHand);
     onLanePowersUpdated();
   }
 

@@ -11,10 +11,8 @@ import { DragAndDropManager } from '@/managers/DragAndDropManager';
 import { BotAIManager } from '@/managers/BotAIManager';
 import { GameEndManager } from '@/managers/GameEndManager';
 import { DeckDisplay } from '@/components/DeckDisplay';
-import { botDeck, playerDeck } from '@/data/CardPool';
 import { LogHistoryButton } from '@/components/LogHistoryButton';
 import { CardEffectManager } from '@/managers/card-effects/CardEffectManager';
-import { CardEffect } from '@/enums/CardEffect';
 import { SceneEnum } from '@/enums/SceneEnum';
 import { ImageEnum } from '@/enums/ImageEnum';
 import { GameButton } from '@/components/GameButton';
@@ -25,23 +23,18 @@ import { EffectAction } from '@/interfaces/EffectAction';
 import { GameEventManager } from '@/managers/GameEventManager';
 import { GameEvent } from '@/enums/GameEvent';
 import { LaneManager } from '@/managers/LaneManager';
+import { HandManager } from '@/managers/HandManager';
+import { opponentDeck, playerDeck } from '@/data/CardPool';
 
 export default class GameScene extends Phaser.Scene {
-  private playerHand: Card[] = [];
-  private botHand: Card[] = [];
-  private playerDeckMutable: Card[] = [];
-  private botDeckMutable: Card[] = [];
-
   private isPlayerTurn = true;
   private lanes: Lane[] = [];
-  private playerHandContainers: CardContainer[] = [];
-  private botHandContainers: CardContainer[] = [];
   private currentTurn = 1;
   private playerEnergy = 0;
-  private botEnergy = 0;
+  private opponentEnergy = 0;
   private maxTurn = 7;
   private isNextTurn: 0 | 1 = Phaser.Math.Between(0, 1) as 0 | 1;
-  private showBotHand = false;
+  private showOpponentHand = false;
   private playerNameText!: Phaser.GameObjects.Text;
   private opponentNameText!: Phaser.GameObjects.Text;
   private playerName = 'Você';
@@ -73,28 +66,29 @@ export default class GameScene extends Phaser.Scene {
 
   // managers
   private laneManager!: LaneManager;
+  private handManager!: HandManager;
 
   constructor() {
     super(SceneEnum.Game);
   }
 
   init(): void {
-    this.playerHand = [];
-    this.botHand = [];
     this.placedCardContainers = [];
-    this.playerDeckMutable = [];
-    this.botDeckMutable = [];
     this.currentTurn = 1;
     this.playerEnergy = 1;
     this.lanes = [];
-    this.playerHandContainers = [];
-    this.botHandContainers = [];
-    this.showBotHand = true;
+    this.showOpponentHand = true;
+    this.maxTurn = 7;
 
     // remove events
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       GameEventManager.instance.off(GameEvent.LogRequest);
       GameEventManager.instance.off(GameEvent.AddCardToHand);
+      GameEventManager.instance.off(GameEvent.PlacedCardsUI);
+      GameEventManager.instance.off(GameEvent.PlaceCardOnSlot);
+      if (this.handManager) {
+        this.handManager.clear();
+      }
     });
   }
 
@@ -103,16 +97,11 @@ export default class GameScene extends Phaser.Scene {
     this.cardDetailsPanel = new CardDetailsPanel(this);
     this.playerDeckDisplay = new DeckDisplay(this, 'Deck jogador');
     this.enemyDeckDisplay = new DeckDisplay(this, 'Deck oponente');
-    this.playerDeckMutable = [...playerDeck];
-    this.botDeckMutable = [...botDeck];
-    this.playerHand = this.drawInitialHand(this.playerDeckMutable, 4);
-    this.botHand = this.drawInitialHand(this.botDeckMutable, 4);
     this.logHistoryButton = new LogHistoryButton(this);
     this.effectManager = new CardEffectManager(this.lanes);
 
     this.createBackground();
     this.initializePlayerNames();
-    this.initializeGameDecks();
     this.initializeGameLanes();
     this.initializeEnergyDisplay();
     this.initializeTurnDisplay();
@@ -130,31 +119,47 @@ export default class GameScene extends Phaser.Scene {
     GameEventManager.instance.on(GameEvent.AddCardToHand, (action: EffectAction) => {
       this.processHand(action);
     });
+    GameEventManager.instance.on(GameEvent.PlacedCardsUI, () => {
+      this.updatePlacedCardsUI();
+    });
+    GameEventManager.instance.on(
+      GameEvent.PlaceCardOnSlot,
+      (data: { slot: Slot; cardData: CardData }) => {
+        this.placeCardOnSlot(data.slot, data.cardData);
+      }
+    );
 
     // managers
     this.laneManager = new LaneManager(this.lanes, this.laneDisplay);
+    this.handManager = new HandManager(this, this.laneManager);
+    this.handManager.initialize(playerDeck, opponentDeck);
+
+    this.initializeGameDecks();
 
     this.dragAndDropManager = new DragAndDropManager(
       this,
       this.lanes,
       this.playerEnergy,
       this.isPlayerTurn,
-      this.placeCardOnSlot.bind(this),
       this.removeCardFromPlayerHand.bind(this),
       this.updateEnergyText.bind(this),
       this.laneManager.updateLanePowers.bind(this.laneManager),
-      this.animateCardReturn.bind(this),
-      this.renderPlayerHand.bind(this)
+      this.animateCardReturn.bind(this)
     );
 
     this.playerEnergy = this.currentTurn;
-    this.botEnergy = this.currentTurn;
+    this.opponentEnergy = this.currentTurn;
     this.updateEnergyText();
 
-    this.renderPlayerHand();
-    this.renderBotHand();
+    this.handManager.renderPlayerHand(this.playerEnergy);
+    this.handManager.renderOpponentHand(this.showOpponentHand);
 
-    this.botAI = new BotAIManager(this, this.lanes, this.botHand, this.botEnergy);
+    this.botAI = new BotAIManager(
+      this,
+      this.lanes,
+      this.handManager.opponentHand,
+      this.opponentEnergy
+    );
     this.gameEndManager = new GameEndManager(this, this.logHistoryButton);
   }
 
@@ -182,16 +187,21 @@ export default class GameScene extends Phaser.Scene {
   }
 
   private initializeGameDecks(): void {
-    this.enemyDeckDisplay.initialize(20, 40, this.botHand.length, this.botDeckMutable);
+    this.enemyDeckDisplay.initialize(
+      20,
+      40,
+      this.handManager.opponentHand.length,
+      this.handManager.opponentDeckMutable
+    );
     this.playerDeckDisplay.initialize(
       20,
       this.scale.height - 40,
-      this.playerHand.length,
-      this.playerDeckMutable
+      this.handManager.playerHand.length,
+      this.handManager.playerDeckMutable
     );
-    this.playerDeckDisplay.updateDeck(this.playerDeckMutable.length);
+    this.playerDeckDisplay.updateDeck(this.handManager.playerDeckMutable.length);
     this.playerDeckDisplay.enableModalOpen();
-    this.enemyDeckDisplay.updateDeck(this.botDeckMutable.length);
+    this.enemyDeckDisplay.updateDeck(this.handManager.opponentDeckMutable.length);
     this.updatePriorityHighlights();
   }
 
@@ -347,38 +357,13 @@ export default class GameScene extends Phaser.Scene {
     this.turnDisplay.setVisible(false);
     this.energyDisplay.setVisible(false);
     this.retreatButton.setVisible(false);
-    this.disablePlayerCardInteraction();
+    this.handManager.disablePlayerCardInteraction(
+      this.placedCardContainers,
+      this.dragAndDropManager
+    );
     this.enemyDeckDisplay.enableModalOpen();
-    this.showBotHand = true;
-    this.revealBotHand();
-  }
-
-  private renderPlayerHand(): void {
-    this.clearContainers(this.playerHandContainers);
-    const { width, height } = this.scale;
-    const handY = height - 120;
-    this.playerHand.forEach((card, index) => {
-      const x = this.cardXPosition(width, this.playerHand.length, index);
-      const cardContainer = new CardContainer(this, x, handY, 100, 140, 0x0088ff, card, index);
-      cardContainer.setInteractivity('draggable');
-      this.add.existing(cardContainer);
-      this.playerHandContainers.push(cardContainer);
-    });
-    this.updatePlayableCardsBorder();
-  }
-
-  private renderBotHand(): void {
-    this.clearContainers(this.botHandContainers);
-    const { width } = this.scale;
-    const handY = 100;
-    this.botHand.forEach((card, index) => {
-      const x = this.cardXPosition(width, this.botHand.length, index);
-      const cardContainer = new CardContainer(this, x, handY, 100, 140, 0xff0000, card, index);
-      cardContainer.setInteractivity('none');
-      this.add.existing(cardContainer);
-      this.botHandContainers.push(cardContainer);
-      this.revealBotHand();
-    });
+    this.showOpponentHand = true;
+    this.revealOpponentHand();
   }
 
   private animateCardReturn(container: CardContainer, onComplete?: () => void): void {
@@ -432,13 +417,13 @@ export default class GameScene extends Phaser.Scene {
   }
 
   private removeCardFromPlayerHand(index: number): void {
-    this.playerHand.splice(index, 1);
+    this.handManager.playerHand.splice(index, 1);
   }
 
   private updateEnergyText(): void {
     this.energyDisplay.setLabel(`Energia: ${this.playerEnergy}`);
     this.dragAndDropManager.updatePlayerEnergy(this.playerEnergy);
-    this.updatePlayableCardsBorder();
+    this.handManager.updatePlayableCardsBorder(this.playerEnergy);
   }
 
   private endTurn(): void {
@@ -448,11 +433,11 @@ export default class GameScene extends Phaser.Scene {
     this.time.delayedCall(1000, () => {
       this.executeBotTurn();
       this.recordInitialCardPositions();
+      this.effectManager.checkResolutionEffects(this.revealQueue, this.currentTurn);
+
       this.processRevealQueue();
 
       this.effectManager.handleMoveEffects();
-
-      this.effectManager.checkResolutionEffects(this.revealQueue, this.currentTurn);
 
       this.advanceTurn();
       this.refreshEnergies();
@@ -494,9 +479,9 @@ export default class GameScene extends Phaser.Scene {
     slot.power = cardData.power;
     slot.cardData = cardData;
 
-    const indexInHand = this.botHand.indexOf(card);
-    if (indexInHand >= 0) this.botHand.splice(indexInHand, 1);
-    this.botEnergy -= cardData.cost;
+    const indexInHand = this.handManager.opponentHand.indexOf(card);
+    if (indexInHand >= 0) this.handManager.opponentHand.splice(indexInHand, 1);
+    this.opponentEnergy -= cardData.cost;
 
     const botLaneIndex = this.lanes.findIndex((lane) => lane.opponentSlots.includes(slot));
     if (botLaneIndex !== -1) {
@@ -548,9 +533,9 @@ export default class GameScene extends Phaser.Scene {
     };
 
     if (originalIndex !== undefined && originalIndex >= 0) {
-      this.playerHand.splice(originalIndex, 0, cardToReturn);
+      this.handManager.playerHand.splice(originalIndex, 0, cardToReturn);
     } else {
-      this.playerHand.push(cardToReturn);
+      this.handManager.playerHand.push(cardToReturn);
     }
     const containerIndex = this.placedCardContainers.indexOf(container);
     if (containerIndex > -1) {
@@ -559,7 +544,7 @@ export default class GameScene extends Phaser.Scene {
 
     container.destroy();
     this.laneManager.updateLanePowers();
-    this.renderPlayerHand();
+    this.handManager.renderPlayerHand(this.playerEnergy);
     this.endTurnButton.setVisible(true);
     this.cardDetailsPanel.hideCardDetails();
   }
@@ -582,66 +567,13 @@ export default class GameScene extends Phaser.Scene {
     );
   }
 
-  private drawInitialHand(deck: Card[], count: number): Card[] {
-    const hand: Card[] = [];
-    const deckCopy = [...deck];
-
-    const quicksilverIndex = deckCopy.findIndex((card) =>
-      card.effects?.some((effect) => effect.cardEffect === CardEffect.QuicksilverStartInHand)
-    );
-
-    if (quicksilverIndex > -1) {
-      const [quicksilverCard] = deckCopy.splice(quicksilverIndex, 1);
-      hand.push(quicksilverCard);
-      console.log(`${quicksilverCard.name} foi garantido na mão inicial.`);
-    }
-
-    for (let i = deckCopy.length - 1; i > 0; i--) {
-      const j = Phaser.Math.Between(0, i);
-      [deckCopy[i], deckCopy[j]] = [deckCopy[j], deckCopy[i]];
-    }
-
-    const cardsToDraw = count - hand.length;
-    for (let i = 0; i < cardsToDraw; i++) {
-      if (deckCopy.length > 0) {
-        hand.push(deckCopy.shift()!);
-      }
-    }
-
-    deck.length = 0;
-    Array.prototype.push.apply(deck, deckCopy);
-
-    return hand;
-  }
-
-  private drawCardForPlayer(hand: Card[], deck: Card[]): void {
-    if (hand.length >= 7) return;
-    if (deck.length === 0) return;
-    const card = deck.shift()!;
-    hand.push(card);
-  }
-
-  private updatePlayableCardsBorder(): void {
-    this.playerHandContainers.forEach((container) => {
-      container.cardData.cost <= this.playerEnergy
-        ? container.enablePlayableBorder()
-        : container.disablePlayableBorder();
-    });
-  }
-
-  private disablePlayerCardInteraction(): void {
-    this.playerHandContainers.forEach((container) => container.disablePlayableBorder());
-    this.dragAndDropManager.disableDrag();
-    this.placedCardContainers.forEach((container) => container.disableMovableBorder());
-  }
-
   private executeBotTurn(): void {
-    this.botAI.updateBotEnergy(this.botEnergy);
-    this.botAI.updateBotHand(this.botHand);
+    this.botAI.updateBotEnergy(this.opponentEnergy);
+    this.botAI.updateBotHand(this.handManager.opponentHand);
     this.botAI.executeTurn(
       this.playBotCardOnSlot.bind(this),
-      this.renderBotHand.bind(this),
-      this.laneManager.updateLanePowers.bind(this.laneManager)
+      this.laneManager.updateLanePowers.bind(this.laneManager),
+      this.showOpponentHand
     );
   }
 
@@ -653,7 +585,7 @@ export default class GameScene extends Phaser.Scene {
 
   private refreshEnergies(): void {
     this.playerEnergy = this.currentTurn;
-    this.botEnergy = this.currentTurn;
+    this.opponentEnergy = this.currentTurn;
     this.updateEnergyText();
   }
 
@@ -686,10 +618,13 @@ export default class GameScene extends Phaser.Scene {
     this.endTurnButton.setVisible(false);
     this.turnDisplay.setVisible(false);
     this.energyDisplay.setVisible(false);
-    this.disablePlayerCardInteraction();
+    this.handManager.disablePlayerCardInteraction(
+      this.placedCardContainers,
+      this.dragAndDropManager
+    );
     this.enemyDeckDisplay.enableModalOpen();
-    this.showBotHand = true;
-    this.revealBotHand();
+    this.showOpponentHand = true;
+    this.revealOpponentHand();
   }
 
   private prepareNextRound(): void {
@@ -701,30 +636,17 @@ export default class GameScene extends Phaser.Scene {
     this.laneManager.updateLanePowers();
 
     this.isPlayerTurn = true;
-    this.drawCardForPlayer(this.playerHand, this.playerDeckMutable);
-    this.drawCardForPlayer(this.botHand, this.botDeckMutable);
-    this.playerDeckDisplay.updateDeck(this.playerDeckMutable.length);
-    this.enemyDeckDisplay.updateDeck(this.botDeckMutable.length);
-    this.renderPlayerHand();
-    this.renderBotHand();
+    this.handManager.drawCardForPlayer(true);
+    this.handManager.drawCardForPlayer(false);
+    this.playerDeckDisplay.updateDeck(this.handManager.playerDeckMutable.length);
+    this.enemyDeckDisplay.updateDeck(this.handManager.opponentDeckMutable.length);
+    this.handManager.renderPlayerHand(this.playerEnergy);
+    this.handManager.renderOpponentHand(this.showOpponentHand);
   }
 
-  private clearContainers(list: CardContainer[]): void {
-    list.forEach((c) => c.destroy());
-    list.length = 0;
-  }
-
-  private cardXPosition(screenWidth: number, totalCards: number, index: number): number {
-    const cardWidth = 100;
-    const cardSpacing = 30;
-    const totalWidth = cardWidth * totalCards + cardSpacing * (totalCards - 1);
-    const startX = (screenWidth - totalWidth) / 2;
-    return startX + index * (cardWidth + cardSpacing);
-  }
-
-  private revealBotHand(): void {
-    if (!this.showBotHand) return;
-    this.botHandContainers.forEach((container) => {
+  private revealOpponentHand(): void {
+    if (!this.showOpponentHand) return;
+    this.handManager.opponentHandContainers.forEach((container) => {
       container.setRevealed(true);
       container.setInteractivity('hover');
     });
@@ -772,7 +694,6 @@ export default class GameScene extends Phaser.Scene {
         this.revealQueue
       );
 
-      // Log removido e adicionado no event
       this.effectManager.triggerOnCardPlayedEffects(item.card, item.laneIndex);
 
       this.updatePlacedCardsUI();
@@ -780,26 +701,11 @@ export default class GameScene extends Phaser.Scene {
     }
     this.revealQueue = [];
 
-    this.renderPlayerHand();
-    this.renderBotHand();
+    this.handManager.renderPlayerHand(this.playerEnergy);
+    this.handManager.renderOpponentHand(this.showOpponentHand);
 
     console.log('Recalculando todos os efeitos Ongoing após as revelações.');
     this.updateAllGamePowers();
-  }
-
-  private addCardToHand(card: Card, isPlayer: boolean): void {
-    const targetHand = isPlayer ? this.playerHand : this.botHand;
-
-    if (targetHand.length < this.maxTurn) {
-      targetHand.push(card);
-      console.log(`${card.name} adicionado à mão de ${isPlayer ? 'Jogador' : 'Bot'}.`);
-      this.updatePlacedCardsUI();
-      this.laneManager.updateLanePowers();
-      return;
-    }
-    console.log(
-      `Mão de ${isPlayer ? 'Jogador' : 'Bot'} está cheia. ${card.name} não foi adicionado.`
-    );
   }
 
   private updatePriorityHighlights(): void {
@@ -899,7 +805,7 @@ export default class GameScene extends Phaser.Scene {
   private processHand(action: EffectAction): void {
     switch (action.type) {
       case 'ADD_TO_HAND':
-        this.addCardToHand(action.payload.card, action.payload.isPlayer);
+        this.handManager.addCardToHand(action.payload.card, action.payload.isPlayer, this.maxTurn);
         break;
     }
   }
