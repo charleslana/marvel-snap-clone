@@ -105,12 +105,20 @@ export class LogHistoryButton {
     const mask = maskShape.createGeometryMask();
     logsContainer.setMask(mask);
 
-    this.scene.input.on('wheel', (_pointer: any, _gameObject: any, _dx: any, dy: number) => {
-      logsContainer.y -= dy * 0.5;
-      const topBound = modalTopY;
-      const bottomBound = modalTopY - (offsetY - modalContentHeight);
-      logsContainer.y = Phaser.Math.Clamp(logsContainer.y, bottomBound, topBound);
-    });
+    this.scene.input.on(
+      'wheel',
+      (
+        _pointer: Phaser.Input.Pointer,
+        _gameObject: Phaser.GameObjects.GameObject[],
+        _dx: number,
+        dy: number
+      ) => {
+        logsContainer.y -= dy * 0.5;
+        const topBound = modalTopY;
+        const bottomBound = modalTopY - (offsetY - modalContentHeight);
+        logsContainer.y = Phaser.Math.Clamp(logsContainer.y, bottomBound, topBound);
+      }
+    );
 
     this.modalContainer = this.scene.add
       .container(0, 0, [background, modalBox, logsContainer, closeButton])

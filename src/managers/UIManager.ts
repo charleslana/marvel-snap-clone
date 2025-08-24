@@ -40,6 +40,17 @@ export class UIManager {
     targetText.setColor('#00ff00');
   }
 
+  public animateTurnChange(): void {
+    this.scene.tweens.add({
+      targets: this.turnDisplay,
+      scale: 1.2,
+      alpha: 0.7,
+      duration: 200,
+      yoyo: true,
+      ease: 'Power2',
+    });
+  }
+
   private initialize() {
     this.playerEnergy = 1;
     this.currentTurn = 1;

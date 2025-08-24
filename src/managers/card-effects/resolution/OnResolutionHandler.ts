@@ -5,9 +5,9 @@ import { HawkeyeResolutionHandler } from './HawkeyeResolutionHandler';
 export class OnResolutionHandler {
   static handle(
     lanes: Lane[],
-    revealQueue: readonly { card: CardData; laneIndex: number; isPlayer: boolean }[],
+    revealQueue: { card: CardData; laneIndex: number; isPlayer: boolean }[],
     currentTurn: number
   ): void {
-    HawkeyeResolutionHandler.resolve(lanes, revealQueue as any, currentTurn);
+    HawkeyeResolutionHandler.resolve(lanes, revealQueue, currentTurn);
   }
 }

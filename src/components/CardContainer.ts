@@ -10,6 +10,8 @@ export class CardContainer extends Phaser.GameObjects.Container {
   public startX: number;
   public startY: number;
   public slot?: Slot;
+  public placed?: boolean;
+  public turnPlayed?: number;
 
   private nameText: Phaser.GameObjects.Text;
   private costText: Phaser.GameObjects.Text;

@@ -13,7 +13,7 @@ export class DragAndDropManager {
   private playerEnergy: number;
   private isPlayerTurn: boolean;
   private enabled: boolean = true;
-  private draggedFromSlot: Slot | null = null;
+  private draggedFromSlot: Slot | null | undefined = null;
   private laneManager: LaneManager;
 
   constructor(
@@ -93,10 +93,10 @@ export class DragAndDropManager {
     const isMovable =
       cardData.effects?.some((e) => e.cardEffect === CardEffect.NightcrawlerMove) &&
       !cardData.hasMoved &&
-      (container as any).slot;
+      container.slot;
 
     if (isMovable) {
-      this.draggedFromSlot = (container as any).slot;
+      this.draggedFromSlot = container.slot;
       container.startX = container.x;
       container.startY = container.y;
       this.scene.children.bringToTop(container);

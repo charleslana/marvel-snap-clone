@@ -7,6 +7,7 @@ import { MoveHandler } from './move/MoveHandler';
 import { CardContainer } from '@/components/CardContainer';
 import { OnCardPlayedHandler } from './on-card-played/OnCardPlayedHandler';
 import { OnResolutionHandler } from './resolution/OnResolutionHandler';
+import { Slot } from '@/interfaces/Slot';
 
 export class CardEffectManager {
   constructor(private lanes: Lane[]) {}
@@ -14,7 +15,7 @@ export class CardEffectManager {
   public applyOnRevealEffect(
     card: CardData,
     laneIndex: number,
-    slot: any,
+    slot: Slot,
     isPlayer: boolean,
     turnPlayed: number,
     revealQueue: readonly {
@@ -40,7 +41,7 @@ export class CardEffectManager {
   }
 
   public checkResolutionEffects(
-    revealQueue: readonly { card: CardData; laneIndex: number; isPlayer: boolean }[],
+    revealQueue: { card: CardData; laneIndex: number; isPlayer: boolean }[],
     currentTurn: number
   ): void {
     OnResolutionHandler.handle(this.lanes, revealQueue, currentTurn);

@@ -1,6 +1,7 @@
 import { Slot } from '@/interfaces/Slot';
 import { BonusHelper } from '../helpers/BonusHelper';
 import { LogHelper } from '../helpers/LogHelper';
+import { CardData } from '@/interfaces/Card';
 
 export class StarLordHandler {
   static handle(
@@ -9,7 +10,12 @@ export class StarLordHandler {
     bonus: number,
     isPlayerCard: boolean,
     turnPlayed: number,
-    revealQueue: readonly { card: any; laneIndex: number; turnPlayed: number; isPlayer: boolean }[]
+    revealQueue: readonly {
+      card: CardData;
+      laneIndex: number;
+      turnPlayed: number;
+      isPlayer: boolean;
+    }[]
   ): void {
     const opponentPlayedHere = revealQueue.some(
       (item) =>

@@ -19,6 +19,7 @@ import { LaneManager } from '@/managers/LaneManager';
 import { HandManager } from '@/managers/HandManager';
 import { opponentDeck, playerDeck } from '@/data/CardPool';
 import { UIManager } from '@/managers/UIManager';
+import { LogHelper } from '@/managers/card-effects/helpers/LogHelper';
 
 export default class GameScene extends Phaser.Scene {
   private lanes: Lane[] = [];
@@ -59,19 +60,7 @@ export default class GameScene extends Phaser.Scene {
     this.showOpponentHand = false;
 
     // remove events
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-      GameEventManager.instance.off(GameEvent.LogRequest);
-      GameEventManager.instance.off(GameEvent.AddCardToHand);
-      GameEventManager.instance.off(GameEvent.PlacedCardsUI);
-      GameEventManager.instance.off(GameEvent.PlaceCardOnSlot);
-      GameEventManager.instance.off(GameEvent.EndTurn);
-      GameEventManager.instance.off(GameEvent.EndBattle);
-      GameEventManager.instance.off(GameEvent.RemoveCardFromPlayerHand);
-      GameEventManager.instance.off(GameEvent.updateEnergy);
-      if (this.handManager) {
-        this.handManager.clear();
-      }
-    });
+    this.removeEvents();
   }
 
   public create(): void {
@@ -83,35 +72,7 @@ export default class GameScene extends Phaser.Scene {
     this.events.on('moveCardRequest', this.handleMoveCard, this);
 
     // Events
-    GameEventManager.instance.on(GameEvent.LogRequest, (action: EffectAction) => {
-      this.processLog(action);
-    });
-    GameEventManager.instance.on(GameEvent.AddCardToHand, (action: EffectAction) => {
-      this.processHand(action);
-    });
-    GameEventManager.instance.on(GameEvent.PlacedCardsUI, () => {
-      this.updatePlacedCardsUI();
-    });
-    GameEventManager.instance.on(
-      GameEvent.PlaceCardOnSlot,
-      (data: { slot: Slot; cardData: CardData }) => {
-        this.placeCardOnSlot(data.slot, data.cardData);
-      }
-    );
-    GameEventManager.instance.on(GameEvent.EndTurn, () => {
-      this.endTurn();
-    });
-    GameEventManager.instance.on(GameEvent.EndBattle, () => {
-      if (this.gameEndManager.isGameEnded()) {
-        this.scene.start(SceneEnum.Home);
-      }
-    });
-    GameEventManager.instance.on(GameEvent.RemoveCardFromPlayerHand, (index: number) => {
-      this.removeCardFromPlayerHand(index);
-    });
-    GameEventManager.instance.on(GameEvent.updateEnergy, () => {
-      this.updateEnergyText();
-    });
+    this.startEvents();
 
     // managers
     this.laneManager = new LaneManager(this.lanes, this.laneDisplay);
@@ -146,6 +107,54 @@ export default class GameScene extends Phaser.Scene {
       this.opponentEnergy
     );
     this.gameEndManager = new GameEndManager(this, this.logHistoryButton);
+  }
+
+  private removeEvents() {
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      GameEventManager.instance.off(GameEvent.LogRequest);
+      GameEventManager.instance.off(GameEvent.AddCardToHand);
+      GameEventManager.instance.off(GameEvent.PlacedCardsUI);
+      GameEventManager.instance.off(GameEvent.PlaceCardOnSlot);
+      GameEventManager.instance.off(GameEvent.EndTurn);
+      GameEventManager.instance.off(GameEvent.EndBattle);
+      GameEventManager.instance.off(GameEvent.RemoveCardFromPlayerHand);
+      GameEventManager.instance.off(GameEvent.updateEnergy);
+      if (this.handManager) {
+        this.handManager.clear();
+      }
+    });
+  }
+
+  private startEvents() {
+    GameEventManager.instance.on(GameEvent.LogRequest, (action: EffectAction) => {
+      this.processLog(action);
+    });
+    GameEventManager.instance.on(GameEvent.AddCardToHand, (action: EffectAction) => {
+      this.processHand(action);
+    });
+    GameEventManager.instance.on(GameEvent.PlacedCardsUI, () => {
+      this.updatePlacedCardsUI();
+    });
+    GameEventManager.instance.on(
+      GameEvent.PlaceCardOnSlot,
+      (data: { slot: Slot; cardData: CardData }) => {
+        this.placeCardOnSlot(data.slot, data.cardData);
+      }
+    );
+    GameEventManager.instance.on(GameEvent.EndTurn, () => {
+      this.endTurn();
+    });
+    GameEventManager.instance.on(GameEvent.EndBattle, () => {
+      if (this.gameEndManager.isGameEnded()) {
+        this.scene.start(SceneEnum.Home);
+      }
+    });
+    GameEventManager.instance.on(GameEvent.RemoveCardFromPlayerHand, (index: number) => {
+      this.removeCardFromPlayerHand(index);
+    });
+    GameEventManager.instance.on(GameEvent.updateEnergy, () => {
+      this.updateEnergyText();
+    });
   }
 
   private initializeGameDecks(): void {
@@ -238,10 +247,10 @@ export default class GameScene extends Phaser.Scene {
     this.uiManager.playerEnergy -= cardData.cost;
     this.updateEnergyText();
 
-    (cardContainer as any).placed = true;
-    (cardContainer as any).slot = slot;
-    (cardContainer as any).cardData = cardData;
-    (cardContainer as any).turnPlayed = this.uiManager.currentTurn;
+    cardContainer.placed = true;
+    cardContainer.slot = slot;
+    cardContainer.cardData = cardData;
+    cardContainer.turnPlayed = this.uiManager.currentTurn;
 
     const playerLaneIndex = this.lanes.findIndex((lane) => lane.playerSlots.includes(slot));
     if (playerLaneIndex !== -1) {
@@ -270,7 +279,7 @@ export default class GameScene extends Phaser.Scene {
     this.uiManager.endTurnButton.setVisible(false);
 
     this.time.delayedCall(1000, () => {
-      this.executeBotTurn();
+      this.executeOpponentTurn();
       this.recordInitialCardPositions();
       this.effectManager.checkResolutionEffects(this.revealQueue, this.uiManager.currentTurn);
 
@@ -294,7 +303,7 @@ export default class GameScene extends Phaser.Scene {
     });
   }
 
-  private playBotCardOnSlot(slot: Slot, card: Card): void {
+  private playOpponentCardOnSlot(slot: Slot, card: Card): void {
     const cardData: CardData = { ...card, index: -1 };
     const cardContainer = new CardContainer(
       this,
@@ -311,8 +320,8 @@ export default class GameScene extends Phaser.Scene {
 
     this.placedCardContainers.push(cardContainer);
 
-    (cardContainer as any).slot = slot;
-    (cardContainer as any).turnPlayed = this.uiManager.currentTurn;
+    cardContainer.slot = slot;
+    cardContainer.turnPlayed = this.uiManager.currentTurn;
 
     slot.occupied = true;
     slot.power = cardData.power;
@@ -322,11 +331,11 @@ export default class GameScene extends Phaser.Scene {
     if (indexInHand >= 0) this.handManager.opponentHand.splice(indexInHand, 1);
     this.opponentEnergy -= cardData.cost;
 
-    const botLaneIndex = this.lanes.findIndex((lane) => lane.opponentSlots.includes(slot));
-    if (botLaneIndex !== -1) {
+    const opponentLaneIndex = this.lanes.findIndex((lane) => lane.opponentSlots.includes(slot));
+    if (opponentLaneIndex !== -1) {
       this.revealQueue.push({
         card: cardData,
-        laneIndex: botLaneIndex,
+        laneIndex: opponentLaneIndex,
         slot,
         isPlayer: false,
         turnPlayed: this.uiManager.currentTurn,
@@ -335,19 +344,19 @@ export default class GameScene extends Phaser.Scene {
   }
 
   private removePlacedCard(container: CardContainer): void {
-    const turnPlayed = (container as any).turnPlayed as number;
+    const turnPlayed = container.turnPlayed as number;
     if (turnPlayed !== this.uiManager.currentTurn) {
       console.log('Carta jogada em turno anterior. Não pode voltar.');
       return;
     }
 
     if (turnPlayed === this.uiManager.currentTurn) {
-      this.uiManager.playerEnergy += (container as any).cardData.cost;
+      this.uiManager.playerEnergy += container.cardData.cost;
       this.updateEnergyText();
     }
 
-    const slot = (container as any).slot as Slot;
-    const cardData = (container as any).cardData as Card;
+    const slot = container.slot as Slot;
+    const cardData = container.cardData as Card;
 
     const queueIndex = this.revealQueue.findIndex(
       (item) => item.card === cardData && item.slot === slot
@@ -360,7 +369,7 @@ export default class GameScene extends Phaser.Scene {
     delete slot.power;
     delete slot.cardData;
 
-    const originalIndex = (container as any).cardData.index as number | undefined;
+    const originalIndex = container.cardData.index;
     const cardToReturn: Card = {
       id: cardData.id,
       name: cardData.name,
@@ -388,11 +397,11 @@ export default class GameScene extends Phaser.Scene {
     this.uiManager.cardDetailsPanel.hideCardDetails();
   }
 
-  private executeBotTurn(): void {
+  private executeOpponentTurn(): void {
     this.botAI.updateBotEnergy(this.opponentEnergy);
     this.botAI.updateBotHand(this.handManager.opponentHand);
     this.botAI.executeTurn(
-      this.playBotCardOnSlot.bind(this),
+      this.playOpponentCardOnSlot.bind(this),
       this.laneManager.updateLanePowers.bind(this.laneManager),
       this.showOpponentHand
     );
@@ -403,7 +412,7 @@ export default class GameScene extends Phaser.Scene {
     this.uiManager.turnDisplay.setLabel(
       `Turno: ${this.uiManager.currentTurn}/${this.uiManager.maxTurn - 1}`
     );
-    this.animateTurnChange();
+    this.uiManager.animateTurnChange();
   }
 
   private refreshEnergies(): void {
@@ -476,7 +485,7 @@ export default class GameScene extends Phaser.Scene {
 
   private updatePlacedCardsUI(): void {
     this.placedCardContainers.forEach((container) => {
-      const slot = (container as any).slot as Slot;
+      const slot = container.slot;
       if (slot && slot.occupied && slot.power !== undefined) {
         container.updatePower(slot.power);
       }
@@ -492,10 +501,10 @@ export default class GameScene extends Phaser.Scene {
 
     this.logHistoryButton.addLog(`---------- Turno ${this.uiManager.currentTurn} ----------`);
 
-    console.log(
-      'Ordem de Revelação:',
-      this.revealQueue.map((item) => `${item.card.name} (${item.isPlayer ? 'Você' : 'Oponente'})`)
+    const revealOrder = this.revealQueue.map(
+      (item) => `${item.card.name} (${item.isPlayer ? 'Você' : 'Oponente'})`
     );
+    LogHelper.emitLog(`Ordem de Revelação: ${revealOrder.join(', ')}`);
 
     for (const item of this.revealQueue) {
       const playerName = item.isPlayer ? 'Você' : 'Oponente';
@@ -535,17 +544,6 @@ export default class GameScene extends Phaser.Scene {
     this.uiManager.updateColorPlayerName(playerHasPriority);
   }
 
-  private animateTurnChange(): void {
-    this.tweens.add({
-      targets: this.uiManager.turnDisplay,
-      scale: 1.2,
-      alpha: 0.7,
-      duration: 200,
-      yoyo: true,
-      ease: 'Power2',
-    });
-  }
-
   private handleMoveCard(data: {
     cardContainer: CardContainer;
     fromSlot: Slot;
@@ -579,7 +577,7 @@ export default class GameScene extends Phaser.Scene {
     toSlot.cardData = cardData;
     toSlot.power = fromSlot.power;
     toSlot.permanentBonus = fromSlot.permanentBonus;
-    (cardContainer as any).slot = toSlot;
+    cardContainer.slot = toSlot;
 
     cardContainer.x = toSlot.x;
     cardContainer.y = toSlot.y;
@@ -598,7 +596,7 @@ export default class GameScene extends Phaser.Scene {
 
   private recordInitialCardPositions(): void {
     this.placedCardContainers.forEach((container) => {
-      const { cardData, slot } = container as any;
+      const { cardData, slot } = container;
       if (cardData && slot) {
         const laneIndex = this.lanes.findIndex(
           (l) => l.playerSlots.includes(slot) || l.opponentSlots.includes(slot)
