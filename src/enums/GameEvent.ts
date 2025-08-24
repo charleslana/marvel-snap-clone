@@ -7,4 +7,6 @@ export enum GameEvent {
   PlaceCardOnSlot = 'placeCardOnSlot',
   EndTurn = 'endTurn',
   EndBattle = 'endBattle',
+  RemoveCardFromPlayerHand = 'removeCardFromPlayerHand',
+  updateEnergy = 'updateEnergy',
 }

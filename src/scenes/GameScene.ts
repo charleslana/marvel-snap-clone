@@ -65,6 +65,9 @@ export default class GameScene extends Phaser.Scene {
       GameEventManager.instance.off(GameEvent.PlacedCardsUI);
       GameEventManager.instance.off(GameEvent.PlaceCardOnSlot);
       GameEventManager.instance.off(GameEvent.EndTurn);
+      GameEventManager.instance.off(GameEvent.EndBattle);
+      GameEventManager.instance.off(GameEvent.RemoveCardFromPlayerHand);
+      GameEventManager.instance.off(GameEvent.updateEnergy);
       if (this.handManager) {
         this.handManager.clear();
       }
@@ -103,6 +106,12 @@ export default class GameScene extends Phaser.Scene {
         this.scene.start(SceneEnum.Home);
       }
     });
+    GameEventManager.instance.on(GameEvent.RemoveCardFromPlayerHand, (index: number) => {
+      this.removeCardFromPlayerHand(index);
+    });
+    GameEventManager.instance.on(GameEvent.updateEnergy, () => {
+      this.updateEnergyText();
+    });
 
     // managers
     this.laneManager = new LaneManager(this.lanes, this.laneDisplay);
@@ -120,10 +129,7 @@ export default class GameScene extends Phaser.Scene {
       this.lanes,
       this.uiManager.playerEnergy,
       this.uiManager.isPlayerTurn,
-      this.removeCardFromPlayerHand.bind(this),
-      this.updateEnergyText.bind(this),
-      this.laneManager.updateLanePowers.bind(this.laneManager),
-      this.animateCardReturn.bind(this)
+      this.laneManager
     );
 
     this.uiManager.playerEnergy = this.uiManager.currentTurn;
@@ -214,23 +220,6 @@ export default class GameScene extends Phaser.Scene {
     this.enemyDeckDisplay.enableModalOpen();
     this.showOpponentHand = true;
     this.revealOpponentHand();
-  }
-
-  private animateCardReturn(container: CardContainer, onComplete?: () => void): void {
-    this.tweens.add({ targets: container, scale: 1, duration: 200, ease: 'Back.out' });
-    this.tweens.add({
-      targets: container,
-      x: container.startX,
-      y: container.startY,
-      duration: 300,
-      ease: 'Power2.out',
-      onComplete: () => {
-        container.list.forEach((child) => {
-          if (child instanceof Phaser.GameObjects.Text) child.setVisible(true);
-        });
-        onComplete?.();
-      },
-    });
   }
 
   private placeCardOnSlot(slot: Slot, cardData: CardData): void {
