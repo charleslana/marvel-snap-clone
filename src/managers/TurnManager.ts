@@ -48,7 +48,7 @@ export class TurnManager {
   }
 
   /**
-   * Inicia um turno do jogador
+   * Inicia um turno do jogador.
    */
   public startPlayerTurn(): void {
     this.gameState.setPlayerTurn(true);
@@ -58,93 +58,104 @@ export class TurnManager {
   }
 
   /**
-   * Finaliza o turno do jogador e executa sequência completa
+   * Finaliza o turno do jogador e inicia a sequência de resolução do turno.
    */
   public endPlayerTurn(): void {
-    this.gameState.setPlayerTurn(false);
-    this.uiManager.endTurnButton.setVisible(false);
+    this.disablePlayerInteractions();
 
-    // Delay para melhor UX
+    // Delay para melhor UX, dando tempo para o jogador ver que o turno acabou.
     this.scene.time.delayedCall(1000, () => {
       this.executeFullTurnSequence();
     });
   }
 
   /**
-   * Executa o turno do oponente
+   * Orquestra a sequência completa de eventos que ocorrem após o jogador finalizar o turno.
+   * A ordem dos métodos aqui define o fluxo de cada rodada do jogo.
    */
-  public executeOpponentTurn(): void {
+  private executeFullTurnSequence(): void {
+    // A sequência de eventos agora é muito mais clara de ler.
+    this.executeOpponentTurn();
+    this.prepareForRevealPhase();
+    this.runRevealPhase();
+    this.runEndOfTurnPhase();
+
+    if (this.gameState.isGameOver()) {
+      this.endTheGame();
+    } else {
+      this.prepareForNextTurn();
+    }
+  }
+
+  // =================================================================
+  // MÉTODOS PRIVADOS - As Etapas do Turno
+  // =================================================================
+
+  /** Etapa 1: Oponente joga suas cartas. */
+  private executeOpponentTurn(): void {
     this.botAI.executeTurn(
       this.cardPlacementManager.placeOpponentCard.bind(this.cardPlacementManager),
       this.laneManager.updateLanePowers.bind(this.laneManager)
     );
   }
 
-  /**
-   * Avança para o próximo turno
-   */
-  public advanceTurn(): void {
-    this.gameState.advanceTurn();
-    if (!this.isGameOver()) {
-      this.updateTurnDisplay();
-      this.animateTurnChange();
-    }
+  /** Etapa 2: Prepara tudo para a fase de revelação (efeitos de resolução, etc.). */
+  private prepareForRevealPhase(): void {
+    this.recordInitialCardPositions();
+    this.effectManager.checkResolutionEffects(
+      this.revealManager.getRevealQueueCopy(),
+      this.gameState.currentTurn
+    );
   }
 
-  /**
-   * Atualiza as energias para o novo turno
-   */
-  public refreshEnergies(): void {
-    this.gameState.refreshEnergies();
-    this.updateEnergyDisplay();
+  /** Etapa 3: Revela as cartas e aplica seus efeitos imediatos (On Reveal). */
+  private runRevealPhase(): void {
+    this.revealManager.processRevealQueue();
   }
 
-  /**
-   * Verifica se o jogo deve terminar
-   */
-  public isGameOver(): boolean {
-    return this.gameState.isGameOver();
-  }
-
-  /**
-   * Prepara o próximo round (depois das revelações)
-   */
-  public prepareNextRound(): void {
-    // Aplica efeitos de fim de turno
+  /** Etapa 4: Aplica efeitos que acontecem no final do turno (movimentos, etc.). */
+  private runEndOfTurnPhase(): void {
+    this.effectManager.handleMoveEffects();
     this.effectManager.applyEndOfTurnEffects();
-    this.recalculateAllPowers();
+    this.recalculateAllPowers(); // Recalcula tudo após os efeitos de fim de turno
+  }
 
-    // Atualiza propriedades das lanes
-    this.laneManager.updateLaneProperties();
-    this.cardPlacementManager.updatePlacedCardsUI();
-    this.laneManager.updateLanePowers();
+  /** Etapa 5a: O jogo acabou. Emite o evento para o GameFlowManager cuidar do resto. */
+  private endTheGame(): void {
+    this.gameState.advanceTurn(); // Avança para o turno 7 para garantir que a UI mostre 6/6
+    this.updateTurnDisplay();
+    GameEventManager.instance.emit(GameEvent.GameEnded);
+  }
 
-    // Permite jogador jogar novamente
-    this.gameState.setPlayerTurn(true);
-
-    // Compra cartas
+  /** Etapa 5b: O jogo continua. Prepara tudo para o próximo turno. */
+  private prepareForNextTurn(): void {
+    this.gameState.advanceTurn();
+    this.gameState.refreshEnergies();
+    this.updateUI();
+    this.enablePlayerInteractions();
+    this.updateLaneColorsAndPriority();
     this.handManager.drawCardForPlayer(true);
     this.handManager.drawCardForPlayer(false);
-
-    // Atualiza displays dos decks
     this.updateDeckDisplays();
-
-    // Re-renderiza mãos
     this.handManager.renderPlayerHand(this.gameState.playerEnergy);
     this.handManager.renderOpponentHand(this.gameState.showOpponentHand);
   }
 
+  // =================================================================
+  // MÉTODOS AUXILIARES
+  // =================================================================
+
   /**
-   * Habilita as interações do jogador
+   * Habilita as interações do jogador.
    */
   public enablePlayerInteractions(): void {
     this.gameState.setPlayerTurn(true);
     this.uiManager.endTurnButton.setVisible(true);
-    this.dragAndDropManager.enableDrag(); // Habilita o drag
+    this.dragAndDropManager.enableDrag();
   }
 
   /**
-   * Desabilita as interações do jogador
+   * Desabilita as interações do jogador.
    */
   public disablePlayerInteractions(): void {
     this.gameState.setPlayerTurn(false);
@@ -152,65 +163,27 @@ export class TurnManager {
     this.dragAndDropManager.disableDrag();
   }
 
-  private executeFullTurnSequence(): void {
-    // 1. Executa turno do oponente
-    this.executeOpponentTurn();
-
-    // 2. Registra posições iniciais das cartas
-    this.recordInitialCardPositions();
-
-    // 3. Verifica efeitos de resolução
-    this.effectManager.checkResolutionEffects(
-      this.revealManager.getRevealQueueCopy(),
-      this.gameState.currentTurn
-    );
-
-    // 4. Processa fila de revelação
-    this.revealManager.processRevealQueue();
-
-    // 5. Gerencia efeitos de movimento
-    this.effectManager.handleMoveEffects();
-
-    // 6. Avança turno e atualiza estado
-    this.advanceTurn();
-    this.refreshEnergies();
-    this.enablePlayerInteractions();
-
-    // 7. Atualiza cores e prioridades
-    this.updateLaneColorsAndPriority();
-
-    // 8. Verifica se o jogo terminou ou continua
-    if (this.isGameOver()) {
-      GameEventManager.instance.emit(GameEvent.GameEnded);
-    } else {
-      this.prepareNextRound();
-    }
-  }
-
+  /**
+   * Atualiza os displays de Energia e Turno na tela.
+   */
   private updateUI(): void {
     this.updateEnergyDisplay();
     this.updateTurnDisplay();
+    this.animateTurnChange();
   }
 
   private updateEnergyDisplay(): void {
-    this.uiManager.energyDisplay.setLabel(`Energia: ${this.gameState.playerEnergy}`);
+    this.uiManager.updateEnergyDisplay(this.gameState.playerEnergy);
     GameEventManager.instance.emit(GameEvent.UpdateEnergy);
   }
 
   private updateTurnDisplay(): void {
-    this.uiManager.turnDisplay.setLabel(
-      `Turno: ${this.gameState.currentTurn}/${this.gameState.maxTurn - 1}`
-    );
+    this.uiManager.updateTurnDisplay(this.gameState.currentTurn, this.gameState.maxTurn);
   }
 
   private animateTurnChange(): void {
     this.uiManager.animateTurnChange();
   }
-
-  // CORREÇÃO: Método syncDragAndDropState removido, pois não é mais necessário.
-  // O DragAndDropManager agora lê o estado diretamente do GameStateManager.
-  // As chamadas para enableDrag() e disableDrag() em enable/disablePlayerInteractions
-  // são suficientes.
 
   private updateLaneColorsAndPriority(): void {
     this.laneManager.updateLaneColors();

@@ -32,8 +32,8 @@ export class UIManager {
   }
 
   public updateTurnDisplay(currentTurn: number, maxTurn: number): void {
-    const displayTurn = Math.min(currentTurn, maxTurn - 1);
-    this.turnDisplay.setLabel(`Turno: ${displayTurn}/${maxTurn - 1}`);
+    const displayTurn = Math.min(currentTurn, maxTurn);
+    this.turnDisplay.setLabel(`Turno: ${displayTurn}/${maxTurn}`);
   }
 
   public clearColorPlayersNames() {

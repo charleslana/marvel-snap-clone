@@ -7,7 +7,7 @@ import { RevealQueueItem } from '@/interfaces/RevealQueueItem';
 export class GameStateManager {
   private state: GameState = {
     currentTurn: 1,
-    maxTurn: 7,
+    maxTurn: 6,
     playerEnergy: 1,
     opponentEnergy: 1,
     isPlayerTurn: true,
@@ -159,7 +159,7 @@ export class GameStateManager {
   public reset(): void {
     this.state = {
       currentTurn: 1,
-      maxTurn: 7,
+      maxTurn: 6,
       playerEnergy: 1,
       opponentEnergy: 1,
       isPlayerTurn: true,

@@ -76,6 +76,7 @@ export class GameFlowManager {
 
     this.hideActionButtons();
     this.uiManager.clearColorPlayersNames();
+    this.laneManager.updateLaneColors();
     const finalLanePowers = this.calculateFinalLanePowers();
     this.gameEndManager.checkGameEnd(finalLanePowers);
     this.showEndGameUI();
@@ -90,6 +91,7 @@ export class GameFlowManager {
     // --- CORREÇÃO ADICIONADA AQUI ---
     // Esconde imediatamente os botões de ação, incluindo o de desistir.
     this.hideActionButtons();
+    this.laneManager.updateLaneColors();
 
     const retreatResult = [
       { playerPower: 0, opponentPower: 1 },
