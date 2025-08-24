@@ -66,8 +66,13 @@ export class GameFlowManager {
     this.uiManager.updateTurnDisplay(this.gameState.currentTurn, this.gameState.maxTurn);
     this.uiManager.updateEnergyDisplay(this.gameState.playerEnergy);
 
-    this.turnManager.startPlayerTurn();
     this.updateDeckDisplays();
+
+    this.turnManager.startPlayerTurn();
+
+    const initialPriority = this.gameState.isNextTurn;
+    this.uiManager.updateColorPlayerName(initialPriority === 0);
+
     console.log('Jogo inicializado com sucesso.');
   }
 
