@@ -4,14 +4,17 @@ import { Lane } from '@/interfaces/Lane';
 import { Slot } from '@/interfaces/Slot';
 import { LogHelper } from './card-effects/helpers/LogHelper';
 import { GameStateManager } from './GameStateManager';
+import Phaser from 'phaser'; // Importe o Phaser para acessar a Scene
 
 export class LaneManager {
   private gameState: GameStateManager;
   private laneDisplay: LaneDisplay;
+  private scene: Phaser.Scene; // Adicionamos uma referência à cena para usar o tween manager
 
   constructor(gameState: GameStateManager, laneDisplay: LaneDisplay) {
     this.gameState = gameState;
     this.laneDisplay = laneDisplay;
+    this.scene = laneDisplay['scene']; // Acessa a cena a partir do LaneDisplay
   }
 
   public calculateLanePower(lane: Lane): { opponentPower: number; playerPower: number } {
@@ -40,9 +43,38 @@ export class LaneManager {
   public updateLanePowers(): void {
     for (const lane of this.gameState.lanes) {
       const { opponentPower, playerPower } = this.calculateLanePower(lane);
-      lane.opponentPowerText?.setText(opponentPower.toString());
-      lane.playerPowerText?.setText(playerPower.toString());
+
+      // Verifica se o poder mudou antes de atualizar e animar
+      const playerPowerChanged = lane.playerPowerText?.text !== playerPower.toString();
+      const opponentPowerChanged = lane.opponentPowerText?.text !== opponentPower.toString();
+
+      if (playerPowerChanged) {
+        lane.playerPowerText?.setText(playerPower.toString());
+      }
+      if (opponentPowerChanged) {
+        lane.opponentPowerText?.setText(opponentPower.toString());
+      }
+
+      // --- CORREÇÃO ADICIONADA AQUI ---
+      // Se qualquer um dos poderes da lane mudou, aplica a animação.
+      if ((playerPowerChanged || opponentPowerChanged) && lane.worldContainer) {
+        this.animateWorldContainer(lane.worldContainer);
+      }
     }
+  }
+
+  // --- NOVO MÉTODO PARA A ANIMAÇÃO ---
+  private animateWorldContainer(container: Phaser.GameObjects.Container): void {
+    // Animação de "pulso" - a mesma lógica do botão de turno
+    this.scene.tweens.add({
+      targets: container,
+      scaleX: 1.05, // Um pouco maior na largura
+      scaleY: 1.05, // Um pouco maior na altura
+      alpha: 0.8, // Levemente transparente
+      duration: 150, // Duração curta para um efeito de "pop"
+      yoyo: true, // Faz a animação voltar ao estado original
+      ease: 'Quad.easeInOut', // Curva de animação suave
+    });
   }
 
   public getLeadingPlayer(): 0 | 1 {
@@ -142,7 +174,9 @@ export class LaneManager {
             bonusFromThisLane += finalBonus;
 
             LogHelper.emitLog(
-              `Lane ${receivingLaneIndex + 1} (${sideIdentifier}) recebeu +${finalBonus} de ${slot.cardData.name} da lane ${neighborLane.index + 1}.`
+              `Lane ${receivingLaneIndex + 1} (${sideIdentifier}) recebeu +${finalBonus} de ${
+                slot.cardData.name
+              } da lane ${neighborLane.index + 1}.`
             );
             if (effectMultiplier > 1) {
               LogHelper.emitLog(`(Efeito dobrado por Massacre na lane ${neighborLane.index + 1}!)`);
