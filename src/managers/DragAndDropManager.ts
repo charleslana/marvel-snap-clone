@@ -1,32 +1,23 @@
 import Phaser from 'phaser';
-import { Lane } from '@/interfaces/Lane';
 import { Slot } from '@/interfaces/Slot';
 import { CardContainer } from '@/components/CardContainer';
 import { CardEffect } from '@/enums/CardEffect';
 import { GameEventManager } from './GameEventManager';
 import { GameEvent } from '@/enums/GameEvent';
 import { LaneManager } from './LaneManager';
+import { GameStateManager } from './GameStateManager';
 
 export class DragAndDropManager {
   private scene: Phaser.Scene;
-  private lanes: Lane[];
-  private playerEnergy: number;
-  private isPlayerTurn: boolean;
+  private gameState: GameStateManager;
+  private laneManager: LaneManager;
   private enabled: boolean = true;
   private draggedFromSlot: Slot | null | undefined = null;
-  private laneManager: LaneManager;
 
-  constructor(
-    scene: Phaser.Scene,
-    lanes: Lane[],
-    playerEnergy: number,
-    isPlayerTurn: boolean,
-    laneManager: LaneManager
-  ) {
+  // CORREÇÃO: Construtor ajustado para 3 argumentos.
+  constructor(scene: Phaser.Scene, gameState: GameStateManager, laneManager: LaneManager) {
     this.scene = scene;
-    this.lanes = lanes;
-    this.playerEnergy = playerEnergy;
-    this.isPlayerTurn = isPlayerTurn;
+    this.gameState = gameState;
     this.laneManager = laneManager;
     this.setupDragEvents();
   }
@@ -39,13 +30,9 @@ export class DragAndDropManager {
     this.enabled = false;
   }
 
-  public updatePlayerEnergy(newEnergy: number): void {
-    this.playerEnergy = newEnergy;
-  }
-
-  public updatePlayerTurnStatus(isPlayerTurn: boolean): void {
-    this.isPlayerTurn = isPlayerTurn;
-  }
+  // CORREÇÃO: Removido updatePlayerEnergy e updatePlayerTurnStatus, pois o estado é lido diretamente.
+  // public updatePlayerEnergy(newEnergy: number): void { ... }
+  // public updatePlayerTurnStatus(isPlayerTurn: boolean): void { ... }
 
   private setupDragEvents(): void {
     const input = this.scene.input;
@@ -75,8 +62,11 @@ export class DragAndDropManager {
 
   private handlePointerOver(obj: Phaser.GameObjects.GameObject): void {
     if (!(obj instanceof CardContainer)) return;
+    // CORREÇÃO: Lê o estado diretamente do gameStateManager
     const cursor =
-      this.isPlayerTurn && this.playerEnergy >= obj.cardData.cost ? 'grabbing' : 'default';
+      this.gameState.isPlayerTurn && this.gameState.playerEnergy >= obj.cardData.cost
+        ? 'grabbing'
+        : 'default';
     this.scene.input.setDefaultCursor(cursor);
   }
 
@@ -143,14 +133,16 @@ export class DragAndDropManager {
     const { cost } = cardData;
     let cardPlaced = false;
 
-    if (this.isPlayerTurn && cost <= this.playerEnergy) {
+    // CORREÇÃO: Lê o estado diretamente do gameStateManager
+    if (this.gameState.isPlayerTurn && cost <= this.gameState.playerEnergy) {
       cardPlaced = this.tryPlaceCard(container);
     }
 
     if (!cardPlaced) {
       this.animateCardReturn(container);
     } else {
-      GameEventManager.instance.emit(GameEvent.RenderPlayerHand, this.playerEnergy);
+      // CORREÇÃO: Lê o estado diretamente do gameStateManager
+      GameEventManager.instance.emit(GameEvent.RenderPlayerHand, this.gameState.playerEnergy);
     }
 
     this.toggleSlotOverlays(false);
@@ -158,14 +150,15 @@ export class DragAndDropManager {
 
   private tryPlaceCard(container: CardContainer): boolean {
     const { x, y, cardData } = container;
-    for (const lane of this.lanes) {
+    for (const lane of this.laneManager.getLanes()) {
       for (const slot of lane.playerSlots) {
         if (!slot.occupied && Phaser.Math.Distance.Between(x, y, slot.x, slot.y) < 60) {
           GameEventManager.instance.emit(GameEvent.PlaceCardOnSlot, { slot, cardData });
           GameEventManager.instance.emit(GameEvent.RemoveCardFromPlayerHand, cardData.index);
 
-          this.playerEnergy -= cardData.cost;
-          GameEventManager.instance.emit(GameEvent.updateEnergy);
+          // A energia será atualizada pelo CardPlacementManager, não aqui.
+          // Apenas emitimos o evento para a UI.
+          GameEventManager.instance.emit(GameEvent.UpdateEnergy);
           this.laneManager.updateLanePowers();
 
           return true;
@@ -176,7 +169,7 @@ export class DragAndDropManager {
   }
 
   private toggleSlotOverlays(visible: boolean, ignoreSlot: Slot | null = null): void {
-    for (const lane of this.lanes) {
+    for (const lane of this.laneManager.getLanes()) {
       for (const slot of lane.playerSlots) {
         if (slot !== ignoreSlot) {
           slot.overlay?.setVisible(visible && !slot.occupied);
@@ -187,7 +180,7 @@ export class DragAndDropManager {
 
   private findValidMoveSlot(container: CardContainer): Slot | null {
     const { x, y } = container;
-    for (const lane of this.lanes) {
+    for (const lane of this.laneManager.getLanes()) {
       for (const slot of lane.playerSlots) {
         if (!slot.occupied && Phaser.Math.Distance.Between(x, y, slot.x, slot.y) < 60) {
           return slot;

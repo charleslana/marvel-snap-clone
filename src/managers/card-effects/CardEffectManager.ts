@@ -1,4 +1,3 @@
-import { Lane } from '@/interfaces/Lane';
 import { CardData } from '@/interfaces/Card';
 import { OnRevealHandler } from './on-reveal/OnRevealHandler';
 import { OngoingHandler } from './ongoing/OngoingHandler';
@@ -8,9 +7,14 @@ import { CardContainer } from '@/components/CardContainer';
 import { OnCardPlayedHandler } from './on-card-played/OnCardPlayedHandler';
 import { OnResolutionHandler } from './resolution/OnResolutionHandler';
 import { Slot } from '@/interfaces/Slot';
+import { GameStateManager } from '../GameStateManager';
 
 export class CardEffectManager {
-  constructor(private lanes: Lane[]) {}
+  private gameState: GameStateManager;
+
+  constructor(gameState: GameStateManager) {
+    this.gameState = gameState;
+  }
 
   public applyOnRevealEffect(
     card: CardData,
@@ -25,30 +29,38 @@ export class CardEffectManager {
       isPlayer: boolean;
     }[]
   ): void {
-    OnRevealHandler.handle(this.lanes, card, laneIndex, slot, isPlayer, turnPlayed, revealQueue);
+    OnRevealHandler.handle(
+      this.gameState.lanes,
+      card,
+      laneIndex,
+      slot,
+      isPlayer,
+      turnPlayed,
+      revealQueue
+    );
   }
 
   public updateAllCardPowers(): void {
-    OngoingHandler.updateAll(this.lanes);
+    OngoingHandler.updateAll(this.gameState.lanes);
   }
 
   public applyEndOfTurnEffects(): void {
-    EndOfTurnHandler.handle(this.lanes);
+    EndOfTurnHandler.handle(this.gameState.lanes);
   }
 
   public triggerOnCardPlayedEffects(playedCard: CardData, laneIndex: number): void {
-    OnCardPlayedHandler.handle(this.lanes[laneIndex], playedCard);
+    OnCardPlayedHandler.handle(this.gameState.lanes[laneIndex], playedCard);
   }
 
   public checkResolutionEffects(
-    revealQueue: { card: CardData; laneIndex: number; isPlayer: boolean }[],
+    revealQueue: readonly { card: CardData; laneIndex: number; isPlayer: boolean }[],
     currentTurn: number
   ): void {
-    OnResolutionHandler.handle(this.lanes, revealQueue, currentTurn);
+    OnResolutionHandler.handle(this.gameState.lanes, revealQueue, currentTurn);
   }
 
   public handleMoveEffects(): void {
-    MoveHandler.handle(this.lanes);
+    MoveHandler.handle(this.gameState.lanes);
   }
 
   public updateMoves(containers: CardContainer[]): void {

@@ -8,7 +8,7 @@ import { LogHelper } from '../helpers/LogHelper';
 export class HawkeyeResolutionHandler {
   static resolve(
     lanes: Lane[],
-    revealQueue: { card: CardData; laneIndex: number; isPlayer: boolean }[],
+    revealQueue: readonly { card: CardData; laneIndex: number; isPlayer: boolean }[],
     currentTurn: number
   ): void {
     for (const playedItem of revealQueue) {

@@ -3,13 +3,14 @@ import { CardEffect } from '@/enums/CardEffect';
 import { Lane } from '@/interfaces/Lane';
 import { Slot } from '@/interfaces/Slot';
 import { LogHelper } from './card-effects/helpers/LogHelper';
+import { GameStateManager } from './GameStateManager';
 
 export class LaneManager {
-  private lanes: Lane[];
-  private laneDisplay!: LaneDisplay;
+  private gameState: GameStateManager;
+  private laneDisplay: LaneDisplay;
 
-  constructor(lanes: Lane[], laneDisplay: LaneDisplay) {
-    this.lanes = lanes;
+  constructor(gameState: GameStateManager, laneDisplay: LaneDisplay) {
+    this.gameState = gameState;
     this.laneDisplay = laneDisplay;
   }
 
@@ -20,7 +21,7 @@ export class LaneManager {
   }
 
   public updateLaneProperties(): void {
-    for (const lane of this.lanes) {
+    for (const lane of this.gameState.lanes) {
       if (!lane.properties) lane.properties = {};
       lane.properties.cardsCannotBeDestroyed = false;
 
@@ -37,7 +38,7 @@ export class LaneManager {
   }
 
   public updateLanePowers(): void {
-    for (const lane of this.lanes) {
+    for (const lane of this.gameState.lanes) {
       const { opponentPower, playerPower } = this.calculateLanePower(lane);
       lane.opponentPowerText?.setText(opponentPower.toString());
       lane.playerPowerText?.setText(playerPower.toString());
@@ -50,7 +51,7 @@ export class LaneManager {
     let playerDiff = 0;
     let opponentDiff = 0;
 
-    for (const lane of this.lanes) {
+    for (const lane of this.gameState.lanes) {
       const { playerPower, opponentPower } = this.calculateLanePower(lane);
       if (playerPower > opponentPower) {
         playerWins++;
@@ -69,10 +70,14 @@ export class LaneManager {
   }
 
   public updateLaneColors(): void {
-    for (const lane of this.lanes) {
+    for (const lane of this.gameState.lanes) {
       const { opponentPower, playerPower } = this.calculateLanePower(lane);
       this.laneDisplay.updateLanePowerColors(lane, playerPower, opponentPower);
     }
+  }
+
+  public getLanes(): Lane[] {
+    return this.gameState.lanes;
   }
 
   private calculateSideTotalPower(slots: Slot[], laneIndex: number): number {
@@ -85,17 +90,17 @@ export class LaneManager {
 
   private getAdjacentLaneBonus(currentLaneSlots: Slot[], currentLaneIndex: number): number {
     let totalBonus = 0;
-    const isPlayerSide = this.lanes[currentLaneIndex].playerSlots === currentLaneSlots;
+    const isPlayerSide = this.gameState.lanes[currentLaneIndex].playerSlots === currentLaneSlots;
 
     totalBonus += this.checkNeighboringLaneForBonus(
-      this.lanes[currentLaneIndex - 1],
+      this.gameState.lanes[currentLaneIndex - 1],
       isPlayerSide,
       [CardEffect.MisterFantasticBuff, CardEffect.KlawRightBuff],
       currentLaneIndex
     );
 
     totalBonus += this.checkNeighboringLaneForBonus(
-      this.lanes[currentLaneIndex + 1],
+      this.gameState.lanes[currentLaneIndex + 1],
       isPlayerSide,
       [CardEffect.MisterFantasticBuff],
       currentLaneIndex

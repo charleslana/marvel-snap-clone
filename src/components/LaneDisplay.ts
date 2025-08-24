@@ -11,6 +11,8 @@ export class LaneDisplay {
     this.scene = scene;
   }
 
+  // CORREÇÃO: O método createLane está aqui, como deveria estar.
+  // Ele cria e retorna a estrutura de dados completa da Lane.
   public createLane(x: number, y: number, index: number): Lane {
     const worldRect = this.createWorldRect();
     const worldText = this.createWorldText(index);
@@ -24,7 +26,6 @@ export class LaneDisplay {
       opponentPowerText,
       playerPowerText,
     ]);
-    // worldContainer.setDepth(2);
 
     const playerSlots = this.createSlots(x, y, true);
     const botSlots = this.createSlots(x, y, false);

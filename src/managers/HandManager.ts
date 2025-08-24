@@ -19,6 +19,7 @@ export class HandManager {
   private laneManager: LaneManager;
   private initialHandSize = 4;
 
+  // CORREÇÃO: Construtor ajustado para 2 argumentos.
   constructor(scene: Phaser.Scene, laneManager: LaneManager) {
     this.scene = scene;
     this.laneManager = laneManager;
@@ -44,8 +45,8 @@ export class HandManager {
     this.opponentHand = [];
     this.playerDeckMutable = [];
     this.opponentDeckMutable = [];
-    this.playerHandContainers = [];
-    this.opponentHandContainers = [];
+    this.clearContainers(this.playerHandContainers);
+    this.clearContainers(this.opponentHandContainers);
     GameEventManager.instance.off(GameEvent.RenderPlayerHand);
     GameEventManager.instance.off(GameEvent.RenderOpponentHand);
   }
@@ -92,7 +93,9 @@ export class HandManager {
       cardContainer.setInteractivity('none');
       this.scene.add.existing(cardContainer);
       this.opponentHandContainers.push(cardContainer);
-      this.revealOpponentHand(showOpponentHand);
+      if (showOpponentHand) {
+        this.revealOpponentHand();
+      }
     });
   }
 
@@ -105,10 +108,10 @@ export class HandManager {
     hand.push(card);
   }
 
-  public addCardToHand(card: Card, isPlayer: boolean, maxTurn: number): void {
+  public addCardToHand(card: Card, isPlayer: boolean, maxHandSize: number): void {
     const targetHand = isPlayer ? this.playerHand : this.opponentHand;
 
-    if (targetHand.length < maxTurn) {
+    if (targetHand.length < maxHandSize) {
       targetHand.push(card);
       console.log(`${card.name} adicionado à mão de ${isPlayer ? 'Jogador' : 'Bot'}.`);
       GameEventManager.instance.emit(GameEvent.PlacedCardsUI);
@@ -151,6 +154,7 @@ export class HandManager {
       LogHelper.emitLog(`${quicksilverCard.name} foi garantido na mão inicial.`);
     }
 
+    // Shuffle the rest of the deck
     for (let i = deckCopy.length - 1; i > 0; i--) {
       const j = Phaser.Math.Between(0, i);
       [deckCopy[i], deckCopy[j]] = [deckCopy[j], deckCopy[i]];
@@ -163,6 +167,7 @@ export class HandManager {
       }
     }
 
+    // Update the original deck reference
     deck.length = 0;
     Array.prototype.push.apply(deck, deckCopy);
 
@@ -182,8 +187,7 @@ export class HandManager {
     return startX + index * (cardWidth + cardSpacing);
   }
 
-  private revealOpponentHand(showOpponentHand: boolean): void {
-    if (!showOpponentHand) return;
+  private revealOpponentHand(): void {
     this.opponentHandContainers.forEach((container) => {
       container.setRevealed(true);
       container.setInteractivity('hover');

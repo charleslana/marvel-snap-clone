@@ -8,10 +8,7 @@ import { CardDetailsPanel } from '@/components/CardDetailsPanel';
 import { CardData } from '@/interfaces/Card';
 
 export class UIManager {
-  public playerEnergy = 0;
   public isPlayerTurn = true;
-  public currentTurn = 0;
-  public maxTurn = 7;
   public energyDisplay!: GameButton;
   public endBattleButton!: GameButton;
   public endTurnButton!: GameButton;
@@ -27,6 +24,16 @@ export class UIManager {
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
     this.initialize();
+  }
+
+  // CORREÇÃO: Métodos públicos para atualizar a UI.
+  public updateEnergyDisplay(energy: number): void {
+    this.energyDisplay.setLabel(`Energia: ${energy}`);
+  }
+
+  public updateTurnDisplay(currentTurn: number, maxTurn: number): void {
+    const displayTurn = Math.min(currentTurn, maxTurn - 1);
+    this.turnDisplay.setLabel(`Turno: ${displayTurn}/${maxTurn - 1}`);
   }
 
   public clearColorPlayersNames() {
@@ -52,9 +59,6 @@ export class UIManager {
   }
 
   private initialize() {
-    this.playerEnergy = 1;
-    this.currentTurn = 1;
-    this.maxTurn = 7;
     this.isPlayerTurn = true;
     this.createBackground();
     this.initializePlayerNames();
@@ -100,7 +104,7 @@ export class UIManager {
       this.scene,
       buttonCenterX,
       centerY,
-      `Energia: ${this.playerEnergy}`,
+      `Energia: 1`, // Valor inicial
       () => {},
       {
         width: buttonWidth,
@@ -122,7 +126,7 @@ export class UIManager {
       this.scene,
       buttonCenterX,
       centerY,
-      `Turno: ${this.currentTurn}/${this.maxTurn - 1}`,
+      `Turno: 1/6`, // Valor inicial
       () => {},
       {
         color: ButtonColor.Black,

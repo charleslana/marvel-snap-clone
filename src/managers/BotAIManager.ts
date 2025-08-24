@@ -4,56 +4,61 @@ import { Lane } from '@/interfaces/Lane';
 import { Slot } from '@/interfaces/Slot';
 import { GameEventManager } from './GameEventManager';
 import { GameEvent } from '@/enums/GameEvent';
+import { GameStateManager } from './GameStateManager';
+import { HandManager } from './HandManager';
 
 export class BotAIManager {
   private scene: Phaser.Scene;
-  private lanes: Lane[];
-  private botHand: Card[];
-  private botEnergy: number;
+  private gameState: GameStateManager;
+  private handManager: HandManager;
 
-  constructor(scene: Phaser.Scene, lanes: Lane[], botHand: Card[], botEnergy: number) {
+  // CORREÇÃO: Construtor ajustado para 3 argumentos.
+  constructor(scene: Phaser.Scene, gameState: GameStateManager, handManager: HandManager) {
     this.scene = scene;
-    this.lanes = lanes;
-    this.botHand = botHand;
-    this.botEnergy = botEnergy;
+    this.gameState = gameState;
+    this.handManager = handManager;
   }
 
   public executeTurn(
     onCardPlayed: (slot: Slot, card: Card) => void,
-    onLanePowersUpdated: () => void,
-    showOpponentHand: boolean
+    onLanePowersUpdated: () => void
   ): void {
-    const playableCards = this.getPlayableCards();
+    // CORREÇÃO: Obtém dados do bot diretamente dos managers de estado.
+    const botHand = this.handManager.opponentHand;
+    let botEnergy = this.gameState.opponentEnergy;
+
+    const playableCards = botHand
+      .filter((c) => c.cost <= botEnergy)
+      .sort((a, b) => b.power - a.power);
 
     for (const card of playableCards) {
-      if (card.cost > this.botEnergy) continue;
+      if (card.cost > botEnergy) continue;
 
       const lanesByPriority = this.getLanesByPriority();
 
-      const played = this.tryPlayCardOnPrioritizedLane(card, lanesByPriority, onCardPlayed);
+      const played = this.tryPlayCardOnPrioritizedLane(
+        card,
+        lanesByPriority,
+        onCardPlayed,
+        botEnergy
+      );
 
       if (!played) {
-        this.playCardOnAnyAvailableSlot(card, onCardPlayed);
+        botEnergy = this.playCardOnAnyAvailableSlot(card, onCardPlayed, botEnergy);
+      } else {
+        botEnergy -= card.cost;
       }
 
-      if (this.botEnergy <= 0) break;
+      if (botEnergy <= 0) break;
     }
 
-    GameEventManager.instance.emit(GameEvent.RenderOpponentHand, showOpponentHand);
+    GameEventManager.instance.emit(GameEvent.RenderOpponentHand, this.gameState.showOpponentHand);
     onLanePowersUpdated();
   }
 
-  public updateBotEnergy(newEnergy: number): void {
-    this.botEnergy = newEnergy;
-  }
-
-  public updateBotHand(newHand: Card[]): void {
-    this.botHand = newHand;
-  }
-
-  private getPlayableCards(): Card[] {
-    return this.botHand.filter((c) => c.cost <= this.botEnergy).sort((a, b) => b.power - a.power);
-  }
+  // CORREÇÃO: Funções de update removidas, pois o estado é lido na hora.
+  // public updateBotEnergy(newEnergy: number): void { ... }
+  // public updateBotHand(newHand: Card[]): void { ... }
 
   private getLanesByPriority(): Array<{
     lane: Lane;
@@ -61,7 +66,7 @@ export class BotAIManager {
     playerPower: number;
     difference: number;
   }> {
-    return this.lanes
+    return this.gameState.lanes
       .map((lane) => {
         const { botPower, playerPower } = this.calculateLanePower(lane);
         return { lane, botPower, playerPower, difference: botPower - playerPower };
@@ -78,8 +83,11 @@ export class BotAIManager {
   private tryPlayCardOnPrioritizedLane(
     card: Card,
     lanesByPriority: Array<{ lane: Lane; botPower: number; playerPower: number }>,
-    onCardPlayed: (slot: Slot, card: Card) => void
+    onCardPlayed: (slot: Slot, card: Card) => void,
+    currentEnergy: number
   ): boolean {
+    if (card.cost > currentEnergy) return false;
+
     for (const laneItem of lanesByPriority) {
       const slot = laneItem.lane.opponentSlots.find((s) => !s.occupied);
       if (!slot) continue;
@@ -107,22 +115,24 @@ export class BotAIManager {
     slot.occupied = true;
     slot.power = card.power;
 
-    const index = this.botHand.indexOf(card);
-    if (index >= 0) this.botHand.splice(index, 1);
-
-    this.botEnergy -= card.cost;
+    const index = this.handManager.opponentHand.indexOf(card);
+    if (index >= 0) this.handManager.opponentHand.splice(index, 1);
   }
 
   private playCardOnAnyAvailableSlot(
     card: Card,
-    onCardPlayed: (slot: Slot, card: Card) => void
-  ): void {
-    for (const lane of this.lanes) {
+    onCardPlayed: (slot: Slot, card: Card) => void,
+    currentEnergy: number
+  ): number {
+    if (card.cost > currentEnergy) return currentEnergy;
+
+    for (const lane of this.gameState.lanes) {
       const slot = lane.opponentSlots.find((s) => !s.occupied);
-      if (slot && card.cost <= this.botEnergy) {
+      if (slot) {
         this.playCardOnSlot(slot, card, onCardPlayed);
-        break;
+        return currentEnergy - card.cost;
       }
     }
+    return currentEnergy;
   }
 }
