@@ -5,4 +5,6 @@ export enum GameEvent {
   RenderPlayerHand = 'renderPlayerHand',
   RenderOpponentHand = 'renderOpponentHand',
   PlaceCardOnSlot = 'placeCardOnSlot',
+  EndTurn = 'endTurn',
+  EndBattle = 'endBattle',
 }

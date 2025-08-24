@@ -24,6 +24,7 @@ export class LaneDisplay {
       opponentPowerText,
       playerPowerText,
     ]);
+    // worldContainer.setDepth(2);
 
     const playerSlots = this.createSlots(x, y, true);
     const botSlots = this.createSlots(x, y, false);
@@ -58,7 +59,10 @@ export class LaneDisplay {
   }
 
   private createWorldRect(): Phaser.GameObjects.Rectangle {
-    return this.scene.add.rectangle(0, 0, 160, 100, 0x333333).setStrokeStyle(2, 0xffffff);
+    return UIFactory.createRectangle(this.scene, 0, 0, 160, 100, 0x333333).setStrokeStyle(
+      2,
+      0xffffff
+    );
   }
 
   private createWorldText(index: number): Phaser.GameObjects.Text {
@@ -104,9 +108,15 @@ export class LaneDisplay {
           isPlayer
         );
 
-        const overlay = this.scene.add
-          .rectangle(slotX, slotY, cardWidth, cardHeight, 0xffffff, 0.2)
-          .setVisible(false);
+        const overlay = UIFactory.createRectangle(
+          this.scene,
+          slotX,
+          slotY,
+          cardWidth,
+          cardHeight,
+          0xffffff,
+          0.2
+        ).setVisible(false);
 
         slots.push({ x: slotX, y: slotY, occupied: false, overlay });
       }
