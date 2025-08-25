@@ -29,6 +29,10 @@ export class GameStateManager {
     return this.state.maxTurn;
   }
 
+  public setMaxTurn(maxTurn: number): void {
+    this.state.maxTurn = Math.max(1, maxTurn);
+  }
+
   get playerEnergy(): number {
     return this.state.playerEnergy;
   }

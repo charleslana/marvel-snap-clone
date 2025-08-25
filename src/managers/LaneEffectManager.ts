@@ -34,6 +34,12 @@ export class LaneEffectManager {
         this.laneDisplay.updateLaneEffectImage(lane, lane.effect.image);
 
         LogHelper.emitLog(`Mundo Revelado: ${lane.effect.name} - ${lane.effect.description}`);
+
+        // --- TRATAMENTO ESPECIAL DO LIMBO ---
+        if (lane.effect.id === 'limbo') {
+          this.gameState.setMaxTurn(7);
+          LogHelper.emitLog('O jogo agora terá 7 turnos por causa do Limbo!');
+        }
       }
     }
   }

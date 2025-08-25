@@ -28,4 +28,5 @@ export enum ImageEnum {
   LocationAtlantis = 'locationAtlantis',
   LocationNidavellir = 'locationNidavellir',
   LocationSewerSystem = 'locationSewerSystem',
+  LocationLimbo = 'locationLimbo',
 }

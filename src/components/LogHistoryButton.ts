@@ -76,7 +76,7 @@ export class LogHistoryButton {
       }
     );
 
-    const modalContentWidth = width * 0.8 - 40;
+    const modalContentWidth = width * 0.8 - 60; // espaço pra barra
     const modalTopY = height / 2 - (height * 0.8) / 2 + 20;
     const modalBottomY = closeButton.y - closeButton.height / 2 - 20;
     const modalContentHeight = modalBottomY - modalTopY;
@@ -105,24 +105,94 @@ export class LogHistoryButton {
     const mask = maskShape.createGeometryMask();
     logsContainer.setMask(mask);
 
-    this.scene.input.on(
-      'wheel',
-      (
-        _pointer: Phaser.Input.Pointer,
-        _gameObject: Phaser.GameObjects.GameObject[],
-        _dx: number,
-        dy: number
-      ) => {
+    // -------------------------------
+    // Barra de rolagem
+    // -------------------------------
+    if (offsetY > modalContentHeight) {
+      const scrollbarX = width / 2 + modalContentWidth / 2 + 8; // ao lado direito
+
+      // trilha
+      const track = UIFactory.createRoundedRectangle(
+        this.scene,
+        scrollbarX,
+        modalTopY,
+        10,
+        modalContentHeight,
+        0x555555,
+        1,
+        6
+      );
+
+      // tamanho do thumb proporcional
+      const visibleRatio = modalContentHeight / offsetY;
+      const thumbHeight = Math.max(30, modalContentHeight * visibleRatio);
+
+      const thumb = UIFactory.createRoundedRectangle(
+        this.scene,
+        scrollbarX,
+        modalTopY,
+        10,
+        thumbHeight,
+        0x888888,
+        1,
+        6
+      );
+
+      // cantos arredondados (se suportado)
+      (thumb as any).setRadius?.(6);
+
+      let isDragging = false;
+      let dragOffsetY = 0;
+
+      thumb
+        .setInteractive({ useHandCursor: true })
+        .on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+          isDragging = true;
+          dragOffsetY = pointer.y - thumb.y;
+        });
+
+      this.scene.input.on('pointerup', () => {
+        isDragging = false;
+      });
+
+      this.scene.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
+        if (!isDragging) return;
+
+        const top = modalTopY;
+        const bottom = modalTopY + modalContentHeight - thumbHeight;
+        thumb.y = Phaser.Math.Clamp(pointer.y - dragOffsetY, top, bottom);
+
+        const scrollRange = modalContentHeight - thumbHeight;
+        const contentRange = offsetY - modalContentHeight;
+        const scrollPercent = (thumb.y - modalTopY) / scrollRange;
+        logsContainer.y = modalTopY - scrollPercent * contentRange;
+      });
+
+      const updateThumb = () => {
+        const scrollRange = modalContentHeight - thumbHeight;
+        const contentRange = offsetY - modalContentHeight;
+        const scrollPercent = (modalTopY - logsContainer.y) / contentRange;
+        thumb.y = modalTopY + scrollPercent * scrollRange;
+      };
+
+      // roda do mouse
+      this.scene.input.on('wheel', (_pointer: any, _go: any, _dx: number, dy: number) => {
         logsContainer.y -= dy * 0.5;
         const topBound = modalTopY;
         const bottomBound = modalTopY - (offsetY - modalContentHeight);
         logsContainer.y = Phaser.Math.Clamp(logsContainer.y, bottomBound, topBound);
-      }
-    );
+        updateThumb();
+      });
 
-    this.modalContainer = this.scene.add
-      .container(0, 0, [background, modalBox, logsContainer, closeButton])
-      .setDepth(100);
+      this.modalContainer = this.scene.add
+        .container(0, 0, [background, modalBox, logsContainer, closeButton, track, thumb])
+        .setDepth(100);
+    } else {
+      // sem scroll
+      this.modalContainer = this.scene.add
+        .container(0, 0, [background, modalBox, logsContainer, closeButton])
+        .setDepth(100);
+    }
   }
 
   private createLogItem(message: string, width: number): Phaser.GameObjects.Container {
@@ -143,19 +213,23 @@ export class LogHistoryButton {
       color = '#ffd633';
     }
 
-    const background = UIFactory.createRectangle(this.scene, 0, 0, width, 40, 0x111111, 1)
-      .setOrigin(0, 0)
-      .setStrokeStyle(1, 0x444444);
-
+    // Texto com quebra automática
     const text = this.scene.add.text(10, 10, `[${timestamp}] ${message}`, {
       fontSize: '16px',
       color,
-      wordWrap: { width: width - 20 },
+      wordWrap: { width: width - 20, useAdvancedWrap: true },
+      lineSpacing: 4,
     });
 
-    background.height = text.height + 20;
+    // Calcula altura dinâmica (mínimo 40px)
+    const textHeight = text.height;
+    const itemHeight = Math.max(40, textHeight + 20);
 
-    return this.scene.add.container(0, 0, [background, text]).setSize(width, background.height);
+    const background = UIFactory.createRectangle(this.scene, 0, 0, width, itemHeight, 0x111111, 1)
+      .setOrigin(0, 0)
+      .setStrokeStyle(1, 0x444444);
+
+    return this.scene.add.container(0, 0, [background, text]).setSize(width, itemHeight);
   }
 
   private closeModal(): void {

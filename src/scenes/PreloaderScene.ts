@@ -113,5 +113,6 @@ export class PreloaderScene extends Phaser.Scene {
     this.load.image(ImageEnum.LocationAtlantis, 'images/locations/atlantis.jpg');
     this.load.image(ImageEnum.LocationNidavellir, 'images/locations/nidavellir.jpg');
     this.load.image(ImageEnum.LocationSewerSystem, 'images/locations/sewer-system.jpg');
+    this.load.image(ImageEnum.LocationLimbo, 'images/locations/limbo.jpg');
   }
 }

@@ -33,4 +33,24 @@ export class UIFactory {
   ): Phaser.GameObjects.Rectangle {
     return scene.add.rectangle(x, y, width, height, fillColor, fillAlpha);
   }
+
+  public static createRoundedRectangle(
+    scene: Phaser.Scene,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    fillColor: number,
+    fillAlpha: number = 1,
+    radius: number = 6
+  ): Phaser.GameObjects.Graphics {
+    const graphics = scene.add.graphics({ x, y });
+    graphics.fillStyle(fillColor, fillAlpha);
+    graphics.fillRoundedRect(0, 0, width, height, radius);
+    graphics.setInteractive(
+      new Phaser.Geom.Rectangle(0, 0, width, height),
+      Phaser.Geom.Rectangle.Contains
+    );
+    return graphics;
+  }
 }

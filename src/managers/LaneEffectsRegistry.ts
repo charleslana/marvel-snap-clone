@@ -56,6 +56,17 @@ const AtlantisEffect: LaneEffect = {
   },
 };
 
+// Efeito 4: Limbo
+const LimboEffect: LaneEffect = {
+  id: 'limbo',
+  name: 'Limbo',
+  description: 'Há um turno 7 neste jogo.',
+  image: ImageEnum.LocationLimbo,
+  applyPowerBonus: (_slots: Slot[], _lane: Lane): number => {
+    return 0;
+  },
+};
+
 /**
  * Um registro central que contém todos os efeitos de lane possíveis no jogo.
  */
@@ -64,6 +75,7 @@ export class LaneEffectsRegistry {
     SewerSystemEffect,
     NidavellirEffect,
     AtlantisEffect,
+    LimboEffect,
     // Adicione novos efeitos aqui no futuro
   ];
 
