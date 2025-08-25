@@ -20,7 +20,8 @@ export class PreloaderScene extends Phaser.Scene {
   preload() {
     this.load.setPath('assets');
     this.loadCards();
-    this.load.image(ImageEnum.CardBack01, 'images/backs/back01.jpg');
+    this.loadCardBacks();
+    this.loadLocations();
   }
 
   create() {
@@ -102,5 +103,15 @@ export class PreloaderScene extends Phaser.Scene {
     this.load.image(ImageEnum.CardWolfsbane, 'images/cards/wolfsbane.jpg');
     this.load.image(ImageEnum.CardStarlord, 'images/cards/starlord.jpg');
     this.load.image(ImageEnum.CardTheThing, 'images/cards/the-thing.jpg');
+  }
+
+  private loadCardBacks(): void {
+    this.load.image(ImageEnum.CardBack01, 'images/backs/back01.jpg');
+  }
+
+  private loadLocations(): void {
+    this.load.image(ImageEnum.LocationAtlantis, 'images/locations/atlantis.jpg');
+    this.load.image(ImageEnum.LocationNidavellir, 'images/locations/nidavellir.jpg');
+    this.load.image(ImageEnum.LocationSewerSystem, 'images/locations/sewer-system.jpg');
   }
 }

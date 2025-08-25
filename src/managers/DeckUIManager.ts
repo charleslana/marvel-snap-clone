@@ -43,7 +43,7 @@ export class DeckUIManager {
     const events = GameEventManager.instance;
 
     events.on(
-      GameEvent.DECK_MODE_CHANGED,
+      GameEvent.DeckModeChanged,
       (mode: DeckMode) => {
         this.updateButtonVisibility();
         this.updateDeckTitle();
@@ -57,7 +57,7 @@ export class DeckUIManager {
     );
 
     events.on(
-      GameEvent.DECK_DATA_CHANGED,
+      GameEvent.DeckDataChanged,
       () => {
         this.updateDeckTitle();
         this.updateSaveButton();
@@ -66,7 +66,7 @@ export class DeckUIManager {
     );
 
     events.on(
-      GameEvent.DECK_LIST_UPDATED,
+      GameEvent.DeckListUpdated,
       (deckToSelectId?: string) => {
         this.refreshDeckSelect(deckToSelectId);
       },
@@ -76,9 +76,9 @@ export class DeckUIManager {
     // É crucial limpar os listeners quando a cena for destruída
     this.scene.events.on('shutdown', () => {
       console.log('🧹 Limpando eventos do DeckUIManager');
-      events.off(GameEvent.DECK_MODE_CHANGED);
-      events.off(GameEvent.DECK_DATA_CHANGED);
-      events.off(GameEvent.DECK_LIST_UPDATED);
+      events.off(GameEvent.DeckModeChanged);
+      events.off(GameEvent.DeckDataChanged);
+      events.off(GameEvent.DeckListUpdated);
     });
   }
 

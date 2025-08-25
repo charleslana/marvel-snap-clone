@@ -26,11 +26,11 @@ export class DeckGridManager {
     console.log('Grid Manager configurando listeners globais');
     const events = GameEventManager.instance;
 
-    events.on(GameEvent.DECK_DATA_CHANGED, this.updateDeckGrid, this);
+    events.on(GameEvent.DeckDataChanged, this.updateDeckGrid, this);
 
     this.scene.events.on('shutdown', () => {
       console.log('🧹 Limpando eventos do DeckGridManager');
-      events.off(GameEvent.DECK_DATA_CHANGED, this.updateDeckGrid, this);
+      events.off(GameEvent.DeckDataChanged, this.updateDeckGrid, this);
     });
   }
 

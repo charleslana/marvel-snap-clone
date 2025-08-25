@@ -67,7 +67,6 @@ export default class GameScene extends Phaser.Scene {
   public create(): void {
     // 1. Inicializa o Estado Central
     this.gameStateManager = new GameStateManager();
-    this.laneEffectManager = new LaneEffectManager(this.gameStateManager);
 
     // 2. Inicializa componentes de UI que não dependem de estado complexo
     this.uiManager = new UIManager(this);
@@ -76,8 +75,11 @@ export default class GameScene extends Phaser.Scene {
     this.playerDeckDisplay = new DeckDisplay(this, 'Deck jogador');
     this.enemyDeckDisplay = new DeckDisplay(this, 'Deck oponente');
 
+    this.laneEffectManager = new LaneEffectManager(this.gameStateManager, this.laneDisplay);
+
     // 3. Cria as Lanes e as armazena no Estado Central
     this.initializeGameLanes();
+    this.laneDisplay.initializeLaneDetailsPanel();
 
     this.laneEffectManager.setupLaneEffectsForGame();
 

@@ -154,7 +154,7 @@ export class DeckManager {
 
     userDecks.splice(deckIndex, 1);
     // Notifica que a lista de decks no <select> precisa ser atualizada.
-    GameEventManager.instance.emit(GameEvent.DECK_LIST_UPDATED);
+    GameEventManager.instance.emit(GameEvent.DeckListUpdated);
 
     // Se o deck removido era o que estava selecionado...
     if (this.selectedDeckId === deckId) {
@@ -192,7 +192,7 @@ export class DeckManager {
     const newDeckId = 'deck_' + Date.now();
     const newDeck: Deck = { id: newDeckId, name: deckName, cards: [...this.currentDeckData] };
     userDecks.push(newDeck);
-    GameEventManager.instance.emit(GameEvent.DECK_LIST_UPDATED, newDeckId);
+    GameEventManager.instance.emit(GameEvent.DeckListUpdated, newDeckId);
 
     this.selectedDeckId = newDeckId;
     this.currentMode = DeckMode.View; // O modo mudou de Create para View
@@ -206,7 +206,7 @@ export class DeckManager {
 
     deck.name = deckName;
     deck.cards = [...this.currentDeckData];
-    GameEventManager.instance.emit(GameEvent.DECK_LIST_UPDATED, deck.id);
+    GameEventManager.instance.emit(GameEvent.DeckListUpdated, deck.id);
 
     this.currentMode = DeckMode.View; // O modo mudou de Edit para View
     this.originalDeckData = [];
@@ -216,7 +216,7 @@ export class DeckManager {
 
   private triggerCallbacks(): void {
     GameEventManager.instance.emit(
-      GameEvent.DECK_DATA_CHANGED,
+      GameEvent.DeckDataChanged,
       this.getCurrentDeckData(),
       this.currentMode
     );
@@ -232,7 +232,7 @@ export class DeckManager {
 
   private emitDataChangeOnly(): void {
     GameEventManager.instance.emit(
-      GameEvent.DECK_DATA_CHANGED,
+      GameEvent.DeckDataChanged,
       this.getCurrentDeckData(),
       this.currentMode
     );
@@ -242,6 +242,6 @@ export class DeckManager {
     // É importante emitir a mudança de dados primeiro, caso algum listener dependa dela
     this.emitDataChangeOnly();
     // Em seguida, emite a mudança de modo, que geralmente redesenha a UI.
-    GameEventManager.instance.emit(GameEvent.DECK_MODE_CHANGED, this.currentMode);
+    GameEventManager.instance.emit(GameEvent.DeckModeChanged, this.currentMode);
   }
 }

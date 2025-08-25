@@ -117,8 +117,8 @@ export class DeckScene extends Phaser.Scene {
     console.log('🔧 Configurando listeners de eventos globais');
 
     const events = GameEventManager.instance;
-    events.on(GameEvent.DECK_MODE_CHANGED, this.refreshGrids, this);
-    events.on(GameEvent.DECK_DATA_CHANGED, this.refreshGrids, this);
+    events.on(GameEvent.DeckModeChanged, this.refreshGrids, this);
+    events.on(GameEvent.DeckDataChanged, this.refreshGrids, this);
 
     this.gridManager.onCardHover = (card) => this.cardDetails.showCardDetails(card.cardData);
     this.gridManager.onCardHoverEnd = () => this.cardDetails.hideCardDetails();
@@ -126,8 +126,8 @@ export class DeckScene extends Phaser.Scene {
     // Limpeza de eventos ao sair da cena
     this.events.on('shutdown', () => {
       console.log('🧹 Limpando eventos da DeckScene');
-      events.off(GameEvent.DECK_MODE_CHANGED, this.refreshGrids, this);
-      events.off(GameEvent.DECK_DATA_CHANGED, this.refreshGrids, this);
+      events.off(GameEvent.DeckModeChanged, this.refreshGrids, this);
+      events.off(GameEvent.DeckDataChanged, this.refreshGrids, this);
     });
 
     console.log('✅ Listeners configurados');

@@ -25,4 +25,7 @@ export enum ImageEnum {
   CardStarlord = 'cardStarlord',
   CardTheThing = 'cardTheThing',
   CardBack01 = 'cardBack01',
+  LocationAtlantis = 'locationAtlantis',
+  LocationNidavellir = 'locationNidavellir',
+  LocationSewerSystem = 'locationSewerSystem',
 }

@@ -3,15 +3,17 @@ import { LaneEffect } from '@/interfaces/LaneEffect';
 import { GameStateManager } from './GameStateManager';
 import { LaneEffectsRegistry } from './LaneEffectsRegistry';
 import { LogHelper } from './card-effects/helpers/LogHelper';
-import Phaser from 'phaser';
 import { Slot } from '@/interfaces/Slot';
+import { LaneDisplay } from '@/components/LaneDisplay';
 
 export class LaneEffectManager {
   private gameState: GameStateManager;
+  private laneDisplay: LaneDisplay;
   private effectsForThisGame: (LaneEffect | null)[] = [null, null, null];
 
-  constructor(gameState: GameStateManager) {
+  constructor(gameState: GameStateManager, laneDisplay: LaneDisplay) {
     this.gameState = gameState;
+    this.laneDisplay = laneDisplay;
   }
 
   /**
@@ -19,20 +21,18 @@ export class LaneEffectManager {
    * Deve ser chamado no início de cada turno.
    */
   public revealLaneEffectForTurn(turn: number): void {
-    // Os turnos são 1-6, os índices das lanes são 0-2.
     const laneIndex = turn - 1;
 
-    // Só revela nos turnos 1, 2 e 3.
     if (laneIndex >= 0 && laneIndex < this.gameState.lanes.length) {
       const lane = this.gameState.lanes[laneIndex];
-      if (lane.effect && lane.worldText) {
-        lane.isRevealed = true;
-        // Atualiza a UI para mostrar o nome e a descrição do efeito
-        const newText = `${lane.effect.name}\n\n${lane.effect.description}`;
-        lane.worldText.setText(newText);
 
-        // --- LÓGICA DE AJUSTE ADICIONADA AQUI ---
-        this.adjustTextToFit(lane.worldText, lane.worldContainer);
+      if (lane.effect) {
+        lane.isRevealed = true;
+
+        // Delega a atualização da UI para o LaneDisplay
+        this.laneDisplay.updateLaneEffectText(lane, lane.effect.name);
+        this.laneDisplay.updateLaneEffectImage(lane, lane.effect.image);
+
         LogHelper.emitLog(`Mundo Revelado: ${lane.effect.name} - ${lane.effect.description}`);
       }
     }
@@ -74,30 +74,5 @@ export class LaneEffectManager {
       'Efeitos para esta partida:',
       this.effectsForThisGame.map((e) => e?.name)
     );
-  }
-
-  private adjustTextToFit(
-    textObject: Phaser.GameObjects.Text,
-    container?: Phaser.GameObjects.Container
-  ): void {
-    if (!container) return;
-
-    // Define a largura máxima com um pouco de preenchimento (padding)
-    const maxWidth = container.getBounds().width - 20;
-    const maxHeight = container.getBounds().height - 10;
-
-    // Aplica a quebra de linha automática
-    textObject.setWordWrapWidth(maxWidth);
-    textObject.setAlign('center'); // Centraliza o texto de múltiplas linhas
-
-    // Começa com um tamanho de fonte padrão e vai diminuindo
-    let fontSize = 16; // Tamanho de fonte inicial
-    textObject.setFontSize(fontSize);
-
-    // Reduz o tamanho da fonte até que a altura do texto caiba no contêiner
-    while (textObject.height > maxHeight && fontSize > 8) {
-      fontSize--;
-      textObject.setFontSize(fontSize);
-    }
   }
 }

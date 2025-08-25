@@ -1,12 +1,14 @@
 import { LaneEffect } from '@/interfaces/LaneEffect';
 import { Lane } from '@/interfaces/Lane';
 import { Slot } from '@/interfaces/Slot';
+import { ImageEnum } from '@/enums/ImageEnum';
 
 // Efeito 1: Sistema de Esgoto
 const SewerSystemEffect: LaneEffect = {
   id: 'sewer_system',
   name: 'Sistema de Esgoto',
   description: 'As cartas aqui têm -1 de Poder.',
+  image: ImageEnum.LocationSewerSystem,
   applyPowerBonus: (slots: Slot[], _lane: Lane): number => {
     let totalPenalty = 0;
     for (const slot of slots) {
@@ -23,6 +25,7 @@ const NidavellirEffect: LaneEffect = {
   id: 'nidavellir',
   name: 'Nidavellir',
   description: 'As cartas aqui têm +5 de Poder.',
+  image: ImageEnum.LocationNidavellir,
   applyPowerBonus: (slots: Slot[], _lane: Lane): number => {
     let totalBonus = 0;
     for (const slot of slots) {
@@ -39,6 +42,7 @@ const AtlantisEffect: LaneEffect = {
   id: 'atlantis',
   name: 'Atlântida',
   description: 'Se você tiver apenas uma carta aqui, ela terá +5 de Poder.',
+  image: ImageEnum.LocationAtlantis,
   applyPowerBonus: (slots: Slot[], _lane: Lane): number => {
     // Conta quantas cartas o jogador tem nesta lane
     const cardCount = slots.filter((slot) => slot.occupied).length;
