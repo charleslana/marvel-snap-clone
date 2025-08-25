@@ -67,8 +67,14 @@ export class LaneDisplay {
   }
 
   private createWorldText(index: number): Phaser.GameObjects.Text {
+    const rectWidth = 160;
+
     return UIFactory.createText(this.scene, 0, 0, `Mundo ${index + 1}`, {
       fontSize: '16px',
+      align: 'center',
+      wordWrap: { width: rectWidth - 20, useAdvancedWrap: true },
+      stroke: '#000000',
+      strokeThickness: 3,
     }).setOrigin(0.5, 0.5);
   }
 

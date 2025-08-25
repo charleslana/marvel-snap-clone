@@ -12,6 +12,7 @@ import { DeckDisplay } from '@/components/DeckDisplay';
 import { GameEventManager } from './GameEventManager';
 import { GameEvent } from '@/enums/GameEvent';
 import { SceneEnum } from '@/enums/SceneEnum';
+import { LaneEffectManager } from './LaneEffectManager';
 
 export class GameFlowManager {
   private scene: Phaser.Scene;
@@ -26,6 +27,7 @@ export class GameFlowManager {
   private retreatButton: RetreatButton;
   private playerDeckDisplay: DeckDisplay;
   private enemyDeckDisplay: DeckDisplay;
+  private laneEffectManager: LaneEffectManager;
 
   constructor(
     scene: Phaser.Scene,
@@ -39,7 +41,8 @@ export class GameFlowManager {
     dragAndDropManager: DragAndDropManager,
     retreatButton: RetreatButton,
     playerDeckDisplay: DeckDisplay,
-    enemyDeckDisplay: DeckDisplay
+    enemyDeckDisplay: DeckDisplay,
+    laneEffectManager: LaneEffectManager
   ) {
     this.scene = scene;
     this.gameState = gameState;
@@ -53,6 +56,7 @@ export class GameFlowManager {
     this.retreatButton = retreatButton;
     this.playerDeckDisplay = playerDeckDisplay;
     this.enemyDeckDisplay = enemyDeckDisplay;
+    this.laneEffectManager = laneEffectManager;
 
     this.setupEventListeners();
   }
@@ -72,6 +76,8 @@ export class GameFlowManager {
 
     const initialPriority = this.gameState.isNextTurn;
     this.uiManager.updateColorPlayerName(initialPriority === 0);
+
+    this.laneEffectManager.revealLaneEffectForTurn(1);
 
     console.log('Jogo inicializado com sucesso.');
   }

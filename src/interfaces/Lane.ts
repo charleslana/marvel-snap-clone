@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { Slot } from './Slot';
+import { LaneEffect } from './LaneEffect';
 
 export interface Lane {
   index: number;
@@ -14,4 +15,6 @@ export interface Lane {
   properties?: {
     cardsCannotBeDestroyed?: boolean;
   };
+  effect?: LaneEffect | null;
+  isRevealed?: boolean;
 }

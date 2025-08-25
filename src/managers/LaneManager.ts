@@ -5,16 +5,23 @@ import { Slot } from '@/interfaces/Slot';
 import { LogHelper } from './card-effects/helpers/LogHelper';
 import { GameStateManager } from './GameStateManager';
 import Phaser from 'phaser'; // Importe o Phaser para acessar a Scene
+import { LaneEffectManager } from './LaneEffectManager';
 
 export class LaneManager {
   private gameState: GameStateManager;
   private laneDisplay: LaneDisplay;
   private scene: Phaser.Scene; // Adicionamos uma referência à cena para usar o tween manager
+  private effectManager: LaneEffectManager;
 
-  constructor(gameState: GameStateManager, laneDisplay: LaneDisplay) {
+  constructor(
+    gameState: GameStateManager,
+    laneDisplay: LaneDisplay,
+    effectManager: LaneEffectManager
+  ) {
     this.gameState = gameState;
     this.laneDisplay = laneDisplay;
     this.scene = laneDisplay['scene']; // Acessa a cena a partir do LaneDisplay
+    this.effectManager = effectManager;
   }
 
   public calculateLanePower(lane: Lane): { opponentPower: number; playerPower: number } {
@@ -113,7 +120,14 @@ export class LaneManager {
   }
 
   private calculateSideTotalPower(slots: Slot[], laneIndex: number): number {
+    const lane = this.gameState.lanes[laneIndex];
     let totalPower = slots.reduce((sum, slot) => sum + (slot.power ?? 0), 0);
+
+    // --- INTEGRAÇÃO AQUI ---
+    // 1. Aplica o bônus do efeito da lane
+    totalPower += this.effectManager.getPowerBonusForLane(slots, lane);
+
+    // 2. Aplica outros bônus (adjacentes, etc.)
     totalPower += this.getAdjacentLaneBonus(slots, laneIndex);
     totalPower = this.applyMultiplicativeEffects(totalPower, slots, laneIndex);
 

@@ -29,6 +29,7 @@ import { GameEvent } from '@/enums/GameEvent';
 import { CardContainer } from '@/components/CardContainer';
 import { Slot } from '@/interfaces/Slot';
 import { Lane } from '@/interfaces/Lane';
+import { LaneEffectManager } from '@/managers/LaneEffectManager';
 
 export default class GameScene extends Phaser.Scene {
   // Core Managers
@@ -40,6 +41,7 @@ export default class GameScene extends Phaser.Scene {
 
   // Existing Managers (refactored)
   private laneManager!: LaneManager;
+  private laneEffectManager!: LaneEffectManager;
   private handManager!: HandManager;
   private uiManager!: UIManager;
   private dragAndDropManager!: DragAndDropManager;
@@ -65,6 +67,7 @@ export default class GameScene extends Phaser.Scene {
   public create(): void {
     // 1. Inicializa o Estado Central
     this.gameStateManager = new GameStateManager();
+    this.laneEffectManager = new LaneEffectManager(this.gameStateManager);
 
     // 2. Inicializa componentes de UI que não dependem de estado complexo
     this.uiManager = new UIManager(this);
@@ -76,8 +79,14 @@ export default class GameScene extends Phaser.Scene {
     // 3. Cria as Lanes e as armazena no Estado Central
     this.initializeGameLanes();
 
+    this.laneEffectManager.setupLaneEffectsForGame();
+
     // 4. Inicializa os Managers passando as dependências corretas
-    this.laneManager = new LaneManager(this.gameStateManager, this.laneDisplay);
+    this.laneManager = new LaneManager(
+      this.gameStateManager,
+      this.laneDisplay,
+      this.laneEffectManager
+    );
     this.handManager = new HandManager(this, this.laneManager);
     this.effectManager = new CardEffectManager(this.gameStateManager);
 
@@ -91,7 +100,7 @@ export default class GameScene extends Phaser.Scene {
 
     this.dragAndDropManager = new DragAndDropManager(this, this.gameStateManager, this.laneManager);
 
-    this.botAI = new BotAIManager(this, this.gameStateManager, this.handManager);
+    this.botAI = new BotAIManager(this, this.gameStateManager, this.handManager, this.laneManager);
 
     this.gameEndManager = new GameEndManager(this, this.logHistoryButton);
 
@@ -113,7 +122,8 @@ export default class GameScene extends Phaser.Scene {
       this.handManager,
       this.uiManager,
       this.dragAndDropManager,
-      this.cardPlacementManager
+      this.cardPlacementManager,
+      this.laneEffectManager
     );
 
     this.initializeRetreatButton();
@@ -130,7 +140,8 @@ export default class GameScene extends Phaser.Scene {
       this.dragAndDropManager,
       this.retreatButton,
       this.playerDeckDisplay,
-      this.enemyDeckDisplay
+      this.enemyDeckDisplay,
+      this.laneEffectManager
     );
 
     // 6. Configura o layout final e listeners

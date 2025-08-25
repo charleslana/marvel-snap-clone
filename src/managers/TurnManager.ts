@@ -10,6 +10,7 @@ import { DragAndDropManager } from './DragAndDropManager';
 import { CardPlacementManager } from './CardPlacementManager';
 import { GameEventManager } from './GameEventManager';
 import { GameEvent } from '@/enums/GameEvent';
+import { LaneEffectManager } from './LaneEffectManager';
 
 export class TurnManager {
   private scene: Phaser.Scene;
@@ -22,6 +23,7 @@ export class TurnManager {
   private uiManager: UIManager;
   private dragAndDropManager: DragAndDropManager;
   private cardPlacementManager: CardPlacementManager;
+  private laneEffectManager: LaneEffectManager;
 
   constructor(
     scene: Phaser.Scene,
@@ -33,7 +35,8 @@ export class TurnManager {
     handManager: HandManager,
     uiManager: UIManager,
     dragAndDropManager: DragAndDropManager,
-    cardPlacementManager: CardPlacementManager
+    cardPlacementManager: CardPlacementManager,
+    laneEffectManager: LaneEffectManager
   ) {
     this.scene = scene;
     this.gameState = gameState;
@@ -45,6 +48,7 @@ export class TurnManager {
     this.uiManager = uiManager;
     this.dragAndDropManager = dragAndDropManager;
     this.cardPlacementManager = cardPlacementManager;
+    this.laneEffectManager = laneEffectManager;
   }
 
   /**
@@ -130,6 +134,17 @@ export class TurnManager {
   /** Etapa 5b: O jogo continua. Prepara tudo para o próximo turno. */
   private prepareForNextTurn(): void {
     this.gameState.advanceTurn();
+    const currentTurn = this.gameState.currentTurn;
+
+    // 1. Revela o efeito da lane para o novo turno que está começando.
+    this.laneEffectManager.revealLaneEffectForTurn(currentTurn);
+
+    // --- A CORREÇÃO ESTÁ AQUI ---
+    // 2. Força um recálculo de todos os poderes imediatamente após a revelação.
+    // Isso garante que os efeitos da nova lane revelada sejam aplicados instantaneamente.
+    this.recalculateAllPowers();
+
+    // 3. Continua com o resto da preparação do turno.
     this.gameState.refreshEnergies();
     this.updateUI();
     this.enablePlayerInteractions();

@@ -6,17 +6,25 @@ import { GameEventManager } from './GameEventManager';
 import { GameEvent } from '@/enums/GameEvent';
 import { GameStateManager } from './GameStateManager';
 import { HandManager } from './HandManager';
+import { LaneManager } from './LaneManager';
 
 export class BotAIManager {
   private scene: Phaser.Scene;
   private gameState: GameStateManager;
   private handManager: HandManager;
+  private laneManager: LaneManager;
 
   // CORREÇÃO: Construtor ajustado para 3 argumentos.
-  constructor(scene: Phaser.Scene, gameState: GameStateManager, handManager: HandManager) {
+  constructor(
+    scene: Phaser.Scene,
+    gameState: GameStateManager,
+    handManager: HandManager,
+    laneManager: LaneManager
+  ) {
     this.scene = scene;
     this.gameState = gameState;
     this.handManager = handManager;
+    this.laneManager = laneManager;
   }
 
   public executeTurn(
@@ -68,16 +76,18 @@ export class BotAIManager {
   }> {
     return this.gameState.lanes
       .map((lane) => {
-        const { botPower, playerPower } = this.calculateLanePower(lane);
-        return { lane, botPower, playerPower, difference: botPower - playerPower };
+        // --- CORREÇÃO AQUI ---
+        // Em vez de usar um método local, use o LaneManager para obter os poderes.
+        // O LaneManager já sabe sobre os efeitos das lanes.
+        const { opponentPower, playerPower } = this.laneManager.calculateLanePower(lane);
+        return {
+          lane,
+          botPower: opponentPower, // Renomeado para clareza
+          playerPower,
+          difference: opponentPower - playerPower,
+        };
       })
       .sort((a, b) => a.difference - b.difference);
-  }
-
-  private calculateLanePower(lane: Lane): { botPower: number; playerPower: number } {
-    const botPower = lane.opponentSlots.reduce((sum, s) => sum + (s.power ?? 0), 0);
-    const playerPower = lane.playerSlots.reduce((sum, s) => sum + (s.power ?? 0), 0);
-    return { botPower, playerPower };
   }
 
   private tryPlayCardOnPrioritizedLane(
