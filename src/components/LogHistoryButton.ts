@@ -110,13 +110,13 @@ export class LogHistoryButton {
     // -------------------------------
     if (offsetY > modalContentHeight) {
       const scrollbarX = width / 2 + modalContentWidth / 2 + 8; // ao lado direito
-
+      const scrollbarWidth = 20;
       // trilha
       const track = UIFactory.createRoundedRectangle(
         this.scene,
         scrollbarX,
         modalTopY,
-        10,
+        scrollbarWidth,
         modalContentHeight,
         0x555555,
         1,
@@ -131,15 +131,12 @@ export class LogHistoryButton {
         this.scene,
         scrollbarX,
         modalTopY,
-        10,
+        scrollbarWidth,
         thumbHeight,
         0x888888,
         1,
         6
       );
-
-      // cantos arredondados (se suportado)
-      (thumb as any).setRadius?.(6);
 
       let isDragging = false;
       let dragOffsetY = 0;

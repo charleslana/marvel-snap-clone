@@ -62,24 +62,35 @@ export class DeckGridManager {
   public updateAvailableCardsGrid(allCards: Card[]): void {
     if (!this.availableCardsGrid) return;
     this.availableCardsGrid.clearContent();
-    const gridWidth = this.availableCardsGrid.width;
-    this.populateGrid(this.availableCardsGrid, allCards, true, gridWidth);
+    const gridWidth = this.availableCardsGrid.viewWidth; // Usar viewWidth ao invés de width
+    const cardContainers = this.createCardContainers(allCards, true, gridWidth);
+    this.availableCardsGrid.addContent(cardContainers);
   }
 
   private populateGrid(
-    container: Phaser.GameObjects.Container | ScrollableContainer,
+    container: Phaser.GameObjects.Container,
     cards: Card[],
     isAvailableCards: boolean,
     gridWidth: number
   ): void {
+    const cardContainers = this.createCardContainers(cards, isAvailableCards, gridWidth);
+    container.add(cardContainers);
+  }
+
+  private createCardContainers(
+    cards: Card[],
+    isAvailableCards: boolean,
+    gridWidth: number
+  ): CardContainer[] {
     const cardSize = { w: 80, h: 110 };
     const cardSpacing = 15;
     const padding = 40;
     const cols = Math.floor((gridWidth - padding * 2) / (cardSize.w + cardSpacing));
 
-    cards.forEach((card, i) => {
+    return cards.map((card, i) => {
       const x = padding + (i % cols) * (cardSize.w + cardSpacing);
       const y = padding + Math.floor(i / cols) * (cardSize.h + cardSpacing) + 15;
+
       const cardContainer = new CardContainer(
         this.scene,
         x,
@@ -90,13 +101,11 @@ export class DeckGridManager {
         card,
         i
       );
+
       this.setupCardInteractivity(cardContainer, isAvailableCards, i);
-      if (container instanceof ScrollableContainer) {
-        container.addContent(cardContainer);
-      } else {
-        container.add(cardContainer);
-      }
       this.setupHoverEvents(cardContainer);
+
+      return cardContainer;
     });
   }
 
@@ -142,6 +151,7 @@ export class DeckGridManager {
   public getDeckGridContainer(): Phaser.GameObjects.Container {
     return this.deckGridContainer;
   }
+
   public getAvailableCardsGrid(): ScrollableContainer {
     return this.availableCardsGrid;
   }
