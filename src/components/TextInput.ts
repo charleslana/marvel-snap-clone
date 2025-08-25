@@ -5,6 +5,7 @@ export interface TextInputConfig {
   type?: 'text' | 'password';
   width?: number;
   height?: number;
+  maxLength?: number;
 }
 
 export class TextInput extends Phaser.GameObjects.DOMElement {
@@ -15,8 +16,11 @@ export class TextInput extends Phaser.GameObjects.DOMElement {
     const height = config.height ?? 38;
     const type = config.type ?? 'text';
     const placeholder = config.placeholder ?? '';
+    const maxLength = config.maxLength;
 
-    const html = `<input type="${type}" name="input" placeholder="${placeholder}" 
+    const maxLengthAttribute = maxLength ? `maxlength="${maxLength}"` : '';
+
+    const html = `<input type="${type}" name="input" placeholder="${placeholder}" ${maxLengthAttribute}
       style="
         background-color: #1b1e29;
         border: 1px solid #292d3e;
@@ -26,6 +30,7 @@ export class TextInput extends Phaser.GameObjects.DOMElement {
         width: ${width}px;
         height: ${height}px;
         font-size:16px;
+        font-family: 'Red Hat Display', sans-serif;
       ">`;
 
     this.createFromHTML(html);

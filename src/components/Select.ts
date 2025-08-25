@@ -41,6 +41,7 @@ export class Select extends Phaser.GameObjects.DOMElement {
       height: ${height}px;
       font-size: 16px;
       cursor: pointer;
+      font-family: 'Red Hat Display', sans-serif;
     `;
 
     const html = `<select name="select" style="${style}">${optionsHtml}</select>`;

@@ -4,14 +4,17 @@ import { userDecks } from '@/data/UserDecks';
 import { GameEventManager } from './GameEventManager';
 import { GameEvent } from '@/enums/GameEvent';
 import { DeckMode } from '@/enums/DeckMode';
+import { AlertModal } from '@/components/AlertModal';
 
 export class DeckManager {
+  private scene: Phaser.Scene;
   private currentDeckData: Card[] = [];
   private currentMode: DeckMode = DeckMode.View;
   private selectedDeckId: string = '';
   private originalDeckData: Card[] = [];
 
-  constructor() {
+  constructor(scene: Phaser.Scene) {
+    this.scene = scene;
     this.reset();
   }
 
@@ -114,12 +117,16 @@ export class DeckManager {
 
   public saveDeck(deckName: string): boolean {
     if (!this.isValidDeckSize()) {
-      alert('O deck precisa ter exatamente 12 cartas para ser salvo.');
+      new AlertModal(this.scene, {
+        message: 'O deck precisa ter exatamente 12 cartas para ser salvo.',
+      }).show();
       return false;
     }
     const trimmedName = deckName.trim();
     if (!trimmedName) {
-      alert('O nome do deck não pode estar vazio.');
+      new AlertModal(this.scene, {
+        message: 'O nome do deck não pode estar vazio.',
+      }).show();
       return false;
     }
     const isNameDuplicate = userDecks.some(
@@ -127,7 +134,9 @@ export class DeckManager {
         deck.name.toLowerCase() === trimmedName.toLowerCase() && deck.id !== this.selectedDeckId
     );
     if (isNameDuplicate) {
-      alert(`Já existe um deck com o nome "${trimmedName}". Por favor, escolha outro nome.`);
+      new AlertModal(this.scene, {
+        message: `Já existe um deck com o nome "${trimmedName}".\nPor favor, escolha outro nome.`,
+      }).show();
       return false;
     }
 

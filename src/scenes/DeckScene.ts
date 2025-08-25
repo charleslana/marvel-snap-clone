@@ -27,7 +27,7 @@ export class DeckScene extends Phaser.Scene {
 
   init(): void {
     console.log('🚀 DeckScene - Iniciando inicialização');
-    this.deckManager = new DeckManager();
+    this.deckManager = new DeckManager(this);
     this.uiManager = new DeckUIManager(this, this.deckManager);
     this.gridManager = new DeckGridManager(this, this.deckManager);
     this.uiManager.initialize();

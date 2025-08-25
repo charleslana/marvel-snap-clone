@@ -9,6 +9,9 @@ import { DeckManager } from './DeckManager';
 import { GameEventManager } from './GameEventManager';
 import { GameEvent } from '@/enums/GameEvent';
 import { DeckMode } from '@/enums/DeckMode';
+import { ConfirmationModal } from '@/components/ConfirmationModal';
+import { LoadingOverlay } from '@/components/LoadingOverlay';
+import { AlertModal } from '@/components/AlertModal';
 
 export class DeckUIManager {
   private scene: Phaser.Scene;
@@ -100,6 +103,7 @@ export class DeckUIManager {
       width: 200,
       height: 38,
       placeholder: 'Nome do Deck...',
+      maxLength: 50, //TODO diminuir para 50
     });
     this.deckNameInput.setVisible(false);
     currentY += 60;
@@ -167,8 +171,15 @@ export class DeckUIManager {
       () => {
         const deckId = this.deckManager.getSelectedDeckId();
         const deckName = this.deckManager.getSelectedDeckName();
-        if (deckId && confirm(`Tem certeza que deseja remover o deck "${deckName}"?`)) {
-          this.deckManager.deleteDeck(deckId);
+        if (deckId) {
+          const modal = new ConfirmationModal(this.scene, {
+            message: `Remover o deck "${deckName}"?\n\nEsta ação não pode ser desfeita.`,
+            confirmText: 'Remover',
+            onConfirm: () => {
+              this.deckManager.deleteDeck(deckId);
+            },
+          });
+          modal.show();
         }
       },
       { color: ButtonColor.Red, width: 200, height: 50, fontSize: '18px' }
@@ -180,10 +191,24 @@ export class DeckUIManager {
       currentY,
       'Salvar Deck',
       () => {
-        const deckName = this.deckNameInput.getValue();
-        if (this.deckManager.saveDeck(deckName)) {
-          this.onDeckSaved?.();
-        }
+        const loading = new LoadingOverlay(this.scene);
+        loading.show('Salvando Deck...');
+
+        // Adiciona um pequeno atraso para o loading ser visível
+        this.scene.time.delayedCall(500, () => {
+          const deckName = this.deckNameInput.getValue();
+          const success = this.deckManager.saveDeck(deckName);
+
+          // Esconde o loading independentemente do resultado
+          loading.hide();
+
+          if (success) {
+            // Opcional: Mostrar um alerta de sucesso
+            new AlertModal(this.scene, { message: 'Deck salvo com sucesso!' }).show();
+            this.onDeckSaved?.();
+          }
+          // Se não houve sucesso, o DeckManager já mostrou o alerta de erro.
+        });
       },
       { color: ButtonColor.Purple, width: 200, height: 50, fontSize: '18px' }
     );
