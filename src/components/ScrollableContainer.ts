@@ -9,11 +9,21 @@ export class ScrollableContainer extends Phaser.GameObjects.Container {
     super(scene, x, y);
     this.width = width;
     this.viewHeight = height;
+
+    // Cria o container de conteúdo
     this.contentContainer = this.scene.add.container(0, 0);
     this.add(this.contentContainer);
-    const maskShape = this.scene.make.graphics().fillRect(x, y, width, height);
+
+    // CORREÇÃO: Criar a máscara com coordenadas relativas (0,0) ao invés de absolutas
+    const maskShape = this.scene.make.graphics();
+    maskShape.fillRect(0, 0, width, height); // Usar coordenadas relativas
     this.scrollMask = maskShape.createGeometryMask();
+
+    // Posicionar a máscara corretamente
+    maskShape.setPosition(x, y);
     this.contentContainer.setMask(this.scrollMask);
+
+    // Setup do scroll
     this.scene.input.on('wheel', this.onWheel, this);
     scene.add.existing(this);
   }
@@ -26,6 +36,10 @@ export class ScrollableContainer extends Phaser.GameObjects.Container {
 
   public getContent(): Phaser.GameObjects.GameObject[] {
     return this.contentContainer.list;
+  }
+
+  public clearContent(): void {
+    this.contentContainer.removeAll(true);
   }
 
   private onWheel(

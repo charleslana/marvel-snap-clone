@@ -1,11 +1,11 @@
 import Phaser from 'phaser';
 
-export interface SelectOption {
+interface SelectOption {
   value: string;
   text: string;
 }
 
-export interface SelectConfig {
+interface SelectConfig {
   width?: number;
   height?: number;
   options?: SelectOption[];

@@ -44,6 +44,14 @@ const buttonColorMap: Record<ButtonColor, ButtonColors> = {
     hover: 0x4aa3ff,
     down: 0x2c7dd6,
   },
+  [ButtonColor.Red]: {
+    shadow: 0x8b1a1a,
+    shadowStroke: 0x5c1111,
+    fill: 0xe52b2b,
+    stroke: 0xc02424,
+    hover: 0xff4c4c,
+    down: 0xc02424,
+  },
 };
 
 export class GameButton extends Phaser.GameObjects.Container {
