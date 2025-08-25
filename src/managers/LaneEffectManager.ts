@@ -12,27 +12,6 @@ export class LaneEffectManager {
 
   constructor(gameState: GameStateManager) {
     this.gameState = gameState;
-    this.selectRandomEffectsForGame();
-  }
-
-  /**
-   * Sorteia 3 efeitos únicos da lista de todos os efeitos para serem usados nesta partida.
-   */
-  private selectRandomEffectsForGame(): void {
-    const allEffects = LaneEffectsRegistry.getAllEffects();
-    // Embaralha a lista de todos os efeitos
-    Phaser.Utils.Array.Shuffle(allEffects);
-    // Pega os 3 primeiros efeitos da lista embaralhada
-    this.effectsForThisGame = allEffects.slice(0, 3);
-
-    // Associa os efeitos sorteados às lanes no estado do jogo
-    for (let i = 0; i < this.gameState.lanes.length; i++) {
-      this.gameState.lanes[i].effect = this.effectsForThisGame[i];
-    }
-    console.log(
-      'Efeitos para esta partida:',
-      this.effectsForThisGame.map((e) => e?.name)
-    );
   }
 
   /**
