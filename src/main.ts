@@ -29,6 +29,7 @@ const config: Phaser.Types.Core.GameConfig = {
   audio: {
     disableWebAudio: true,
   },
+  pixelArt: true,
   parent: 'game-container',
   scene: [BootScene, PreloaderScene, LoginScene, RegisterScene, HomeScene, DeckScene, GameScene],
 };
