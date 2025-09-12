@@ -1,5 +1,3 @@
-// ===== 3. MODIFICAÇÕES NO DragAndDropManager.ts =====
-
 import Phaser from 'phaser';
 import { Slot } from '@/interfaces/Slot';
 import { CardContainer } from '@/components/CardContainer';
@@ -9,18 +7,17 @@ import { GameEvent } from '@/enums/GameEvent';
 import { LaneManager } from './LaneManager';
 import { GameStateManager } from './GameStateManager';
 import { Lane } from '@/interfaces/Lane';
-import { SlotManager } from './SlotManager'; // Nova importação
-import { LaneDisplay } from '@/components/LaneDisplay'; // Nova importação
+import { SlotManager } from './SlotManager';
+import { LaneDisplay } from '@/components/LaneDisplay';
 
 export class DragAndDropManager {
   private scene: Phaser.Scene;
   private gameState: GameStateManager;
   private laneManager: LaneManager;
-  private laneDisplay: LaneDisplay; // Nova propriedade
+  private laneDisplay: LaneDisplay;
   private enabled: boolean = true;
   private draggedFromSlot: Slot | null | undefined = null;
 
-  // CONSTRUTOR MODIFICADO: Adiciona LaneDisplay
   constructor(
     scene: Phaser.Scene,
     gameState: GameStateManager,
@@ -97,7 +94,9 @@ export class DragAndDropManager {
       container.startX = container.x;
       container.startY = container.y;
       this.scene.children.bringToTop(container);
-      this.toggleSlotOverlays(true, this.draggedFromSlot);
+
+      // MODIFICAÇÃO: Usa zonas de drop para movimento também
+      this.showAvailableMovementLaneDropZones(container);
       return;
     }
 
@@ -105,7 +104,7 @@ export class DragAndDropManager {
     container.startY = container.y;
     container.setScale(0.8);
 
-    // NOVA IMPLEMENTAÇÃO: Mostra as zonas de drop das lanes
+    // Mostra as zonas de drop das lanes para cartas novas
     this.showAvailableLaneDropZones();
   }
 
@@ -120,20 +119,33 @@ export class DragAndDropManager {
 
     container.setDepth(0);
 
+    // MODIFICAÇÃO: Usa o novo sistema para movimento do Nightcrawler
     if (this.draggedFromSlot) {
-      const toSlot = this.findValidMoveSlot(container);
-      if (toSlot && toSlot !== this.draggedFromSlot) {
-        this.scene.events.emit('moveCardRequest', {
-          cardContainer: container,
-          fromSlot: this.draggedFromSlot,
-          toSlot: toSlot,
-        });
+      const targetLane = this.getLaneUnderPointer(container.x, container.y);
+
+      if (targetLane) {
+        const targetSlot = SlotManager.getNextAvailableSlot(targetLane, true);
+
+        if (targetSlot && targetSlot !== this.draggedFromSlot) {
+          // Usa o sistema de eventos para mover a carta
+          this.scene.events.emit('moveCardRequest', {
+            cardContainer: container,
+            fromSlot: this.draggedFromSlot,
+            toSlot: targetSlot,
+          });
+        } else {
+          // Retorna para a posição original
+          container.x = container.startX;
+          container.y = container.startY;
+        }
       } else {
+        // Retorna para a posição original se não encontrou lane válida
         container.x = container.startX;
         container.y = container.startY;
       }
+
       this.draggedFromSlot = null;
-      this.toggleSlotOverlays(false);
+      this.hideAllLaneDropZones();
       return;
     }
 
@@ -142,7 +154,6 @@ export class DragAndDropManager {
     let cardPlaced = false;
 
     if (this.gameState.isPlayerTurn && cost <= this.gameState.playerEnergy) {
-      // NOVA IMPLEMENTAÇÃO: Usa o sistema de lane drop zones
       cardPlaced = this.tryPlaceCardInLane(container);
     }
 
@@ -152,11 +163,40 @@ export class DragAndDropManager {
       GameEventManager.instance.emit(GameEvent.RenderPlayerHand, this.gameState.playerEnergy);
     }
 
-    // NOVA IMPLEMENTAÇÃO: Esconde as zonas de drop das lanes
     this.hideAllLaneDropZones();
   }
 
-  // NOVA FUNÇÃO: Mostra as zonas de drop das lanes disponíveis
+  // NOVA FUNÇÃO: Mostra zonas de drop disponíveis para movimento do Nightcrawler
+  private showAvailableMovementLaneDropZones(container: CardContainer): void {
+    const currentSlot = container.slot;
+    if (!currentSlot) return;
+
+    // Encontra a lane atual do Nightcrawler
+    const currentLane = this.laneManager
+      .getLanes()
+      .find(
+        (lane) => lane.playerSlots.includes(currentSlot) || lane.opponentSlots.includes(currentSlot)
+      );
+
+    const isPlayerCard = currentLane?.playerSlots.includes(currentSlot) || false;
+
+    for (const lane of this.laneManager.getLanes()) {
+      // Pula a lane atual
+      if (lane === currentLane) continue;
+
+      // Verifica se tem espaço disponível na lane
+      const hasAvailableSlot = isPlayerCard
+        ? lane.playerSlots.some((slot) => !slot.occupied)
+        : lane.opponentSlots.some((slot) => !slot.occupied);
+
+      if (hasAvailableSlot) {
+        // Mostra a zona de drop apropriada (player ou opponent)
+        this.laneDisplay.showLaneDropZone(lane, isPlayerCard);
+      }
+    }
+  }
+
+  // Mostra as zonas de drop das lanes disponíveis para cartas novas
   private showAvailableLaneDropZones(): void {
     for (const lane of this.laneManager.getLanes()) {
       if (!SlotManager.isLaneFull(lane, true)) {
@@ -165,14 +205,15 @@ export class DragAndDropManager {
     }
   }
 
-  // NOVA FUNÇÃO: Esconde todas as zonas de drop das lanes
+  // Esconde todas as zonas de drop das lanes
   private hideAllLaneDropZones(): void {
     for (const lane of this.laneManager.getLanes()) {
       this.laneDisplay.hideLaneDropZone(lane, true);
+      this.laneDisplay.hideLaneDropZone(lane, false); // Esconde também do oponente
     }
   }
 
-  // NOVA FUNÇÃO: Tenta colocar a carta em uma lane usando o sistema de zona única
+  // Tenta colocar a carta em uma lane usando o sistema de zona única
   private tryPlaceCardInLane(container: CardContainer): boolean {
     const { x, y, cardData } = container;
 
@@ -197,55 +238,26 @@ export class DragAndDropManager {
     return false;
   }
 
-  // NOVA FUNÇÃO: Encontra qual lane está sob o ponteiro
+  // Encontra qual lane está sob o ponteiro
   private getLaneUnderPointer(x: number, y: number): Lane | null {
     for (const lane of this.laneManager.getLanes()) {
-      if (this.laneDisplay.isPointInLaneDropZone(lane, x, y, true)) {
+      // Verifica tanto a zona do player quanto do oponente
+      if (
+        this.laneDisplay.isPointInLaneDropZone(lane, x, y, true) ||
+        this.laneDisplay.isPointInLaneDropZone(lane, x, y, false)
+      ) {
         return lane;
       }
     }
     return null;
   }
 
-  // Mantém as funções existentes para compatibilidade
-  private tryPlaceCard(container: CardContainer): boolean {
-    const { x, y, cardData } = container;
-    for (const lane of this.laneManager.getLanes()) {
-      for (const slot of lane.playerSlots) {
-        if (!slot.occupied && Phaser.Math.Distance.Between(x, y, slot.x, slot.y) < 60) {
-          GameEventManager.instance.emit(GameEvent.PlaceCardOnSlot, { slot, cardData });
-          GameEventManager.instance.emit(GameEvent.RemoveCardFromPlayerHand, cardData.index);
-          GameEventManager.instance.emit(GameEvent.UpdateEnergy);
-          this.laneManager.updateLanePowers();
+  // === FUNÇÕES REMOVIDAS/SUBSTITUÍDAS ===
+  // Estas funções não são mais necessárias com o novo sistema:
 
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-
-  private toggleSlotOverlays(visible: boolean, ignoreSlot: Slot | null = null): void {
-    for (const lane of this.laneManager.getLanes()) {
-      for (const slot of lane.playerSlots) {
-        if (slot !== ignoreSlot) {
-          slot.overlay?.setVisible(visible && !slot.occupied);
-        }
-      }
-    }
-  }
-
-  private findValidMoveSlot(container: CardContainer): Slot | null {
-    const { x, y } = container;
-    for (const lane of this.laneManager.getLanes()) {
-      for (const slot of lane.playerSlots) {
-        if (!slot.occupied && Phaser.Math.Distance.Between(x, y, slot.x, slot.y) < 60) {
-          return slot;
-        }
-      }
-    }
-    return null;
-  }
+  // REMOVIDA: toggleSlotOverlays - não usamos mais overlays individuais
+  // REMOVIDA: findValidMoveSlot - substituída por getLaneUnderPointer + SlotManager
+  // REMOVIDA: tryPlaceCard - substituída por tryPlaceCardInLane
 
   private animateCardReturn(container: CardContainer, onComplete?: () => void): void {
     this.scene.tweens.add({ targets: container, scale: 1, duration: 200, ease: 'Back.out' });
