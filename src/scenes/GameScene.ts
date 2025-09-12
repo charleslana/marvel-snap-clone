@@ -100,7 +100,12 @@ export default class GameScene extends Phaser.Scene {
       this.laneManager
     );
 
-    this.dragAndDropManager = new DragAndDropManager(this, this.gameStateManager, this.laneManager);
+    this.dragAndDropManager = new DragAndDropManager(
+      this,
+      this.gameStateManager,
+      this.laneManager,
+      this.laneDisplay
+    );
 
     this.botAI = new BotAIManager(this, this.gameStateManager, this.handManager, this.laneManager);
 

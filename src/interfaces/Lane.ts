@@ -8,6 +8,8 @@ export interface Lane {
   y: number;
   playerSlots: Slot[];
   opponentSlots: Slot[];
+  playerDropZone?: Phaser.GameObjects.Rectangle; // Nova propriedade
+  opponentDropZone?: Phaser.GameObjects.Rectangle; // Nova propriedade
   worldText?: Phaser.GameObjects.Text;
   worldImage?: Phaser.GameObjects.Image;
   playerPowerText?: Phaser.GameObjects.Text;

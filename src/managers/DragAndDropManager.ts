@@ -1,3 +1,5 @@
+// ===== 3. MODIFICAÇÕES NO DragAndDropManager.ts =====
+
 import Phaser from 'phaser';
 import { Slot } from '@/interfaces/Slot';
 import { CardContainer } from '@/components/CardContainer';
@@ -6,19 +8,29 @@ import { GameEventManager } from './GameEventManager';
 import { GameEvent } from '@/enums/GameEvent';
 import { LaneManager } from './LaneManager';
 import { GameStateManager } from './GameStateManager';
+import { Lane } from '@/interfaces/Lane';
+import { SlotManager } from './SlotManager'; // Nova importação
+import { LaneDisplay } from '@/components/LaneDisplay'; // Nova importação
 
 export class DragAndDropManager {
   private scene: Phaser.Scene;
   private gameState: GameStateManager;
   private laneManager: LaneManager;
+  private laneDisplay: LaneDisplay; // Nova propriedade
   private enabled: boolean = true;
   private draggedFromSlot: Slot | null | undefined = null;
 
-  // CORREÇÃO: Construtor ajustado para 3 argumentos.
-  constructor(scene: Phaser.Scene, gameState: GameStateManager, laneManager: LaneManager) {
+  // CONSTRUTOR MODIFICADO: Adiciona LaneDisplay
+  constructor(
+    scene: Phaser.Scene,
+    gameState: GameStateManager,
+    laneManager: LaneManager,
+    laneDisplay: LaneDisplay
+  ) {
     this.scene = scene;
     this.gameState = gameState;
     this.laneManager = laneManager;
+    this.laneDisplay = laneDisplay;
     this.setupDragEvents();
   }
 
@@ -29,10 +41,6 @@ export class DragAndDropManager {
   public disableDrag(): void {
     this.enabled = false;
   }
-
-  // CORREÇÃO: Removido updatePlayerEnergy e updatePlayerTurnStatus, pois o estado é lido diretamente.
-  // public updatePlayerEnergy(newEnergy: number): void { ... }
-  // public updatePlayerTurnStatus(isPlayerTurn: boolean): void { ... }
 
   private setupDragEvents(): void {
     const input = this.scene.input;
@@ -62,7 +70,6 @@ export class DragAndDropManager {
 
   private handlePointerOver(obj: Phaser.GameObjects.GameObject): void {
     if (!(obj instanceof CardContainer)) return;
-    // CORREÇÃO: Lê o estado diretamente do gameStateManager
     const cursor =
       this.gameState.isPlayerTurn && this.gameState.playerEnergy >= obj.cardData.cost
         ? 'grabbing'
@@ -98,7 +105,8 @@ export class DragAndDropManager {
     container.startY = container.y;
     container.setScale(0.8);
 
-    this.toggleSlotOverlays(true);
+    // NOVA IMPLEMENTAÇÃO: Mostra as zonas de drop das lanes
+    this.showAvailableLaneDropZones();
   }
 
   private handleDrag(container: CardContainer, dragX: number, dragY: number): void {
@@ -133,21 +141,73 @@ export class DragAndDropManager {
     const { cost } = cardData;
     let cardPlaced = false;
 
-    // CORREÇÃO: Lê o estado diretamente do gameStateManager
     if (this.gameState.isPlayerTurn && cost <= this.gameState.playerEnergy) {
-      cardPlaced = this.tryPlaceCard(container);
+      // NOVA IMPLEMENTAÇÃO: Usa o sistema de lane drop zones
+      cardPlaced = this.tryPlaceCardInLane(container);
     }
 
     if (!cardPlaced) {
       this.animateCardReturn(container);
     } else {
-      // CORREÇÃO: Lê o estado diretamente do gameStateManager
       GameEventManager.instance.emit(GameEvent.RenderPlayerHand, this.gameState.playerEnergy);
     }
 
-    this.toggleSlotOverlays(false);
+    // NOVA IMPLEMENTAÇÃO: Esconde as zonas de drop das lanes
+    this.hideAllLaneDropZones();
   }
 
+  // NOVA FUNÇÃO: Mostra as zonas de drop das lanes disponíveis
+  private showAvailableLaneDropZones(): void {
+    for (const lane of this.laneManager.getLanes()) {
+      if (!SlotManager.isLaneFull(lane, true)) {
+        this.laneDisplay.showLaneDropZone(lane, true);
+      }
+    }
+  }
+
+  // NOVA FUNÇÃO: Esconde todas as zonas de drop das lanes
+  private hideAllLaneDropZones(): void {
+    for (const lane of this.laneManager.getLanes()) {
+      this.laneDisplay.hideLaneDropZone(lane, true);
+    }
+  }
+
+  // NOVA FUNÇÃO: Tenta colocar a carta em uma lane usando o sistema de zona única
+  private tryPlaceCardInLane(container: CardContainer): boolean {
+    const { x, y, cardData } = container;
+
+    const targetLane = this.getLaneUnderPointer(x, y);
+
+    if (targetLane) {
+      const availableSlot = SlotManager.getNextAvailableSlot(targetLane, true);
+
+      if (availableSlot) {
+        GameEventManager.instance.emit(GameEvent.PlaceCardOnSlot, {
+          slot: availableSlot,
+          cardData,
+        });
+        GameEventManager.instance.emit(GameEvent.RemoveCardFromPlayerHand, cardData.index);
+        GameEventManager.instance.emit(GameEvent.UpdateEnergy);
+        this.laneManager.updateLanePowers();
+
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  // NOVA FUNÇÃO: Encontra qual lane está sob o ponteiro
+  private getLaneUnderPointer(x: number, y: number): Lane | null {
+    for (const lane of this.laneManager.getLanes()) {
+      if (this.laneDisplay.isPointInLaneDropZone(lane, x, y, true)) {
+        return lane;
+      }
+    }
+    return null;
+  }
+
+  // Mantém as funções existentes para compatibilidade
   private tryPlaceCard(container: CardContainer): boolean {
     const { x, y, cardData } = container;
     for (const lane of this.laneManager.getLanes()) {
@@ -155,9 +215,6 @@ export class DragAndDropManager {
         if (!slot.occupied && Phaser.Math.Distance.Between(x, y, slot.x, slot.y) < 60) {
           GameEventManager.instance.emit(GameEvent.PlaceCardOnSlot, { slot, cardData });
           GameEventManager.instance.emit(GameEvent.RemoveCardFromPlayerHand, cardData.index);
-
-          // A energia será atualizada pelo CardPlacementManager, não aqui.
-          // Apenas emitimos o evento para a UI.
           GameEventManager.instance.emit(GameEvent.UpdateEnergy);
           this.laneManager.updateLanePowers();
 
